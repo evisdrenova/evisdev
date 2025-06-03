@@ -1,9 +1,9 @@
 import React from "react";
-import { Mail, Github, Twitter, Linkedin } from "lucide-react";
+import { Mail, Github } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { getAllPosts } from "@/lib/posts";
 import Link from "next/link";
+import { FaLinkedin } from "react-icons/fa";
 
 interface Project {
   name: string;
@@ -24,6 +24,13 @@ interface Book {
   author: string;
   status: "reading" | "completed";
   date: string;
+}
+
+interface Experience {
+  title: string;
+  company: string;
+  date: string;
+  description: string;
 }
 
 export default function Home() {
@@ -89,6 +96,17 @@ export default function Home() {
     },
   ];
 
+  const experiences: Experience[] = [
+    {
+      title: "Senior Software Engineer",
+      company: "Tech Corp",
+      date: "2024 - Present",
+      description:
+        "Leading development of distributed systems and microservices architecture",
+    },
+    // ... more entries
+  ];
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -107,21 +125,60 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Evis</h1>
               <p className="text-gray-600 mb-3">Always building</p>
               <p className="text-gray-700 mb-4">
-                I like to build stuff and i like to learn stuff.
+                I like to build and learn stuff.
               </p>
               <div className="flex gap-4">
                 <Github className="w-5 h-5 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors" />
-                <Twitter className="w-5 h-5 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors" />
-                <Linkedin className="w-5 h-5 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors" />
+                <div className="w-5 h-5 flex items-center justify-center cursor-pointer group">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-4 h-4 text-gray-600 group-hover:text-black transition-colors fill-current"
+                    aria-label="X (formerly Twitter)"
+                  >
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </div>
+                <FaLinkedin className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
                 <Mail className="w-5 h-5 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors" />
               </div>
             </div>
           </div>
         </header>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Experience</h2>
+            <div className="relative">
+              {/* Vertical line */}
+              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-200"></div>
 
-        {/* Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Posts Column */}
+              <div className="space-y-8">
+                {experiences.map((exp, index) => (
+                  <div key={index} className="relative flex items-start gap-4">
+                    {/* Timeline dot */}
+                    <div className="relative z-10 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-3 h-3 bg-white rounded-full"></div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 pb-8">
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 text-sm mb-1">
+                          {exp.title}
+                        </h3>
+                        <p className="text-blue-600 font-medium text-sm mb-2">
+                          {exp.company}
+                        </p>
+                        <p className="text-gray-500 text-xs mb-2">{exp.date}</p>
+                        <p className="text-gray-700 text-xs leading-relaxed">
+                          {exp.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-900">Posts</h2>
             <div className="space-y-6">
@@ -175,8 +232,6 @@ export default function Home() {
               </Link>
             )}
           </div>
-
-          {/* Projects Column */}
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
             <div className="space-y-6">
@@ -204,8 +259,6 @@ export default function Home() {
               ))}
             </div>
           </div>
-
-          {/* Books Column */}
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-900">Books</h2>
             <div className="space-y-6">
