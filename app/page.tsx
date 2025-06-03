@@ -26,13 +26,6 @@ interface Book {
   date: string;
 }
 
-interface Experience {
-  title: string;
-  company: string;
-  date: string;
-  description: string;
-}
-
 export default function Home() {
   const posts: Posts[] = getAllPosts().slice(0, 6);
 
@@ -96,17 +89,6 @@ export default function Home() {
     },
   ];
 
-  const experiences: Experience[] = [
-    {
-      title: "Senior Software Engineer",
-      company: "Tech Corp",
-      date: "2024 - Present",
-      description:
-        "Leading development of distributed systems and microservices architecture",
-    },
-    // ... more entries
-  ];
-
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -144,41 +126,7 @@ export default function Home() {
             </div>
           </div>
         </header>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">Experience</h2>
-            <div className="relative">
-              {/* Vertical line */}
-              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-200"></div>
-
-              <div className="space-y-8">
-                {experiences.map((exp, index) => (
-                  <div key={index} className="relative flex items-start gap-4">
-                    {/* Timeline dot */}
-                    <div className="relative z-10 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <div className="w-3 h-3 bg-white rounded-full"></div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0 pb-8">
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h3 className="font-semibold text-gray-900 text-sm mb-1">
-                          {exp.title}
-                        </h3>
-                        <p className="text-blue-600 font-medium text-sm mb-2">
-                          {exp.company}
-                        </p>
-                        <p className="text-gray-500 text-xs mb-2">{exp.date}</p>
-                        <p className="text-gray-700 text-xs leading-relaxed">
-                          {exp.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-900">Posts</h2>
             <div className="space-y-6">
