@@ -20,7 +20,6 @@ export default function Home() {
   const posts: Posts[] = [
     {
       title: "Comprehensive Rust by Google",
-      subtitle: "study notes",
       date: "Mar 15, 2025",
     },
     {
@@ -91,9 +90,6 @@ export default function Home() {
         <div>
           <h2 className="text-xl font-bold mb-6">Posts</h2>
           <PostList posts={posts} />
-          <div className="mt-6 text-sm text-gray-600">
-            See /micro for more frequent updates. 🌿
-          </div>
         </div>
         <div>
           <h2 className="text-xl font-bold mb-6">Projects</h2>
