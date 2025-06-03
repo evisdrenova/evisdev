@@ -1,5 +1,7 @@
 import React from "react";
-import { Mail, Twitter, Github, Rss, ExternalLink } from "lucide-react";
+import { Mail, Rss, ExternalLink } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FaGithub, FaLinkedin } from "react-icons/fa";
 
 const Portfolio = () => {
   const posts = [
@@ -55,21 +57,22 @@ const Portfolio = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto p-8 bg-white border-4 border-black rounded-lg shadow-2xl font-mono">
-      {/* Header Section */}
+    <div className="max-w-5xl mx-auto p-8  font-mono">
       <div className="flex items-start gap-6 mb-8">
         {/* Avatar */}
-        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center border-2 border-gray-300">
-          <div className="w-12 h-12 bg-gray-800 rounded-full relative">
-            {/* Simple avatar illustration */}
-            <div className="absolute top-2 left-3 w-6 h-4 bg-white rounded-full"></div>
-            <div className="absolute top-6 left-2 w-8 h-6 bg-white rounded-b-full"></div>
-          </div>
-        </div>
+
+        <Avatar className="w-18 h-18">
+          <AvatarImage
+            src="Circlevis.png"
+            alt="evis"
+            className="border border-gray-800 rounded-full"
+          />
+          <AvatarFallback>Ed</AvatarFallback>
+        </Avatar>
 
         {/* Name and Title */}
         <div className="flex-1">
-          <h1 className="text-2xl font-bold mb-1">Kyaw</h1>
+          <h1 className="text-2xl font-bold mb-1">Evis</h1>
           <p className="text-gray-600 mb-4">Software Engineer</p>
 
           {/* About Section */}
@@ -79,13 +82,19 @@ const Portfolio = () => {
             </p>
           </div>
 
-          {/* Social Links */}
           <div className="flex gap-4 mb-6">
-            <Mail className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer" />
-            <div className="w-5 h-5 bg-gray-600 hover:bg-black cursor-pointer"></div>
-            <Twitter className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer" />
-            <Github className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer" />
-            <Rss className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer" />
+            <FaLinkedin className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
+            <Mail className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
+            <div className="w-5 h-5 flex items-center justify-center cursor-pointer group">
+              <svg
+                viewBox="0 0 24 24"
+                className="w-4 h-4 text-gray-600 group-hover:text-black transition-colors fill-current"
+                aria-label="X (formerly Twitter)"
+              >
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+            </div>
+            <FaGithub className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
           </div>
         </div>
       </div>
