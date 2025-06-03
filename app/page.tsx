@@ -1,9 +1,9 @@
 import React from "react";
-import { Mail, Rss, ExternalLink } from "lucide-react";
+import { Mail, ExternalLink } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 
-const Portfolio = () => {
+export default function Home() {
   const posts = [
     {
       title: "Comprehensive Rust by Google",
@@ -59,8 +59,6 @@ const Portfolio = () => {
   return (
     <div className="max-w-5xl mx-auto p-8  font-mono">
       <div className="flex items-start gap-6 mb-8">
-        {/* Avatar */}
-
         <Avatar className="w-18 h-18">
           <AvatarImage
             src="Circlevis.png"
@@ -69,38 +67,20 @@ const Portfolio = () => {
           />
           <AvatarFallback>Ed</AvatarFallback>
         </Avatar>
-
-        {/* Name and Title */}
         <div className="flex-1">
           <h1 className="text-2xl font-bold mb-1">Evis</h1>
-          <p className="text-gray-600 mb-4">Software Engineer</p>
-
-          {/* About Section */}
+          <p className="text-gray-600 mb-4">Always building</p>
+          <p className="text-gray-600 mb-4">
+            I like to build stuff and i like to learn stuff.
+          </p>
           <div className="mb-6">
-            <p className="text-gray-700 leading-relaxed">
-              Perhaps you want to learn more about me?
-            </p>
-          </div>
-
-          <div className="flex gap-4 mb-6">
-            <FaLinkedin className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
-            <Mail className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
-            <div className="w-5 h-5 flex items-center justify-center cursor-pointer group">
-              <svg
-                viewBox="0 0 24 24"
-                className="w-4 h-4 text-gray-600 group-hover:text-black transition-colors fill-current"
-                aria-label="X (formerly Twitter)"
-              >
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-            </div>
-            <FaGithub className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
+            <SocialLinks />
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols12 gap-12">
         {/* Posts Section */}
         <div>
           <h2 className="text-xl font-bold mb-6">Posts</h2>
@@ -182,6 +162,23 @@ const Portfolio = () => {
       </div>
     </div>
   );
-};
+}
 
-export default Portfolio;
+function SocialLinks() {
+  return (
+    <div className="flex gap-4 mb-6">
+      <FaGithub className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
+      <div className="w-5 h-5 flex items-center justify-center cursor-pointer group">
+        <svg
+          viewBox="0 0 24 24"
+          className="w-4 h-4 text-gray-600 group-hover:text-black transition-colors fill-current"
+          aria-label="X (formerly Twitter)"
+        >
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+      </div>
+      <FaLinkedin className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
+      <Mail className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
+    </div>
+  );
+}
