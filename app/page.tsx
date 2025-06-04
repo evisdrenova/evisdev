@@ -1,9 +1,71 @@
 import React from "react";
-import { Mail, Github } from "lucide-react";
+import { Github } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getAllPosts } from "@/lib/posts";
 import Link from "next/link";
 import { FaLinkedin } from "react-icons/fa";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Evis - Always Building",
+  description:
+    "I like to build and learn stuff. Explore my posts, projects, and reading list.",
+  keywords: [
+    "developer",
+    "software engineer",
+    "rust",
+    "typescript",
+    "react",
+    "blog",
+    "projects",
+  ],
+  authors: [{ name: "Evis" }],
+  creator: "Evis",
+  publisher: "Evis",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://kyswtn.com",
+    title: "Evis - Always Building",
+    description:
+      "I like to build and learn stuff. Explore my posts, projects, and reading list.",
+    siteName: "Evis",
+    images: [
+      {
+        url: "/Circlevis.png",
+        width: 1200,
+        height: 630,
+        alt: "Evis - Developer Portfolio",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Evis - Always Building",
+    description:
+      "I like to build and learn stuff. Explore my posts, projects, and reading list.",
+    images: ["/Circlevis.png"],
+    creator: "@evis", // Replace with your actual Twitter handle
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
+  category: "technology",
+};
 
 interface Project {
   name: string;
@@ -106,9 +168,9 @@ export default function Home() {
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Evis</h1>
               <p className="text-gray-600 mb-3">Always building</p>
-              <p className="text-gray-700 mb-4">
+              {/* <p className="text-gray-700 mb-4">
                 I like to build and learn stuff.
-              </p>
+              </p> */}
               <div className="flex gap-4">
                 <Github className="w-5 h-5 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors" />
                 <div className="w-5 h-5 flex items-center justify-center cursor-pointer group">
@@ -121,7 +183,6 @@ export default function Home() {
                   </svg>
                 </div>
                 <FaLinkedin className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
-                <Mail className="w-5 h-5 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors" />
               </div>
             </div>
           </div>
