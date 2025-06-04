@@ -2,31 +2,30 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 
-const postsDirectory = path.join(process.cwd(), "posts");
+const projectsDirectory = path.join(process.cwd(), "project");
 
-export interface PostMetadata {
-  title: string;
+export interface ProjectMetadata {
+  name: string;
   date: string;
-  subtitle?: string;
+  tags: string[];
   slug: string;
-  tags?: string[];
 }
 
-export interface Post extends PostMetadata {
+export interface Project extends ProjectMetadata {
   content: string;
 }
 
-export function getAllPosts(): PostMetadata[] {
-  // Ensure posts directory exists
-  if (!fs.existsSync(postsDirectory)) {
+export function getAllproject(): ProjectMetadata[] {
+  // Ensure project directory exists
+  if (!fs.existsSync(projectsDirectory)) {
     return [];
   }
 
-  const fileNames = fs.readdirSync(postsDirectory);
-  const posts = fileNames
+  const fileNames = fs.readdirSync(projectsDirectory);
+  const project = fileNames
     .filter((name) => name.endsWith(".mdx"))
     .map((name) => {
-      const fullPath = path.join(postsDirectory, name);
+      const fullPath = path.join(projectsDirectory, name);
       const fileContents = fs.readFileSync(fullPath, "utf8");
       const { data } = matter(fileContents);
 
@@ -34,31 +33,29 @@ export function getAllPosts(): PostMetadata[] {
 
       return {
         slug,
-        title: data.title || slug,
+        name: data.name,
         date: data.date || "",
-        subtitle: data.subtitle,
         tags: data.tags || [],
-      } as PostMetadata;
+      } as ProjectMetadata;
     })
     .sort((a, b) => {
       // Sort by date, newest first
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
 
-  return posts;
+  return project;
 }
 
-export function getPostBySlug(slug: string): Post | null {
+export function getbookprojectBySlug(slug: string): Project | null {
   try {
-    const fullPath = path.join(postsDirectory, `${slug}.mdx`);
+    const fullPath = path.join(projectsDirectory, `${slug}.mdx`);
     const fileContents = fs.readFileSync(fullPath, "utf8");
     const { data, content } = matter(fileContents);
 
     return {
       slug,
-      title: data.title || slug,
+      name: data.name,
       date: data.date || "",
-      subtitle: data.subtitle,
       tags: data.tags || [],
       content,
     };
@@ -67,12 +64,12 @@ export function getPostBySlug(slug: string): Post | null {
   }
 }
 
-export function getPostSlugs(): string[] {
-  if (!fs.existsSync(postsDirectory)) {
+export function getprojectlugs(): string[] {
+  if (!fs.existsSync(projectsDirectory)) {
     return [];
   }
 
-  const fileNames = fs.readdirSync(postsDirectory);
+  const fileNames = fs.readdirSync(projectsDirectory);
   return fileNames
     .filter((name) => name.endsWith(".mdx"))
     .map((name) => name.replace(/\.mdx$/, ""));

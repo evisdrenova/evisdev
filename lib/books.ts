@@ -8,7 +8,9 @@ export interface BookMetadata {
   title: string;
   date: string;
   subtitle?: string;
+  author: string;
   slug: string;
+  status: "reading" | "completed";
   tags?: string[];
 }
 
@@ -60,6 +62,8 @@ export function getBooksBySlug(slug: string): Book | null {
       subtitle: data.subtitle,
       tags: data.tags || [],
       content,
+      author: "author",
+      status: "reading",
     };
   } catch {
     return null;

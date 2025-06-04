@@ -1,10 +1,12 @@
 import React from "react";
 import { Github } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getAllPosts } from "@/lib/posts";
+import { getAllPosts, PostMetadata } from "@/lib/posts";
 import Link from "next/link";
 import { FaLinkedin } from "react-icons/fa";
 import { Metadata } from "next";
+import { BookMetadata, getAllBooks } from "@/lib/books";
+import { getAllproject, ProjectMetadata } from "@/lib/projects";
 
 export const metadata: Metadata = {
   title: "Evis - Always Building",
@@ -67,89 +69,10 @@ export const metadata: Metadata = {
   category: "technology",
 };
 
-interface Project {
-  name: string;
-  date: string;
-  tags: string[];
-}
-
-interface Posts {
-  title: string;
-  date: string;
-  subtitle?: string;
-  slug: string;
-  tags?: string[];
-}
-
-interface Book {
-  title: string;
-  author: string;
-  status: "reading" | "completed";
-  date: string;
-}
-
 export default function Home() {
-  const posts: Posts[] = getAllPosts().slice(0, 6);
-
-  const projects: Project[] = [
-    {
-      name: "kyswtn.com",
-      date: "Feb 26, 2025",
-      tags: ["rust", "typescript", "react"],
-    },
-    {
-      name: "vscode-vercel-website",
-      date: "Nov 27, 2024",
-      tags: ["rust", "typescript", "react"],
-    },
-    {
-      name: "unocss-preset-radix-colors",
-      date: "Sep 15, 2024",
-      tags: ["rust", "typescript", "react"],
-    },
-    {
-      name: "vscode-vercel",
-      date: "Sep 2, 2024",
-      tags: ["rust", "typescript", "react"],
-    },
-    {
-      name: "vedk",
-      date: "Aug 20, 2024",
-      tags: ["rust", "typescript", "react"],
-    },
-    {
-      name: "terraform-provider-porkbun",
-      date: "Apr 26, 2024",
-      tags: ["rust", "typescript", "react"],
-    },
-  ];
-
-  const books: Book[] = [
-    {
-      title: "The Pragmatic Programmer",
-      author: "David Thomas",
-      status: "completed",
-      date: "Dec 15, 2024",
-    },
-    {
-      title: "Clean Code",
-      author: "Robert C. Martin",
-      status: "reading",
-      date: "Jan 10, 2025",
-    },
-    {
-      title: "System Design Interview",
-      author: "Alex Xu",
-      status: "reading",
-      date: "Nov 5, 2024",
-    },
-    {
-      title: "Designing Data-Intensive Applications",
-      author: "Martin Kleppmann",
-      status: "completed",
-      date: "Oct 12, 2024",
-    },
-  ];
+  const posts: PostMetadata[] = getAllPosts().slice(0, 6);
+  const books: BookMetadata[] = getAllBooks().slice(0, 6);
+  const projects: ProjectMetadata[] = getAllproject().slice(0, 6);
 
   return (
     <div className="min-h-screen bg-white">
