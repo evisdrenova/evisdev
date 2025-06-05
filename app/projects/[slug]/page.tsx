@@ -1,49 +1,50 @@
-import { getPostBySlug, getPostSlugs } from "@/lib/posts";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { useMDXComponents } from "@/mdx-components";
+import { getProjectBySlug, getProjectslugs } from "@/lib/projects";
 
-interface PostPageProps {
-  params: {
+interface ProjectsPageProps {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export async function generateStaticParams() {
-  const slugs = getPostSlugs();
+  const slugs = getProjectslugs();
   return slugs.map((slug) => ({
     slug,
   }));
 }
 
-export async function generateMetadata({ params }: PostPageProps) {
-  const post = getPostBySlug(params.slug);
+export async function generateMetadata({ params }: ProjectsPageProps) {
+  const { slug } = await params;
+  const project = getProjectBySlug(slug);
 
-  if (!post) {
+  if (!project) {
     return {
-      title: "Post Not Found",
+      title: "project Not Found",
     };
   }
 
   return {
-    title: `${post.title} - Evis`,
-    description: post.subtitle,
+    title: `${project.name} - Evis`,
   };
 }
 
-export default async function PostPage({ params }: PostPageProps) {
-  const post = getPostBySlug(params.slug);
+export default async function projectPage({ params }: ProjectsPageProps) {
+  const { slug } = await params;
+  const project = getProjectBySlug(slug);
   const components = useMDXComponents;
 
-  if (!post) {
+  if (!project) {
     notFound();
   }
 
   // Compile the MDX content
   const { content } = await compileMDX({
-    source: post.content,
+    source: project.content,
     components: components,
     options: {
       parseFrontmatter: false,
@@ -54,27 +55,24 @@ export default async function PostPage({ params }: PostPageProps) {
     <div className="max-w-4xl mx-auto p-8">
       <div className="mb-8">
         <Link
-          href="/posts"
+          href="/projects"
           className="text-blue-600 hover:text-blue-800 transition-colors mb-4 inline-block font-mono"
         >
-          ← Back to Posts
+          ← Back to projects
         </Link>
 
         <header className="mb-8">
           <h1 className="text-4xl font-bold mb-2 text-gray-900">
-            {post.title}
+            {project.name}
           </h1>
-          {post.subtitle && (
-            <p className="text-xl text-gray-600 mb-4">{post.subtitle}</p>
-          )}
 
           <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-            <time dateTime={post.date}>{post.date}</time>
+            <time dateTime={project.date}>{project.date}</time>
           </div>
 
-          {post.tags && post.tags.length > 0 && (
+          {project.tags && project.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {post.tags.map((tag) => (
+              {project.tags.map((tag) => (
                 <Badge key={tag} variant="secondary">
                   {tag}
                 </Badge>

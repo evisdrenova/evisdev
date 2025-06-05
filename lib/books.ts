@@ -10,7 +10,6 @@ export interface BookMetadata {
   subtitle?: string;
   author: string;
   slug: string;
-  status: "reading" | "completed";
   tags?: string[];
 }
 
@@ -39,7 +38,6 @@ export function getAllBooks(): BookMetadata[] {
         date: data.date || "",
         subtitle: data.subtitle,
         tags: data.tags || [],
-        status: data.status || "",
       } as BookMetadata;
     })
     .sort((a, b) => {
@@ -64,7 +62,6 @@ export function getBooksBySlug(slug: string): Book | null {
       tags: data.tags || [],
       content,
       author: "author",
-      status: "reading",
     };
   } catch {
     return null;

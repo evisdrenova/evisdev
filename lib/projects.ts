@@ -46,7 +46,7 @@ export function getAllproject(): ProjectMetadata[] {
   return project;
 }
 
-export function getbookprojectBySlug(slug: string): Project | null {
+export function getProjectBySlug(slug: string): Project | null {
   try {
     const fullPath = path.join(projectsDirectory, `${slug}.mdx`);
     const fileContents = fs.readFileSync(fullPath, "utf8");
@@ -64,7 +64,7 @@ export function getbookprojectBySlug(slug: string): Project | null {
   }
 }
 
-export function getprojectlugs(): string[] {
+export function getProjectslugs(): string[] {
   if (!fs.existsSync(projectsDirectory)) {
     return [];
   }

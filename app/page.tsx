@@ -24,31 +24,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Evis" }],
   creator: "Evis",
   publisher: "Evis",
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://kyswtn.com",
-    title: "Evis - Always Building",
-    description:
-      "I like to build and learn stuff. Explore my posts, projects, and reading list.",
-    siteName: "Evis",
-    images: [
-      {
-        url: "/Circlevis.png",
-        width: 1200,
-        height: 630,
-        alt: "Evis - Developer Portfolio",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Evis - Always Building",
-    description:
-      "I like to build and learn stuff. Explore my posts, projects, and reading list.",
-    images: ["/Circlevis.png"],
-    creator: "@evis", // Replace with your actual Twitter handle
-  },
+
   robots: {
     index: true,
     follow: true,
@@ -59,11 +35,6 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
-  },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
   },
   manifest: "/site.webmanifest",
   category: "technology",
@@ -121,6 +92,7 @@ function Header() {
     </header>
   );
 }
+
 function PostList({ posts }: { posts: PostMetadata[] }) {
   return (
     <div className="space-y-6">
@@ -187,26 +159,32 @@ function ProjectList({ projects }: { projects: ProjectMetadata[] }) {
       <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
       <div className="space-y-6">
         {projects.map((project, index) => (
-          <article key={index} className="group cursor-pointer">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
-                {project.name}
-              </h3>
-              <time className="text-sm text-gray-500 ml-4 flex-shrink-0">
-                {project.date}
-              </time>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {project.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </article>
+          <Link
+            key={project.slug}
+            href={`/project/${project.slug}`}
+            className="block group cursor-pointer"
+          >
+            <article key={index} className="group cursor-pointer">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
+                  {project.name}
+                </h3>
+                <time className="text-sm text-gray-500 ml-4 flex-shrink-0">
+                  {project.date}
+                </time>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {project.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </article>
+          </Link>
         ))}
       </div>
       <div className="mt-10">
@@ -226,31 +204,28 @@ function ProjectList({ projects }: { projects: ProjectMetadata[] }) {
 function BookList({ books }: { books: BookMetadata[] }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-900">Book Reviews</h2>
-      <div className="space-y-6">
-        {books.map((book, index) => (
-          <article key={index} className="group cursor-pointer">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
-                {book.title}
-              </h3>
-              <time className="text-sm text-gray-500 ml-4 flex-shrink-0">
-                {book.date}
-              </time>
-            </div>
-            <div className="flex items-center gap-2">
-              <p className="text-gray-600 text-sm">{book.author}</p>
-              <span
-                className={`px-2 py-1 text-xs rounded ${
-                  book.status === "completed"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-blue-100 text-blue-700"
-                }`}
-              >
-                {book.status}
-              </span>
-            </div>
-          </article>
+      <h2 className="text-xl font-semibold text-gray-900">Books</h2>
+      <div className="space-y-4">
+        {books.map((book: BookMetadata, index) => (
+          <Link
+            key={book.slug}
+            href={`/books/${book.slug}`}
+            className="block group cursor-pointer"
+          >
+            <article key={index} className="group cursor-pointer">
+              <div className="flex justify-between items-start mb-2">
+                <div className="text-sm font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
+                  {book.title}
+                </div>
+                <time className="text-xs text-gray-500 ml-4 flex-shrink-0">
+                  {new Date(book.date).toLocaleDateString("en-US")}
+                </time>
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-gray-600 text-sm">{book.author}</p>
+              </div>
+            </article>
+          </Link>
         ))}
       </div>
       <div className="mt-10">

@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { useMDXComponents } from "@/mdx-components";
 
+// Updated interface for Next.js 15+
 interface PostPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export async function generateStaticParams() {
@@ -19,7 +20,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PostPageProps) {
-  const post = getPostBySlug(params.slug);
+  // Await the params since it's now a Promise
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
 
   if (!post) {
     return {
@@ -34,13 +37,14 @@ export async function generateMetadata({ params }: PostPageProps) {
 }
 
 export default async function PostPage({ params }: PostPageProps) {
-  const post = getPostBySlug(params.slug);
+  // Await the params since it's now a Promise
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
+  const components = useMDXComponents;
 
   if (!post) {
     notFound();
   }
-
-  const components = useMDXComponents;
 
   // Compile the MDX content
   const { content } = await compileMDX({
@@ -70,7 +74,9 @@ export default async function PostPage({ params }: PostPageProps) {
           )}
 
           <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-            <time dateTime={post.date}>{post.date}</time>
+            <time dateTime={post.date}>
+              {new Date(post.date).toLocaleDateString("en-GB")}
+            </time>
           </div>
 
           {post.tags && post.tags.length > 0 && (
