@@ -39,6 +39,7 @@ export function getAllBooks(): BookMetadata[] {
         date: data.date || "",
         subtitle: data.subtitle,
         tags: data.tags || [],
+        status: data.status || "",
       } as BookMetadata;
     })
     .sort((a, b) => {
