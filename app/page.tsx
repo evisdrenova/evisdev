@@ -77,7 +77,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Header Section */}
         <header className="mb-16">
           <div className="flex items-start gap-6">
             <Avatar className="w-20 h-20">
@@ -91,9 +90,6 @@ export default function Home() {
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Evis</h1>
               <p className="text-gray-600 mb-3">Always building</p>
-              {/* <p className="text-gray-700 mb-4">
-                I like to build and learn stuff.
-              </p> */}
               <div className="flex gap-4">
                 <Github className="w-5 h-5 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors" />
                 <div className="w-5 h-5 flex items-center justify-center cursor-pointer group">
