@@ -112,16 +112,13 @@ function PostList({ posts }: { posts: PostMetadata[] }) {
             >
               <article>
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
+                  <div className="text-sm font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
                     {post.title}
-                  </h3>
-                  <time className="text-sm text-gray-500 ml-4 flex-shrink-0">
-                    {post.date}
+                  </div>
+                  <time className="text-xs text-gray-500 ml-4 flex-shrink-0">
+                    {new Date(post.date).toLocaleDateString("en-US")}
                   </time>
                 </div>
-                {post.subtitle && (
-                  <p className="text-gray-600 text-sm">{post.subtitle}</p>
-                )}
                 {post.tags && post.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {post.tags.map((tag) => (
@@ -154,6 +151,7 @@ function PostList({ posts }: { posts: PostMetadata[] }) {
 }
 
 function ProjectList({ projects }: { projects: ProjectMetadata[] }) {
+  console.log("projects", projects);
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
@@ -166,11 +164,11 @@ function ProjectList({ projects }: { projects: ProjectMetadata[] }) {
           >
             <article key={index} className="group cursor-pointer">
               <div className="flex justify-between items-start mb-2">
-                <h3 className="font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
+                <div className="text-sm font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
                   {project.name}
-                </h3>
-                <time className="text-sm text-gray-500 ml-4 flex-shrink-0">
-                  {project.date}
+                </div>
+                <time className="text-xs text-gray-500 ml-4 flex-shrink-0">
+                  {new Date(project.date).toLocaleDateString("en-US")}
                 </time>
               </div>
               <div className="flex flex-wrap gap-2">
