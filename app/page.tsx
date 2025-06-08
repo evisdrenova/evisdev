@@ -1,48 +1,13 @@
 import React from "react";
-import { Github } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getAllPosts, PostMetadata } from "@/lib/posts";
 import Link from "next/link";
-import { FaLinkedin } from "react-icons/fa";
-import { Metadata } from "next";
 import { BookMetadata, getAllBooks } from "@/lib/books";
 import { getAllproject, ProjectMetadata } from "@/lib/projects";
-
-export const metadata: Metadata = {
-  title: "Evis - Always Building",
-  description:
-    "I like to build and learn stuff. Explore my posts, projects, and reading list.",
-  keywords: [
-    "developer",
-    "software engineer",
-    "rust",
-    "typescript",
-    "react",
-    "blog",
-    "projects",
-  ],
-  authors: [{ name: "Evis" }],
-  creator: "Evis",
-  publisher: "Evis",
-
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  manifest: "/site.webmanifest",
-  category: "technology",
-};
+import Header from "@/components/Header";
 
 export default function Home() {
   const posts: PostMetadata[] = getAllPosts().slice(0, 6);
-  const books: BookMetadata[] = getAllBooks().slice(0, 6);
+  const books: BookMetadata[] = getAllBooks().slice(0, 8);
   const projects: ProjectMetadata[] = getAllproject().slice(0, 6);
 
   return (
@@ -59,38 +24,16 @@ export default function Home() {
   );
 }
 
-function Header() {
-  return (
-    <header className="mb-16">
-      <div className="flex items-start gap-6">
-        <Avatar className="w-20 h-20">
-          <AvatarImage
-            src="Circlevis.png"
-            alt="evis"
-            className="border border-gray-800 rounded-full"
-          />
-          <AvatarFallback>Ed</AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Evis</h1>
-          <p className="text-gray-600 mb-3">Always building and learning</p>
-          <div className="flex gap-4">
-            <Github className="w-5 h-5 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors" />
-            <div className="w-5 h-5 flex items-center justify-center cursor-pointer group">
-              <svg
-                viewBox="0 0 24 24"
-                className="w-4 h-4 text-gray-600 group-hover:text-black transition-colors fill-current"
-                aria-label="X (formerly Twitter)"
-              >
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-            </div>
-            <FaLinkedin className="w-5 h-5 text-gray-600 hover:text-black cursor-pointer transition-colors" />
-          </div>
-        </div>
-      </div>
-    </header>
-  );
+function formatDate(dateString: string): string {
+  try {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return dateString;
+  }
 }
 
 function PostList({ posts }: { posts: PostMetadata[] }) {
@@ -116,7 +59,7 @@ function PostList({ posts }: { posts: PostMetadata[] }) {
                     {post.title}
                   </div>
                   <time className="text-xs text-gray-500 ml-4 flex-shrink-0">
-                    {new Date(post.date).toLocaleDateString("en-US")}
+                    {formatDate(post.date)}
                   </time>
                 </div>
                 {post.tags && post.tags.length > 0 && (
@@ -168,7 +111,7 @@ function ProjectList({ projects }: { projects: ProjectMetadata[] }) {
                   {project.name}
                 </div>
                 <time className="text-xs text-gray-500 ml-4 flex-shrink-0">
-                  {new Date(project.date).toLocaleDateString("en-US")}
+                  {formatDate(project.date)}
                 </time>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -216,7 +159,7 @@ function BookList({ books }: { books: BookMetadata[] }) {
                   {book.title}
                 </div>
                 <time className="text-xs text-gray-500 ml-4 flex-shrink-0">
-                  {new Date(book.date).toLocaleDateString("en-US")}
+                  {formatDate(book.date)}
                 </time>
               </div>
               <div className="flex items-center gap-2">
