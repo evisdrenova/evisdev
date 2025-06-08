@@ -128,7 +128,7 @@ function Popover({ children, content, isVisible }: PopoverProps) {
     <div className="relative">
       {children}
       {isVisible && (
-        <div className="absolute left-full top-0 ml-4 z-50 w-72 p-3 bg-white border border-black rounded shadow-sm">
+        <div className="absolute left-full top-0 ml-4 z-50 w-72 p-3 bg-white border border-gray-400 rounded shadow-sm">
           <div className="text-sm text-gray-900 leading-relaxed">{content}</div>
         </div>
       )}
