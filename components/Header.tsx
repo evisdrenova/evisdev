@@ -1,4 +1,3 @@
-"use client";
 import { Github } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -6,7 +5,7 @@ import { FaLinkedin } from "react-icons/fa";
 
 export default function Header() {
   return (
-    <header className="mb-16 bg-white dark:bg-gray-600">
+    <header className="mb-16">
       <div className="flex items-start gap-6">
         <Avatar className="w-20 h-20">
           <AvatarImage
@@ -17,7 +16,7 @@ export default function Header() {
           <AvatarFallback>Ed</AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <div className="flex flex-row items-center gap-2">
+          <div className="flex flex-row items-center gap-2 justify-between">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Evis</h1>
             <ThemeToggle />
           </div>
