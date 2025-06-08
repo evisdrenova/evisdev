@@ -1,0 +1,18 @@
+---
+name: "Kita"
+date: "2025-05-20"
+subtitle: "Getting started with MDX blogging on my personal site"
+tags: ["Rust", "Tauri", "AI", "Typescript", "Swift"]
+---
+
+Kita is a desktop application that is meant to replace the default Mac spotlight application.
+
+I wrote Kita using the Tauri desktop app framework which is a Rust backend with a React/Typescript front-end.
+
+Then for certain system level APIs on the Mac, I used Rust's FFI and bridging to directly call Swift functions.
+
+Kita shows the users all fo the applications and files they have installed and then performs semantic search to find relevant files.
+
+It has also has support for fully local AI using the llama.cpp library which instantiates a server and loads .gguf model.
+
+I decided to use Mistral 7B quantized as my model. It's not terribly slow and reasonably smart.
