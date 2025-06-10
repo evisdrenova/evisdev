@@ -10,7 +10,7 @@ export default function Home() {
   const projects: ProjectMetadata[] = getAllproject().slice(0, 6);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
+    <div className="min-h-screen bg-white dark:bg-zinc-950">
       <div className="max-w-7xl mx-auto px-6 py-12">
         <Header />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -38,7 +38,9 @@ function formatDate(dateString: string): string {
 function PostList({ posts }: { posts: PostMetadata[] }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-900">Posts</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-300 ">
+        Posts
+      </h2>
       <div className="space-y-6">
         {posts.length === 0 ? (
           <div className="text-gray-500 text-sm">
@@ -52,12 +54,12 @@ function PostList({ posts }: { posts: PostMetadata[] }) {
               href={`/posts/${post.slug}`}
               className="block group cursor-pointer"
             >
-              <article>
+              <article className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 t">
                 <div className="flex justify-between items-start mb-2">
-                  <div className="text-sm font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
+                  <div className="text-sm font-medium ransition-colors">
                     {post.title}
                   </div>
-                  <time className="text-xs text-gray-500 ml-4 flex-shrink-0">
+                  <time className="text-xs ml-4 flex-shrink-0">
                     {post.date == "current"
                       ? "Currently Reading"
                       : formatDate(post.date)}
@@ -66,12 +68,7 @@ function PostList({ posts }: { posts: PostMetadata[] }) {
                 {post.tags && post.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {post.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
-                      >
-                        {tag}
-                      </span>
+                      <Tags key={tag} text={tag} />
                     ))}
                   </div>
                 )}
@@ -84,7 +81,7 @@ function PostList({ posts }: { posts: PostMetadata[] }) {
         {posts.length > 0 && (
           <Link
             href="/posts"
-            className="block text-center text-gray-600 hover:text-gray-900 text-sm transition-colors"
+            className="block text-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 text-sm transition-colors"
           >
             View all Posts →
           </Link>
@@ -97,7 +94,9 @@ function PostList({ posts }: { posts: PostMetadata[] }) {
 function ProjectList({ projects }: { projects: ProjectMetadata[] }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-300">
+        Projects
+      </h2>
       <div className="space-y-6">
         {projects.map((project, index) => (
           <Link
@@ -105,23 +104,21 @@ function ProjectList({ projects }: { projects: ProjectMetadata[] }) {
             href={`/project/${project.slug}`}
             className="block group cursor-pointer"
           >
-            <article key={index} className="group cursor-pointer">
+            <article
+              key={index}
+              className="group cursor-pointer text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 "
+            >
               <div className="flex justify-between items-start mb-2">
-                <div className="text-sm font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
+                <div className="text-sm font-medium transition-colors">
                   {project.name}
                 </div>
-                <time className="text-xs text-gray-500 ml-4 flex-shrink-0">
+                <time className="text-xs ml-4 flex-shrink-0">
                   {formatDate(project.date)}
                 </time>
               </div>
               <div className="flex flex-wrap gap-2">
                 {project.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
-                  >
-                    {tag}
-                  </span>
+                  <Tags key={tag} text={tag} />
                 ))}
               </div>
             </article>
@@ -132,12 +129,20 @@ function ProjectList({ projects }: { projects: ProjectMetadata[] }) {
         {[projects].length > 0 && (
           <Link
             href="/posts"
-            className="block text-center text-gray-600 hover:text-gray-900 text-sm transition-colors"
+            className="block text-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200  text-sm transition-colors"
           >
             View all Projects →
           </Link>
         )}
       </div>
     </div>
+  );
+}
+
+function Tags({ text }: { text: string }) {
+  return (
+    <span className="px-1 py-[2px] text-xs bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300  rounded">
+      {text}
+    </span>
   );
 }

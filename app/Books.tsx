@@ -128,8 +128,10 @@ function Popover({ children, content, isVisible }: PopoverProps) {
     <div className="relative">
       {children}
       {isVisible && (
-        <div className="absolute left-full top-0 ml-4 z-50 w-72 p-3 bg-white border border-gray-400 rounded shadow-sm">
-          <div className="text-sm text-gray-900 leading-relaxed">{content}</div>
+        <div className="absolute left-full top-0 ml-4 z-50 w-72 p-3 bg-white  border border-gray-400 dark:bg-zinc-900/30 dark:border-gray-700 rounded shadow-sm">
+          <div className="text-sm text-gray-900 dark:text-gray-300 leading-relaxed">
+            {content}
+          </div>
         </div>
       )}
     </div>
@@ -153,7 +155,9 @@ export default function BookList() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-900">Books</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-300">
+        Books
+      </h2>
       <div className="space-y-4">
         {visibleBooks.map((book: BookMetadata, index) => (
           <div key={book.title} className="block group cursor-pointer">
@@ -163,16 +167,16 @@ export default function BookList() {
                 isVisible={hoveredBook === book.title}
               >
                 <div
-                  className="flex justify-between items-start mb-2"
+                  className="flex justify-between items-start mb-2  text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                   onMouseEnter={() => setHoveredBook(book.title)}
                   onMouseLeave={() => setHoveredBook(null)}
                 >
-                  <div className="text-sm font-medium text-gray-900 group-hover:text-gray-600 transition-colors">
+                  <div className="text-sm font-medium   transition-colors">
                     {book.title}
                   </div>
                   <div className="ml-4 flex-shrink-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-900 min-w-[2rem]">
+                      <span className="text-xs font-medium min-w-[2rem]">
                         {book.rating.toFixed(1)} / 10
                       </span>
                     </div>
@@ -183,11 +187,11 @@ export default function BookList() {
           </div>
         ))}
       </div>
-      <div className="mt-10 flex justify-center">
+      <div className="mt-10 flex justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
         {hasMoreBooks ? (
           <button
             onClick={loadMore}
-            className="flex flex-row items-center gap-2 text-gray-600 hover:text-gray-900 text-sm transition-colors cursor-pointer"
+            className="flex flex-row items-center gap-2 text-sm transition-colors cursor-pointer"
           >
             Load more ({books.length - visibleCount} more){" "}
             <ArrowDown size="16" />
@@ -195,7 +199,7 @@ export default function BookList() {
         ) : (
           <button
             onClick={loadLess}
-            className="flex flex-row items-center gap-2 text-gray-600 hover:text-gray-900 text-sm transition-colors cursor-pointer"
+            className="flex flex-row items-center gap-2 text-sm transition-colors cursor-pointer"
           >
             <div>Collapse</div> <ArrowUp size="16" />
           </button>
