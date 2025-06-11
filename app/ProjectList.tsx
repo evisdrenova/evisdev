@@ -12,7 +12,7 @@ export default function ProjectList({
 }: {
   projects: ProjectMetadata[];
 }) {
-  const [visibleCount, setVisibleCount] = useState(7);
+  const [visibleCount, setVisibleCount] = useState(4);
 
   const visibleProjects = projects.slice(0, visibleCount);
   const hasMoreProjects = visibleCount < projects.length;
@@ -22,7 +22,7 @@ export default function ProjectList({
   };
 
   const loadLess = () => {
-    setVisibleCount(7);
+    setVisibleCount(4);
   };
 
   return (
