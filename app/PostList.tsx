@@ -66,7 +66,7 @@ export function PostList({ posts }: { posts: PostMetadata[] }) {
         ) : (
           <button
             onClick={loadLess}
-            className="flex flex-row items-center gap-2 text-sm transition-colors cursor-pointer"
+            className="flex flex-row items-center gap-2 text-xs transition-colors cursor-pointer"
           >
             <div>Collapse</div> <ArrowUp size="16" />
           </button>

@@ -191,7 +191,7 @@ export default function BookList() {
         {hasMoreBooks ? (
           <button
             onClick={loadMore}
-            className="flex flex-row items-center gap-2 text-sm transition-colors cursor-pointer"
+            className="flex flex-row items-center gap-2 text-xs transition-colors cursor-pointer"
           >
             Load more ({books.length - visibleCount} more){" "}
             <ArrowDown size="16" />

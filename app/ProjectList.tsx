@@ -62,7 +62,7 @@ export default function ProjectList({
         {hasMoreProjects ? (
           <button
             onClick={loadMore}
-            className="flex flex-row items-center gap-2 text-sm transition-colors cursor-pointer"
+            className="flex flex-row items-center gap-2 text-xs transition-colors cursor-pointer"
           >
             Load more ({projects.length - visibleCount} more){" "}
             <ArrowDown size="16" />
@@ -70,7 +70,7 @@ export default function ProjectList({
         ) : (
           <button
             onClick={loadLess}
-            className="flex flex-row items-center gap-2 text-sm transition-colors cursor-pointer"
+            className="flex flex-row items-center gap-2 text-xs transition-colors cursor-pointer"
           >
             <div>Collapse</div> <ArrowUp size="16" />
           </button>
