@@ -1,3 +1,4 @@
+"use client";
 import { ThemeToggle } from "./ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { FaGithub, FaLinkedin } from "react-icons/fa";

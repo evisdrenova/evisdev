@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { useMDXComponents } from "@/mdx-components";
-import { getProjectBySlug, getProjectslugs } from "@/lib/projects";
+import { getProjectBySlug, getProjectslugs } from "@/lib/projects.server";
 
 interface ProjectsPageProps {
   params: Promise<{

@@ -1,21 +1,15 @@
 import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
+import { ProjectMetadata } from "./types";
 
 const projectsDirectory = path.join(process.cwd(), "projects");
-
-export interface ProjectMetadata {
-  name: string;
-  date: string;
-  tags: string[];
-  slug: string;
-}
 
 export interface Project extends ProjectMetadata {
   content: string;
 }
 
-export function getAllproject(): ProjectMetadata[] {
+export function getAllprojects(): ProjectMetadata[] {
   // Ensure project directory exists
   if (!fs.existsSync(projectsDirectory)) {
     return [];

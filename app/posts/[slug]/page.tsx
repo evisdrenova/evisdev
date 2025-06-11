@@ -1,9 +1,9 @@
-import { getPostBySlug, getPostSlugs } from "@/lib/posts";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { useMDXComponents } from "@/mdx-components";
+import { getPostBySlug, getPostSlugs } from "@/lib/posts.server";
 
 // Updated interface for Next.js 15+
 interface PostPageProps {

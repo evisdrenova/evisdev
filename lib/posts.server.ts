@@ -1,16 +1,9 @@
 import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
+import { PostMetadata } from "./types";
 
 const postsDirectory = path.join(process.cwd(), "posts");
-
-export interface PostMetadata {
-  title: string;
-  date: string;
-  subtitle?: string;
-  slug: string;
-  tags?: string[];
-}
 
 export interface Post extends PostMetadata {
   content: string;
