@@ -1,0 +1,23 @@
+---
+name: "ghit"
+date: "2025-06-23"
+tags: ["Rust", "AI", "Git"]
+---
+
+[ghit](https://github.com/evisdrenova/ghit) is an AI-powered CLI that automates your git workflows.
+
+For example, I mainly use ghit to automatically stage my code changes, analyze the diff, create a commit using AI and then push the changes to my remote branch.
+
+I can do all of this using a single command `ghit` that will run this entire workflow for me.
+
+It also supports workflows for staging individual files, just creating the commit message and others too. My goal was to automate my most common git workflows using AI so that I can execute one command instead of give.
+
+I wrote ghit in rust using the `clap` crate which serves as a sort of harness for the CLI.
+
+It's split up into a few modules:
+
+- \*_llm_ - this module manages the llm interaction and constructs the requests and returns the responses
+- **git** - this module handles the git workflows and commands such as getting the getting the diff, staging files, pushing to the remote branch and more
+- **config** - this module manages loading the configuration file
+
+Overall, a fun little project to make my life easier and faster.
