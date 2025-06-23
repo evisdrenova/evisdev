@@ -10,6 +10,13 @@ export interface BookMetadata {
 
 const books: BookMetadata[] = [
   {
+    title: "The Book of Five Rings",
+    rating: 9.0,
+    author: "Miyamoto Musashi",
+    comment:
+      "Lessons on life and death by a 17th samuari who defeated over 60 people in battle",
+  },
+  {
     title: "The Rust Programming Language",
     rating: 9.1,
     author: "Steve Klabnik and Carol Nichols",
