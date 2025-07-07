@@ -35,7 +35,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
   const { content } = await compileMDX({
     source: post.content,
-    components: mdxComponents, // ✅ plain object – no hook call
+    components: mdxComponents,
     options: {
       parseFrontmatter: false,
       mdxOptions: {
@@ -50,15 +50,12 @@ export default async function PostPage({ params }: PostPageProps) {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">
       <div className="max-w-4xl mx-auto p-8">
-        {/* navigation */}
         <Link
           href="/"
           className="text-gray-700 hover:text-gray-800 dark:text-gray-300 transition-colors text-sm mb-4 inline-block"
         >
           ← Posts
         </Link>
-
-        {/* header */}
         <header className="mb-20">
           <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">
             {post.title}
@@ -80,9 +77,7 @@ export default async function PostPage({ params }: PostPageProps) {
             </div>
           )}
         </header>
-
-        {/* markdown */}
-        <article className="prose prose-gray max-w-none prose-enhanced">
+        <article className="prose prose-gray max-w-none">
           {content}
         </article>
       </div>
