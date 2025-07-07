@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -118,5 +119,36 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .prose-enhanced {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
+  .prose-enhanced p {
+    margin-bottom: 1.25em;
+    line-height: 1.7;
+  }
+  
+  .prose-enhanced pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  .prose-enhanced code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
+  .prose-enhanced ul, .prose-enhanced ol {
+    padding-left: 1.5em;
+  }
+  
+  .prose-enhanced li {
+    margin-bottom: 0.5em;
   }
 }

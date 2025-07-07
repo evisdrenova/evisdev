@@ -5,7 +5,7 @@ import { FaGithub, FaLinkedin } from "react-icons/fa";
 
 export default function Header() {
   return (
-    <header className="mb-16">
+    <header className="mb-16 ">
       <div className="flex items-start gap-6">
         <Avatar className="w-20 h-20">
           <AvatarImage
