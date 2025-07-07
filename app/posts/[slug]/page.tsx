@@ -45,25 +45,23 @@ export default async function PostPage({ params }: PostPageProps) {
     },
   });
 
-  console.log("the post", post);
-
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-5xl mx-auto p-8">
         <Link
           href="/"
           className="text-gray-700 hover:text-gray-800 dark:text-gray-300 transition-colors text-sm mb-4 inline-block"
         >
           ← Posts
         </Link>
-        <header className="mb-20">
+        <header className="my-20">
           <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">
             {post.title}
           </h1>
 
           <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
             <time dateTime={post.date}>
-              {new Date(post.date).toLocaleDateString("en-GB")}
+              {new Date(post.date).toLocaleDateString("en-US")}
             </time>
           </div>
 
@@ -77,9 +75,7 @@ export default async function PostPage({ params }: PostPageProps) {
             </div>
           )}
         </header>
-        <article className="prose prose-gray max-w-none">
-          {content}
-        </article>
+        <div className="prose prose-gray">{content}</div>
       </div>
     </div>
   );
