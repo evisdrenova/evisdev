@@ -226,38 +226,82 @@
     padding-left: 1em;
   }
 
-  .dark .prose {
-    color: rgb(209 213 219);
+  /* Table styles */
+  .prose table {
+    width: 100%;
+    margin-top: 2em;
+    margin-bottom: 2em;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875em;
+    line-height: 1.7;
+    border: 1px solid rgb(209 213 219);
+    border-radius: 0.5rem;
+    overflow: hidden;
   }
 
-  .dark .prose h1,
-  .dark .prose h2,
-  .dark .prose h3,
-  .dark .prose h4,
-  .dark .prose h5,
-  .dark .prose h6 {
+  .prose thead {
+    background-color: rgb(249 250 251);
+  }
+
+  .prose thead th {
+    vertical-align: bottom;
+    padding: 0.75em 1em;
+    font-weight: 600;
+    color: rgb(17 24 39);
+    text-align: left;
+    border-right: 1px solid rgb(209 213 219);
+    border-bottom: 1px solid rgb(209 213 219);
+  }
+
+  .prose thead th:last-child {
+    border-right: none;
+  }
+
+  .prose tbody tr {
+    border-bottom: 1px solid rgb(229 231 235);
+  }
+
+  .prose tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .prose tbody td {
+    vertical-align: top;
+    padding: 0.75em 1em;
+    border-right: 1px solid rgb(229 231 235);
+    border-bottom: 1px solid rgb(229 231 235);
+  }
+
+  .prose tbody td:last-child {
+    border-right: none;
+  }
+
+  .prose tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Dark mode table styles */
+  .dark .prose table {
+    border-color: rgb(75 85 99);
+  }
+
+  .dark .prose thead {
+    background-color: rgb(31 41 55);
+  }
+
+  .dark .prose thead th {
     color: rgb(243 244 246);
+    border-right-color: rgb(75 85 99);
+    border-bottom-color: rgb(75 85 99);
   }
 
-  .dark .prose a {
-    color: rgb(96 165 250);
+  .dark .prose tbody tr {
+    border-bottom-color: rgb(55 65 81);
   }
 
-  .dark .prose a:hover {
-    color: rgb(59 130 246);
-  }
-
-  .dark .prose code {
-    color: rgb(243 244 246);
-    background-color: rgb(55 65 81);
-  }
-
-  .dark .prose pre {
-    background-color: rgb(55 65 81);
-  }
-
-  .dark .prose blockquote {
-    color: rgb(243 244 246);
-    border-left-color: rgb(75 85 99);
+  .dark .prose tbody td {
+    border-right-color: rgb(55 65 81);
+    border-bottom-color: rgb(55 65 81);
   }
 }

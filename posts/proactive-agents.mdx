@@ -1,0 +1,65 @@
+---
+title: "Are Proactive Agents Next?"
+date: "2025-06-24"
+---
+
+Today, most AI agents are reactive.
+
+Agents are invoked by some process (either manual or programmatic) to complete a well-defined task. Once that task is complete, the agent effectively shuts down and waits for the next invocation.
+
+There are a lot of use-cases
+where this is the right interaction model but I can't help but wonder if there is another model, a more _proactive_ model that hasn't really been explored yet? If the promise of agents is to 'act' like an employee and perhaps one day replace those employees, then how do we get agents to be more proactive like employees?
+
+As you would with a human employee, you want to give an agent a high level objective function and then have it constantly work to optimize that objectve function. Over time, that agent 'learns' how you work and when to ask for help. It should not only remember what you told it but also update its own internal model to work that way moving forward. This should sound like reinforcement learning because it basically is. You're using reinforcement learning to guide the agent towards that outcomes and behaviors that you want. This is effectively how humans work too.
+
+But what would this look like in practice? Let's compare a junior developer with a proactive agent.
+
+| **Aspect**                      | **Junior Developer**                                                                                                                                                                                                                        | **Proactive Agent**                                                                                                                                                                                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Objective Function**          | Contribute to codebase, learn from senior developers, help ship features. Write clean code, follow team conventions, ask for help when stuck.                                                                                               | Continuously monitor codebase, identify improvement opportunities, execute tasks that move project forward. Follow established patterns, ask for guidance on ambiguous decisions, learn from feedback.                                                                                                                |
+| **Daily/Continuous Operations** | • Check Slack/email for updates<br/>• Pull latest code changes<br/>• Work on assigned tickets in JIRA<br/>• Ask questions when blocked<br/>• Submit PRs for review<br/>• Respond to code review feedback<br/>• Attend standups and meetings | • Monitor repository for new issues/PRs<br/>• Scan codebase for potential improvements (dead code, missing tests, documentation gaps)<br/>• Automatically handle routine tasks (dependency updates, formatting fixes)<br/>• Track project metrics and flag concerning trends<br/>• Prepare draft PRs for human review |
+| **When They Need Help**         | • Stuck on a technical problem for >30 minutes<br/>• Unclear about requirements<br/>• Not sure about architectural decisions<br/>• Code review feedback they don't understand                                                               | • Ambiguous requirements in tickets<br/>• Multiple valid implementation approaches<br/>• Breaking changes that affect other teams<br/>• Failed attempts after several iterations                                                                                                                                      |
+
+If you're thinking "these kind of seem like the same thing?", then you're right! Because they essentially are. A proactive agent should be able to effectively do the same job as an employee.
+
+But we're not quite there yet. I think there are two main things holding agents back.
+
+## Learning over time
+
+Today, humans learn through feedback/reinforcement -- both positive and negative -- over time.
+
+For example, a junior developer might learn through:
+
+- Code reviews ("don't use var, use const")
+- Verbal feedback ("we prefer smaller functions")
+- Observing senior developer patterns
+- Team retrospectives
+- General trial/error
+
+For most humans, that learning is persistent. This is where agents fall over today. While they can adapt within a session, they're not very good at learning across sessions.
+
+ChatGPT is probably the most consistent of all of the models but its not very good either. There are tools out there that help with memory but its still very early in terms of performance.
+
+I'll write a whole other post on memory and memory modeling but the punchline is that without consistent memory performance, proactive agents are unlikely to perform as well as humans.
+
+## Integrations and Access to data
+
+Agents still struggle to get the right access to the right data and systems they need in order to do their job well. And when they do get access via MCP they generally struggle to handle requests because they're not very good at determining which tools to use. I encountered this building agents when I gave an agent access to Linear, Github and Slack MCP servers, it was overwhelmed with the amount of tools/APIs it could use and often picked the wrong one.
+
+We eventually ended up implementing a tool filtering workflow that required the user to declare the integration they wanted to use. That massively reduced the tool search space for the agent and it performed better but still no where close to a human.
+
+If an agent can't use the right tools to do their job then they can't be productive.
+
+## The interaction model
+
+Over time, the agent builds a model of how _you specifically_ like to work. Maybe you're cool with the agent autonomously fixing linting errors but always want to review dependency updates. Maybe you want the agent to be more aggressive about refactoring on Fridays when you have more time for review.
+
+The magic is in the handoff between human and agent. Unlike a junior developer who might interrupt you with questions, the proactive agent operates more like having a really good pair programmer who's always working in the background.
+
+It might surface a notification: "I found 12 functions without tests in the payments module. Should I draft some basic test coverage?"
+
+Or: "The API response time for user queries has increased 40% since last week. I can investigate the recent changes - should I proceed?"
+
+The human stays in control but doesn't have to micromanage. The agent gets better at predicting when to act autonomously versus when to ask. It's like having a junior developer who gradually requires less supervision.
+
+This is fundamentally different from today's reactive agents. Instead of "hey agent, do this specific thing," it's more like "here's what good looks like, now go make it happen while I focus on the hard problems."

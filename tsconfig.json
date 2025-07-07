@@ -27,7 +27,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "posts/ambient-agents.mdx",
+    "posts/proactive-agents.mdx",
     "lib/posts.server.ts"
   ],
   "exclude": ["node_modules"]
