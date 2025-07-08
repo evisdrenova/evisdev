@@ -2,31 +2,17 @@
 
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowDown, ArrowUp } from "lucide-react";
-import { useState } from "react";
 import type { PostMetadata } from "@/lib/types";
 import Tags from "@/components/tags";
 
 export function PostList({ posts }: { posts: PostMetadata[] }) {
-  const [visibleCount, setVisibleCount] = useState(7);
-
-  const visiblePosts = posts.slice(0, visibleCount);
-  const hasMorePosts = visibleCount < posts.length;
-
-  const loadMore = () => {
-    setVisibleCount(posts.length);
-  };
-
-  const loadLess = () => {
-    setVisibleCount(7);
-  };
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-300 ">
-        Posts
+        Posts I&apos;ve written
       </h2>
       <div className="space-y-6">
-        {visiblePosts.map((post) => (
+        {posts.map((post) => (
           <Link
             key={post.slug}
             href={`/posts/${post.slug}`}
@@ -53,24 +39,6 @@ export function PostList({ posts }: { posts: PostMetadata[] }) {
             </article>
           </Link>
         ))}
-      </div>
-      <div className="mt-10 flex justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
-        {hasMorePosts ? (
-          <button
-            onClick={loadMore}
-            className="flex flex-row items-center gap-2 text-sm transition-colors cursor-pointer"
-          >
-            Load more ({posts.length - visibleCount} more){" "}
-            <ArrowDown size="16" />
-          </button>
-        ) : (
-          <button
-            onClick={loadLess}
-            className="flex flex-row items-center gap-2 text-xs transition-colors cursor-pointer"
-          >
-            <div>Collapse</div> <ArrowUp size="16" />
-          </button>
-        )}
       </div>
     </div>
   );

@@ -18,11 +18,11 @@ export default function Header() {
         <div className="flex-1">
           <div className="flex flex-row items-center gap-2 justify-between">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-300 mb-2">
-              Evis
+              Evis Drenova
             </h1>
             <ThemeToggle />
           </div>
-          <p className="text-gray-600 dark:text-gray-400 mb-3 w-[70%]">
+          <p className="text-gray-600 text-sm dark:text-gray-400 mb-5 w-[70%]">
             Hey, I&apos;m Evis. I like to write code and learn new things.
             Currently, I&apos;m focused on exploring topics in artificial
             intelligence and brain computer interfaces.

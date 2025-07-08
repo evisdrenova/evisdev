@@ -2,8 +2,6 @@
 
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowDown, ArrowUp } from "lucide-react";
 import { ProjectMetadata } from "@/lib/types";
 import Tags from "@/components/tags";
 
@@ -12,26 +10,13 @@ export default function ProjectList({
 }: {
   projects: ProjectMetadata[];
 }) {
-  const [visibleCount, setVisibleCount] = useState(4);
-
-  const visibleProjects = projects.slice(0, visibleCount);
-  const hasMoreProjects = visibleCount < projects.length;
-
-  const loadMore = () => {
-    setVisibleCount(projects.length);
-  };
-
-  const loadLess = () => {
-    setVisibleCount(4);
-  };
-
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-300">
-        Projects
+        Projects I&apos;ve worked on
       </h2>
       <div className="space-y-6">
-        {visibleProjects.map((project, index) => (
+        {projects.map((project, index) => (
           <Link
             key={project.slug}
             href={`/project/${project.slug}`}
@@ -57,24 +42,6 @@ export default function ProjectList({
             </article>
           </Link>
         ))}
-      </div>
-      <div className="mt-10 flex justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
-        {hasMoreProjects ? (
-          <button
-            onClick={loadMore}
-            className="flex flex-row items-center gap-2 text-xs transition-colors cursor-pointer"
-          >
-            Load more ({projects.length - visibleCount} more){" "}
-            <ArrowDown size="16" />
-          </button>
-        ) : (
-          <button
-            onClick={loadLess}
-            className="flex flex-row items-center gap-2 text-xs transition-colors cursor-pointer"
-          >
-            <div>Collapse</div> <ArrowUp size="16" />
-          </button>
-        )}
       </div>
     </div>
   );

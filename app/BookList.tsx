@@ -1,5 +1,4 @@
 "use client";
-import { ArrowDown, ArrowUp } from "lucide-react";
 import React, { useState } from "react";
 export interface BookMetadata {
   title: string;
@@ -154,28 +153,16 @@ function Popover({ children, content, isVisible }: PopoverProps) {
 
 export default function BookList() {
   const [hoveredBook, setHoveredBook] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(7);
-
-  const visibleBooks = books.slice(0, visibleCount);
-  const hasMoreBooks = visibleCount < books.length;
-
-  const loadMore = () => {
-    setVisibleCount(books.length);
-  };
-
-  const loadLess = () => {
-    setVisibleCount(7);
-  };
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-300">
-        Books
+        Recent books I&apos;ve read
       </h2>
       <div className="space-y-4">
-        {visibleBooks.map((book: BookMetadata, index) => (
-          <div key={book.title} className="block group cursor-pointer">
-            <article key={index} className="group cursor-pointer">
+        {books.map((book: BookMetadata, index) => (
+          <div key={book.title} className="block">
+            <article key={index} className="group">
               <Popover
                 content={book.comment || "No comment available."}
                 isVisible={hoveredBook === book.title}
@@ -200,24 +187,6 @@ export default function BookList() {
             </article>
           </div>
         ))}
-      </div>
-      <div className="mt-10 flex justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
-        {hasMoreBooks ? (
-          <button
-            onClick={loadMore}
-            className="flex flex-row items-center gap-2 text-xs transition-colors cursor-pointer"
-          >
-            Load more ({books.length - visibleCount} more){" "}
-            <ArrowDown size="16" />
-          </button>
-        ) : (
-          <button
-            onClick={loadLess}
-            className="flex flex-row items-center gap-2 text-sm transition-colors cursor-pointer"
-          >
-            <div>Collapse</div> <ArrowUp size="16" />
-          </button>
-        )}
       </div>
     </div>
   );
