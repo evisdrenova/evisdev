@@ -16,7 +16,10 @@ export const metadata: Metadata = {
     "blog",
     "projects",
   ],
-  authors: [{ name: "Evis" }],
+  icons: {
+    icon: [{ url: "/favicon.ico", sizes: "any" }],
+    apple: { url: "/apple-touch-icon.png" },
+  },
   creator: "Evis",
   publisher: "Evis",
 
