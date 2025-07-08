@@ -3,16 +3,14 @@ title: "Are Proactive Agents Next?"
 date: "2025-06-24"
 ---
 
-Today, most AI agents are reactive.
-
-Agents are invoked by some process (either manual or programmatic) to complete a well-defined task. Once that task is complete, the agent effectively shuts down and waits for the next invocation.
+Today, most AI agents are invoked by some process (either manual or programmatic) to complete a well-defined task. Once that task is complete, the agent effectively shuts down and waits for the next invocation.
 
 There are a lot of use-cases
 where this is the right interaction model but I can't help but wonder if there is another model, a more _proactive_ model that hasn't really been explored yet? If the promise of agents is to 'act' like an employee and perhaps one day replace those employees, then how do we get agents to be more proactive like employees?
 
 As you would with a human employee, you want to give an agent a high level objective function and then have it constantly work to optimize that objectve function. Over time, that agent 'learns' how you work and when to ask for help. It should not only remember what you told it but also update its own internal model to work that way moving forward. This should sound like reinforcement learning because it basically is. You're using reinforcement learning to guide the agent towards that outcomes and behaviors that you want. This is effectively how humans work too.
 
-But what would this look like in practice? Let's compare a junior developer with a proactive agent.
+Let's compare a junior developer with a proactive agent.
 
 | **Aspect**                      | **Junior Developer**                                                                                                                                                                                                                        | **Proactive Agent**                                                                                                                                                                                                                                                                                                   |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -22,7 +20,7 @@ But what would this look like in practice? Let's compare a junior developer with
 
 If you're thinking "these kind of seem like the same thing?", then you're right! Because they essentially are. A proactive agent should be able to effectively do the same job as an employee.
 
-But we're not quite there yet. I think there are two main things holding agents back.
+But we're not quite there yet. I think there are two main things holding agents back (among a bunch of other smaller things).
 
 ## Learning over time
 
@@ -44,7 +42,7 @@ I'll write a whole other post on memory and memory modeling but the punchline is
 
 ## Integrations and access to data
 
-Agents still struggle to get the right access to the right data and systems they need in order to do their job well. And when they do get access via MCP they generally struggle to handle requests because they're not very good at determining which tools to use. I encountered this building agents when I gave an agent access to Linear, Github and Slack MCP servers, it was overwhelmed with the amount of tools/APIs it could use and often picked the wrong one.
+Agents still struggle to get the right access to th e right data and systems they need in order to do their job well. And when they do get access via MCP they generally struggle to handle requests because they're not very good at determining which tools to use. I encountered this building agents when I gave an agent access to Linear, Github and Slack MCP servers, it was overwhelmed with the amount of tools/APIs it could use and often picked the wrong one.
 
 We eventually ended up implementing a tool filtering workflow that required the user to declare the integration they wanted to use. That massively reduced the tool search space for the agent and it performed better but still no where close to a human.
 
@@ -52,7 +50,7 @@ If an agent can't use the right tools to do their job then they can't be product
 
 ## The interaction model
 
-Over time, the agent builds a model of how _you specifically_ like to work. Maybe you're cool with the agent autonomously fixing linting errors but always want to review dependency updates. Maybe you want the agent to be more aggressive about refactoring on Fridays when you have more time for review.
+Over time, the agent should build a model of how _you specifically_ like to work. Maybe you're cool with the agent autonomously fixing linting errors but always want to review dependency updates. Maybe you want the agent to be more aggressive about refactoring on Fridays when you have more time for review.
 
 The magic is in the handoff between human and agent. Unlike a junior developer who might interrupt you with questions, the proactive agent operates more like having a really good pair programmer who's always working in the background.
 
