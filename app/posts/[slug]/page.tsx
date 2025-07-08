@@ -75,7 +75,7 @@ export default async function PostPage({ params }: PostPageProps) {
             </div>
           )}
         </header>
-        <div className="prose prose-gray">{content}</div>
+        <div className="prose prose-gray dark:text-gray-100">{content}</div>
       </div>
     </div>
   );
