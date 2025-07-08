@@ -10,6 +10,13 @@ export interface BookMetadata {
 
 const books: BookMetadata[] = [
   {
+    title: "Through two doors at once",
+    rating: 8.2,
+    author: "Anil Ananthaswamy",
+    comment:
+      "The history of the double slit experiment and quantum mechanics. Enjoyed the book but wish it went deeper into the math. ",
+  },
+  {
     title: "The Book of Five Rings",
     rating: 9.0,
     author: "Miyamoto Musashi",
