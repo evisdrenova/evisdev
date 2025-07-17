@@ -1,0 +1,51 @@
+---
+title: "Memory in AI Agents"
+date: "2025-07-08"
+---
+
+Solving memory is arguably the most important problem in getting AI agents to work as well as humans.
+
+By 'solving memory', specifically, I mean developing an efficient and performant way to embue AI agents with cross-session memory that is persistent.
+
+Today, most AI agents don't persist learned attributes or features across user sessions.
+
+LLMs such as ChatGPT and Claude can remember certain things about you such as your name, some of your preferences and other smaller things. But it can't remember that you asked it about X 5 days ago and then recall that conversation if you were to start a new conversation.
+
+This might not be a big problem if we had unlimited context windows but that's not the case. In fact, even if we did have unlimited context windows, we likely still wouldn't want to process that entire context window every time we ask a question. That seems horribly inefficient.
+
+At the same time, we want AI agents to remember certain details about past conversations just as we would expect that our employee would remember details about past projects. To be fair, most humans don't remember every detail about every project but they usually can remember the main lessons and takeaways. Which raises the question of, "what do you actually need to remember?".
+
+Intuitively I would describe human memory as a hierarchical strtucture that progressively gets noisier as you go deeper into the structure, and that noise causes you to misremember details or memories altogether. Although I would probably add some sort of "memory coefficient" for certain memories that, regardless of how far down the structure they are, you can remember the details precisely. We all have memories like this that we remember clearly even though they might have happened 10,15,20 years ago. So we want to adjust for that.
+
+It's likely that we need a similar type of structure in LLMs. Today, we can create crude "memories". One way that I've done this is with a tool call in ChatGPT that says "if the user proviodes an important fact about themselves, save it." Here is what it looks like in code:
+
+```go
+		Tools: []openai.ChatCompletionToolParam{
+				{
+					Function: openai.FunctionDefinitionParam{
+						Name:        "save_memory",
+						Description: openai.String("Save personal information about the user that would be
+                        helpful to remember in future conversations. This includes: location/address,
+                        preferences, family details, important dates, interests, or any personal
+                        facts the user shares. Use this whenever the user mentions something
+                        personal about themselves."),
+						Parameters: openai.FunctionParameters{
+							"type": "object",
+							"properties": map[string]interface{}{
+								"memory": map[string]interface{}{
+									"type":        "string",
+									"description": "The personal information to remember
+                                     about the user. Be specific and include context.",
+								},
+							},
+							"required": []string{"memory"},
+						},
+					},
+				},
+			},
+
+```
+
+If I prompted the agent with "What is the weather in San Francisco?", it might create a memory and save it to a database like this:
+
+![memories](/memories.png)

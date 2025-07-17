@@ -9,6 +9,7 @@ import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypeHighlight from "rehype-highlight";
 import { mdxComponents } from "@/app/mdxComponents";
 
 interface PostPageProps {
@@ -42,7 +43,7 @@ export default async function PostPage({ params }: PostPageProps) {
       parseFrontmatter: false,
       mdxOptions: {
         remarkPlugins: [remarkGfm, remarkBreaks],
-        rehypePlugins: [rehypeSlug, rehypeAutolinkHeadings],
+        rehypePlugins: [rehypeSlug, rehypeAutolinkHeadings, rehypeHighlight],
       },
     },
   });
