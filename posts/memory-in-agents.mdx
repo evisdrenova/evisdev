@@ -7,17 +7,19 @@ Solving memory is arguably the most important problem in getting AI agents to wo
 
 By 'solving memory', specifically, I mean developing an efficient and performant way to embue AI agents with cross-session memory that is persistent.
 
-Today, most AI agents don't persist learned attributes or features across user sessions.
+Today, most AI agents don't persist learned attributes or features across user sessions in a way that makes the human-to-agent interaction feel natural.
 
-LLMs such as ChatGPT and Claude can remember certain things about you such as your name, some of your preferences and other smaller things. But it can't remember that you asked it about X 5 days ago and then recall that conversation if you were to start a new conversation.
+LLMs such as ChatGPT and Claude can remember certain things about you such as your name, some of your preferences and other smaller things. But it can't remember that you asked it about X 5 days ago and then recall that conversation. At least nowhere as well as a human can.
 
-This might not be a big problem if we had unlimited context windows but that's not the case. In fact, even if we did have unlimited context windows, we likely still wouldn't want to process that entire context window every time we ask a question. That seems horribly inefficient.
+This might not be a big problem if we had unlimited context windows. One thought is that we would continue to add things to the context window and maybe perform some pruning over time. But this has a few problems. First, this would lengthen inference times and impact the user experience. Remember that every token in the input must be embedded, normalized, attended to, normalized again and so on. As of yet, we don't have an O(1) way of running this process, so naturally the inference time is going to increase as the number of tokens increases.
 
-At the same time, we want AI agents to remember certain details about past conversations just as we would expect that our employee would remember details about past projects. To be fair, most humans don't remember every detail about every project but they usually can remember the main lessons and takeaways. Which raises the question of, "what do you actually need to remember?".
+Second, there are a lot of details in a conversation that just aren't important and we likely wouldn't want to carry forward anyways. While our brains aren't perfect, they're quite good at identifying what is important to remember and what isn't.
 
-Intuitively I would describe human memory as a hierarchical strtucture that progressively gets noisier as you go deeper into the structure, and that noise causes you to misremember details or memories altogether. Although I would probably add some sort of "memory coefficient" for certain memories that, regardless of how far down the structure they are, you can remember the details precisely. We all have memories like this that we remember clearly even though they might have happened 10,15,20 years ago. So we want to adjust for that.
+Intuitively I would describe human memory as a hierarchical strtucture that progressively gets noisier as you go deeper into the structure, and that noise causes you to misremember details or memories altogether. There has been a lot of interesting work done around how traumatic experiences shape memories and how, for example, we have better recall for memories that were shaped in situations with a lot of adrenaline.
 
-It's likely that we need a similar type of structure in LLMs. Today, we can create crude "memories". One way that I've done this is with a tool call in ChatGPT that says "if the user proviodes an important fact about themselves, save it." Here is what it looks like in code:
+To reproduce something like this in an LLM, we would likely need to add some sort of "memory coefficient" for certain memories that, regardless of how far down the structure they are, can be remembered precisely.
+
+Today, in LLMs, we can create crude "memories". One way that I've done this is with a tool call in ChatGPT that says "if the user proviodes an important fact about themselves, save it." Here is what it looks like in code:
 
 ```go
 		Tools: []openai.ChatCompletionToolParam{
@@ -49,3 +51,11 @@ It's likely that we need a similar type of structure in LLMs. Today, we can crea
 If I prompted the agent with "What is the weather in San Francisco?", it might create a memory and save it to a database like this:
 
 ![memories](/memories.png)
+
+Over time there would be a list of memories and they would get loaded into the context window. Like I said, this is pretty crude. You can easily see all of the infrastructure that would need to go into supporting this. For example, compaction of memories, prioritization, and much more.
+
+I think in an ideal world, the LLM would recursively update a memory module, similar to how the hippocampus and neocortex work to write, index and distribute memories across the cortex. If this is a separate module outside of the LLM, then we can probably evolve our existing crude setup to mirror this. For example, on every write to the memories table, we run a post-write trigger that compacts memories, re-organizes and re-indexes them. I wonder how far that would get us?
+
+Alternatively, if it needs to be "part" of the LLM i.e. stored in some subsection of a hidden layer(s) somewhere then we would need to figure out how to recursively update those weights.
+
+Clearly, still a lot of work to be done here but I think folks are waking up to the fact that memory performance (efficiency and accuracy) is increasingly the bottleneck to geting human like behavior out of LLMs.
