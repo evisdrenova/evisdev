@@ -31,8 +31,10 @@ export function getAllPosts(): PostMetadata[] {
         date: data.date || "",
         subtitle: data.subtitle,
         tags: data.tags || [],
+        publish: data.publish !== false, // Default to true unless explicitly false
       } as PostMetadata;
     })
+    .filter((post) => post.publish) // Only include published posts
     .sort((a, b) => {
       // Sort by date, newest first
       return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -53,6 +55,7 @@ export function getPostBySlug(slug: string): Post | null {
       date: data.date || "",
       subtitle: data.subtitle,
       tags: data.tags || [],
+      publish: data.publish !== false, // Default to true unless explicitly false
       content,
     };
   } catch {
@@ -68,5 +71,14 @@ export function getPostSlugs(): string[] {
   const fileNames = fs.readdirSync(postsDirectory);
   return fileNames
     .filter((name) => name.endsWith(".mdx"))
-    .map((name) => name.replace(/\.mdx$/, ""));
+    .map((name) => {
+      const fullPath = path.join(postsDirectory, name);
+      const fileContents = fs.readFileSync(fullPath, "utf8");
+      const { data } = matter(fileContents);
+      const slug = name.replace(/\.mdx$/, "");
+      
+      // Only return slug if post is published
+      return data.publish !== false ? slug : null;
+    })
+    .filter((slug): slug is string => slug !== null);
 }

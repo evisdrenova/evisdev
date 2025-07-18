@@ -4,6 +4,7 @@ export interface PostMetadata {
   subtitle?: string;
   slug: string;
   tags?: string[];
+  publish?: boolean;
 }
 
 export interface ProjectMetadata {
@@ -11,4 +12,5 @@ export interface ProjectMetadata {
   date: string;
   tags: string[];
   slug: string;
+  publish?: boolean;
 }

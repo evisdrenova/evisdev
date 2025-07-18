@@ -20,7 +20,7 @@ export default function Header() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-300 mb-2">
               Evis Drenova
             </h1>
-            <ThemeToggle />
+            {/* <ThemeToggle /> */}
           </div>
           <p className="text-gray-600 text-sm dark:text-gray-400 mb-5 w-[70%]">
             Hey, I&apos;m Evis. I like to write code and learn new things.

@@ -1,0 +1,138 @@
+---
+title: "Agent Integrations"
+date: "2025-07-17"
+publish: false
+---
+
+I've been thinking a lot about how we integrate agents with our tools as I've been working on different projects. Currently, MCP is the probably the most popular framework but I'm becoming increasingly more convinced that it's not the right approach. But we'll get to that. First, let's go back in time a bit and trace how we got here.
+
+## Tool Calling
+
+The first approach to agent integration was tool calling. The idea was that you would seed your LLM API call with a bunch of "tools" and it would tell you which tools to call then you would call it.
+
+For each tool you would give it a name and define the schema.
+
+Here's one from my projects:
+
+```go
+Tools: []openai.ChatCompletionToolParam{
+        {
+            Function: openai.FunctionDefinitionParam{
+                Name:        "save_memory",
+                Description: openai.String("Save personal information about the user that would be
+                helpful to remember in future conversations. This includes: location/address,
+                preferences, family details, important dates, interests, or any personal
+                facts the user shares. Use this whenever the user mentions something
+                personal about themselves."),
+                Parameters: openai.FunctionParameters{
+                    "type": "object",
+                    "properties": map[string]interface{}{
+                        "memory": map[string]interface{}{
+                            "type":        "string",
+                            "description": "The personal information to remember
+                                about the user. Be specific and include context.",
+                        },
+                    },
+                    "required": []string{"memory"},
+                },
+            },
+        },
+    },
+
+```
+
+This tool saves a memory string to a database. A memory is just a fact about the user i.e. "The user lives in San Francisco".
+
+I would send this in with my prompt and the LLM would decide if it's appropriate to call this tool and save a memory. If so, in the response object it would return the tool name and then the argument to pass into the tool which would be the fact. Then I would iterate over the response object and call the function that corresponds with that tool (they would usually have the same name). It would look something like this:
+
+```go
+for _, toolCall := range choice.Message.ToolCalls {
+    if toolCall.Function.Name == "save_memory" {
+        result, err := h.handleSaveMemoryTool(context.Background(), toolCall.Function.Arguments)
+        if err != nil {
+            log.Printf("Failed to handle save_memory tool: %v", err)
+            result = fmt.Sprintf("Error saving memory: %v", err)
+        }
+
+        // Add tool call result to session
+        session.Messages = append(session.Messages, openai.ToolMessage(result, toolCall.ID))
+    }
+}
+```
+
+Now this technically works but imagine having to create a function for every API call you want to make! And sometimes you don't even know what you want to call ahead of time! That's super manual and just annoying. So while pretty cool, obviously not the right long term solution.
+
+## MCP
+
+Then, along came MCP with a protocol that promised standardization.
+
+I wrote one of the first MCP servers that you could point to an openapi spec and it would auto generate an MCP server. At the time, it was promising and felt like this was the way to integrate an agent with a set of APIs.
+
+The idea behind MCP was actually not all that different than tool calling. Like we saw above, with tool calling, you would define a set of functions and pass those into the LLM and it would decide which tool(s) you should use. Then you would invoke it.
+
+MCP expanded on this idea by introducing 2 new concepts:
+
+- **MCP Client** - a client that is instantiated in your backend and connects and talks to an MCP server
+- **MCP Server** - a standalone server where your functions lives
+
+![memories](/mcp.png)
+
+Tool calling required that you pass into the tools into the LLM call as a slice of Tool types while MCP abstracted out the tools into their own server that you can manage independently.
+
+With MCP, when the application first starts, it requests from the server (through the client) a list of all of the tools that the MCP server supports. You then pass those tools into the the LLM call and similar to tool calling, the LLM determines which tools you should call. But you still call it from your backend, the LLM doesn't call the tool (again, like in tool calling).
+
+Because the tools lived in their own server, you could configure as many clients to talk to as many servers as you wanted. You no longer had to write the tool functions yourself anymore. That's pretty cool!
+
+However, as I built more projects with it, I started to realize that MCP actually had some issues. The biggest was that the LLM would often get overwhelmed if you connected too many tools. It would often struggle to find the right one. Because servers were now managed by third parties, could have many many tools in a server. Sometimes as many tools as APIs. The Github MCP server had close to 100 tools and that's just one server. Say you want to add on the Linear and Github server, all of a sudden you're dealing with potentially hundreds of tools.
+
+Also, remember that you have to pass in all of the tools for the LLM to determine the appropriate one, so with potentially hundreds of tools, you quickly clog up the context window. One thing I tried was to do was filter the tools ahead of time so that the LLM only got the tools that it needed without getting overwhelmed. And this helped in some instances but in order to do it well, you had to tell the user to pick the integration they wanted to use so you could filter to just those tools. You could do this by telling the user to '@' the integration i.e "@linear tell me which tickets are in the todo", but this felt goofy. The LLM _should_ be able to just figure it out.
+
+There were other issues too like authentication, deciding if you want to run the MCP server or use a remote one, and just general LLM accurary issues with picking the wrong tool.
+
+So while MCP solved the problem of manually having to write and maintain all of these functions, it created the problem of overwhelming the LLM with too many tools.
+
+## A2A
+
+Google also released a framework called Agent2Agent but it was more of an orchestrator framework rather than an integration framework. So it didn't really solve the problem.
+
+## What about browser automation/computer use?
+
+There is another way to approach this problem that has nothing to do with APIs or code actually. What if instead of going through APIs we went through the UI? Pretty much everything you can do in an API you van do in a browser, so what if we used something like browserbase or browser-use to navigate a DOM and click our way to the promised land?
+
+I also spent some time trying this out and here are my thoughts. For a subset of requests, it works great - usually because there is no API for the thing that you want to do, so it's the only option. For many other things, it's slow and buggier than MCP. Think about how many more things an LLM has to wade through to accomplish something in a browser: pages, headers, accordians, buttons, forms etc. You get the idea.
+
+I actually do think there is a valid use case for browsers but completely replacing an API based framework such as MCP is probably not it.
+
+## Here's an idea?
+
+If agents are just digital humans then how would we as humans solve this?
+
+Let's take an example. Something that I would use an agent for is to create a ticket in Linear.
+
+My workflow is
+
+What if each MCP server was really just another agent that was trained on your documentation or application?
+
+The interaction would look sometihng like this:
+
+- I configure a client per server (similar to MCP)
+- i give my host a prompt like "create a ticket to add a new form on the pricing page"
+- my LLM then asks each server - "which one of you creates tickets and would be able to process this?" if we have a small list of tools then we could just pick the right integration. what i want to avoid here is teh overwhelming tool issue that i mentioned above?
+- linear agent which is an actual LLM agent says I can do that, here is what I need: ticket name, description, team name etc.
+- my agent then can either fill that information out or prompt the user if it doens't know something, once it has the info it sends it back to the linear agent
+- the linear agent then searches through it's own tools and picks the right one and then executes the task and then returns any datat like a link to the ticket back to the host agent
+- the host agent retusn the link to the user
+
+this is essentially how we as humans work if for example i went to a PM somewhere and said "hey create me ticket for this thing", they would say what do you want to call it and for who and then they would do it and then give back the link. almost like an agonistic task runner.
+
+so what are the tradeoffs with this?
+
+### pros
+
+- your host agent doesn't get overwhelmed with hundreds of tools from different servers and you don't have to ask the user to sepcificy exactly which integration they want
+- each agent only does one job
+
+### cons
+
+- maybe asking the user to specify the integration isn't all that bad? that at least allows you to filter the tools
+- take github and say that has 100 tools, if your agent isn't doing it then another agetn will and they'll get overwhelmed. you're just trading one agent for another

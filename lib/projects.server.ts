@@ -30,8 +30,10 @@ export function getAllprojects(): ProjectMetadata[] {
         name: data.name,
         date: data.date || "",
         tags: data.tags || [],
+        publish: data.publish !== false, // Default to true unless explicitly false
       } as ProjectMetadata;
     })
+    .filter((project) => project.publish) // Only include published projects
     .sort((a, b) => {
       // Sort by date, newest first
       return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -51,6 +53,7 @@ export function getProjectBySlug(slug: string): Project | null {
       name: data.name,
       date: data.date || "",
       tags: data.tags || [],
+      publish: data.publish !== false, // Default to true unless explicitly false
       content,
     };
   } catch {
@@ -66,5 +69,14 @@ export function getProjectslugs(): string[] {
   const fileNames = fs.readdirSync(projectsDirectory);
   return fileNames
     .filter((name) => name.endsWith(".mdx"))
-    .map((name) => name.replace(/\.mdx$/, ""));
+    .map((name) => {
+      const fullPath = path.join(projectsDirectory, name);
+      const fileContents = fs.readFileSync(fullPath, "utf8");
+      const { data } = matter(fileContents);
+      const slug = name.replace(/\.mdx$/, "");
+      
+      // Only return slug if project is published
+      return data.publish !== false ? slug : null;
+    })
+    .filter((slug): slug is string => slug !== null);
 }

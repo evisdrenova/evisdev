@@ -9,7 +9,7 @@ export function PostList({ posts }: { posts: PostMetadata[] }) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-300 ">
-        Posts I&apos;ve written
+        Posts
       </h2>
       <div className="space-y-6">
         {posts.map((post) => (
