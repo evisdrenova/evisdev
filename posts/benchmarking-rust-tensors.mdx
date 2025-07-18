@@ -1,8 +1,150 @@
 ---
 title: "Benchmarking tensor operations in rust"
-date: "2025-07-09"
+date: "2025-07-11"
 ---
 
-I think one of the most important problemns in getting AI agents to work as well as humans is figuring out memory.
+I've doing a bit of ML work in rust lately and have come across a few different libraries that provide tensor operations and other building blocks. The three most popular:
 
-Specifically, I mean finding an efficient and performant way to give AI agents access to cross-session memory that is persistent and enforceable.
+- **Candle** - Minimalist ML framework from hugging face. It supports low level tensor operations and some higher level operations like layernorm, softmax etc.
+- **Burn** - More of a full stack ML framework that you can use for training and inference.
+- **tch-rs** - Rust bindings on top of the C++ torch API.
+
+And then we also have:
+
+- **Ndarray** - Standard rust crate for general elements and numerics.
+
+One of the things I ran into when I was working on gpt-rs was that the rust tensor operations were dramatically slower than pytorch. Which to be fair is expected given that pytorch has a decade of extremely low level optimizations but it begged the question: which native rust library had the most performant tensor operations?
+
+So I decided to run a benchmarking against, Candle, Burn and Ndarray. I skipped tch-rs because it's not native rust.
+
+PS. you can find all of the code and benchmarks [here](https://github.com/evisdrenova/tensor-ops-benchmarks).
+
+Let's dig in.
+
+# Rust Tensor Libraries Benchmark Results
+
+### Test Environment
+
+- **Hardware**: Macbook M2 CPU, No GPU benchmarks included
+- **Data Type**: f32
+- **Optimization**: Release mode with LTO enabled
+- **Measurement**: Criterion framework from the criterion crate with 95% confidence intervals
+- **Limited Operations**: Core operations only, no neural network layers
+- **System Dependent**: Results may vary across different hardware
+
+### Overall Performance Overview
+
+First, a tldr. Different frameworks were good at different things. There was no one clear winner. Each framework also has it's own pros and cons, for example, if you want to build a training pipeline you're better off doing that with Burn than Candle because Burn already has all of the building blocks in place. It probably doesn't make sense to rebuild backprop, SGD and more just to use Candle.
+
+| Operation                   | Winner         | Performance Advantage                             |
+| --------------------------- | -------------- | ------------------------------------------------- |
+| **Tensor Creation**         | NDArray        | ~4.5x faster than Burn, ~8.2x faster than Candle  |
+| **Matrix Multiplication**   | Candle         | ~1.7x faster than Burn, ~3.9x faster than NDArray |
+| **Element-wise Operations** | NDArray/Candle | Virtually identical performance                   |
+| **Reduction Operations**    | Candle         | ~1.7x faster than NDArray/Burn                    |
+| **Vector Operations**       | NDArray        | ~2.1x faster than Burn                            |
+
+Now into the details.
+
+### 1. Tensor Creation (512×512 Random Tensors)
+
+Performance for creating random tensors:
+
+| Library     | Mean Time (μs) | Std Dev (μs) | Relative Performance |
+| ----------- | -------------- | ------------ | -------------------- |
+| **NDArray** | 317.3          | 63.2         | **1.00x** (baseline) |
+| **Burn**    | 1,435.9        | 172.0        | 4.53x slower         |
+| **Candle**  | 2,605.6        | 85.7         | 8.22x slower         |
+
+NDArray significantly outperforms both Burn and Candle for tensor creation, outperforming Burn by 4.5x and Candle by an impressive 8.2x. I was actually pretty surprised by this. I would have expected Burn and/or Candle to have optimized BLAS routines and even some assembly operations but it doesn't look like it. Or at least it didn't make a difference. The other potential cause here is how the random numbers are generated. With NdArray, I used the `ndarray_rand` crate while Candle and Burn have their own wrappers if not implementations of a random number generator.
+
+### 2. Matrix Multiplication (512×512 × 512×512)
+
+Performance for matrix multiplication:
+
+| Library     | Mean Time (μs) | Std Dev (μs) | Relative Performance |
+| ----------- | -------------- | ------------ | -------------------- |
+| **Candle**  | 674.8          | 75.7         | **1.00x** (baseline) |
+| **Burn**    | 1,144.0        | 190.3        | 1.70x slower         |
+| **NDArray** | 2,663.8        | 105.3        | 3.95x slower         |
+
+Candle dominates matrix multiplication. Candle outperforms Burn by 1.7x and NDArray by nearly 4x in matrix multiplication tasks. More importantly, Candle achieved approximately 397M FLOPS compared to the theoretical 268M FLOPS for the operation—indicating highly optimized GEMM (General Matrix Multiply) implementations, likely leveraging optimized BLAS libraries. Matmul is obviously crucial to deep learning payloads so it's not surprising that Candle and Burn have invested in it (at least relative to NDArray).
+
+### 3. Vector Operations (Dot Product)
+
+Performance for vector dot products (100K elements):
+
+| Library     | Mean Time (μs) | Performance Notes    |
+| ----------- | -------------- | -------------------- |
+| **NDArray** | ~11.2          | Optimized vector ops |
+| **Burn**    | ~23.9          | 2.1x slower          |
+
+I only ran dot products for NDArray and Burn because Candle didn't support native dot product calculations and that felt a little unfair to write my own and then compare it. But overall, Burn is must slower than NDArray here which is interesting given that Burn is much faster than NDArray in MatMul. I would have thought that some of the optimizations that improved matmul would have also improved dot product.
+
+### 4. Element-wise Addition (512×512 + 512×512)
+
+Performance for element-wise addition:
+
+| Library     | Mean Time (μs) | Std Dev (μs) | Relative Performance |
+| ----------- | -------------- | ------------ | -------------------- |
+| **Candle**  | 30.7           | 2.0          | **1.00x** (baseline) |
+| **NDArray** | 30.9           | 0.9          | 1.01x slower         |
+| **Burn**    | 31.3           | 0.8          | 1.02x slower         |
+
+All three libraries show nearly identical performance for element-wise operations.
+
+### 5. Reduction Operations (Sum)
+
+Performance for tensor sum operations (256×256 tensors):
+
+| Library     | Mean Time (μs) | Performance Notes    |
+| ----------- | -------------- | -------------------- |
+| **Candle**  | ~4.2           | Fastest reduction    |
+| **NDArray** | ~7.3           | Moderate performance |
+| **Burn**    | ~7.8           | Slowest reduction    |
+
+## Performance Scaling Analysis
+
+### Matrix Multiplication Scaling (64×64 to 512×512)
+
+The libraries show different scaling characteristics:
+
+- **Candle**: Excellent scaling, maintains performance advantage
+- **Burn**: Good scaling but consistently slower than Candle
+- **NDArray**: Poor scaling for larger matrices
+
+### Element-wise Operations Scaling
+
+All libraries scale similarly for element-wise operations, maintaining competitive performance across different tensor sizes.
+
+## Memory and Throughput Analysis
+
+### Tensor Creation Throughput (512×512 matrices)
+
+| Library     | Elements/sec      | Throughput Efficiency |
+| ----------- | ----------------- | --------------------- |
+| **NDArray** | 831M elements/sec | Highest throughput    |
+| **Burn**    | 183M elements/sec | Moderate throughput   |
+| **Candle**  | 101M elements/sec | Lowest throughput     |
+
+### Matrix Multiplication FLOPS (512×512 × 512×512)
+
+Theoretical FLOPS for 512×512 matrix multiplication: ~268M FLOPS
+
+| Library     | Actual FLOPS | Efficiency          |
+| ----------- | ------------ | ------------------- |
+| **Candle**  | ~397M FLOPS  | Best efficiency     |
+| **Burn**    | ~234M FLOPS  | Moderate efficiency |
+| **NDArray** | ~101M FLOPS  | Poor efficiency     |
+
+### Conclusion
+
+Each library has distinct performance characteristics:
+
+- **Candle** excels at compute-intensive operations like matrix multiplication
+- **NDArray** dominates memory-intensive operations like tensor creation
+- **Burn** provides consistent, balanced performance with additional safety features
+
+The choice really depends on your specific use case, with Candle being ideal for ML inference, NDArray for data processing, and Burn for comprehensive ML training pipelines. It would be great to be able to interop between these easily but each one has it's own tensor implementation so you would need a translation layer to convert Candle Tensor types to Burn Tensors.
+
+As the ecosystem matures, we'll likely see consolidation around fewer libraries, each with clearer use case definitions and wider support.
