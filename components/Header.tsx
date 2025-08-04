@@ -23,9 +23,23 @@ export default function Header() {
             {/* <ThemeToggle /> */}
           </div>
           <p className="text-gray-600 text-sm dark:text-gray-400 mb-5 w-[70%]">
-            Hey, I&apos;m Evis. I like to write code, and learn new things.
-            Currently, I&apos;m focused on exploring topics in artificial
-            intelligence and brain computer interfaces.
+            <span>
+              Hey, I&apos;m Evis. I like to write code and learn new things.{" "}
+            </span>
+            <br />
+            <br />
+            <span>
+              I previously co-founded Neosync, an open source data security
+              company that specialized in synthetic data. Neosync was acquired
+              by Grow Therapy, a leading behavorial healthtech backed by
+              Sequoia.
+            </span>
+            <br />
+            <br />
+            <span>
+              I&apos;m focused on exploring topics in artificial intelligence
+              and brain computer interfaces.
+            </span>
           </p>
           <div className="flex gap-4">
             <FaGithub className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 cursor-pointer transition-colors" />
