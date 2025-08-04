@@ -163,27 +163,27 @@ export default function BookList() {
         {books.map((book: BookMetadata, index) => (
           <div key={book.title} className="block">
             <article key={index} className="group">
-              <Popover
+              {/* <Popover
                 content={book.comment || "No comment available."}
                 isVisible={hoveredBook === book.title}
+              > */}
+              <div
+                className="flex justify-between items-start mb-2  text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                onMouseEnter={() => setHoveredBook(book.title)}
+                onMouseLeave={() => setHoveredBook(null)}
               >
-                <div
-                  className="flex justify-between items-start mb-2  text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  onMouseEnter={() => setHoveredBook(book.title)}
-                  onMouseLeave={() => setHoveredBook(null)}
-                >
-                  <div className="text-sm font-medium   transition-colors">
-                    {book.title}
-                  </div>
-                  <div className="ml-4 flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium min-w-[2rem]">
-                        {book.rating.toFixed(1)} / 10
-                      </span>
-                    </div>
+                <div className="text-sm font-medium   transition-colors">
+                  {book.title}
+                </div>
+                <div className="ml-4 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium min-w-[2rem]">
+                      {book.rating.toFixed(1)} / 10
+                    </span>
                   </div>
                 </div>
-              </Popover>
+              </div>
+              {/* </Popover> */}
             </article>
           </div>
         ))}
