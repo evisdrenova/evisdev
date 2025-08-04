@@ -1,0 +1,26 @@
+---
+name: "mirror"
+date: "2025-07-26"
+tags: ["Rust", "AI", "Tauri", "Typescript"]
+publish: true
+---
+
+[mirror](https://github.com/evisdrenova/mirror) is an AI-powered knowledge management tool designed to clip, save and automatically organize any text, URL or image.
+
+I constantly have 4-6 browser windows with 30-40 tabs open in each one and I can never find anything. I use my tabs are bookmarks which is a terrible way to organize things but it's the easiest way I've found to keep track of things that I'm working on and things that I want to read/explore.
+
+So I set out to build a better system to organize things without cluttering my browser tabs. Enter Mirror.
+
+Mirror is designed around a global shortcut system that allows you to highlight any text and hit a global shortcut such as Command+Shift+S to save what you highlighted.
+
+Once you hit the global shortcut, the clip (as I call it) is sent to an LLM for categorization and tagging, then saved in a local sqlite db.
+
+This is then surfaced in a desktop app that shows you everything you saved and allows you to search across all of the items.
+
+It would be like searching across all of your tabs in all browser windows and all of the content of those tabs to find the thing that you're looking for.
+
+The backend is written in Rust and the front end in Tauri and it's completely open source.
+
+I love using it and hope others do too!
+
+Evis
