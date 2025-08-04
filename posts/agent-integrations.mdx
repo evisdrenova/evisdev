@@ -103,36 +103,12 @@ I also spent some time trying this out and here are my thoughts. For a subset of
 
 I actually do think there is a valid use case for browsers but completely replacing an API based framework such as MCP is probably not it.
 
-## Here's an idea?
+## So what's the answer?
 
-If agents are just digital humans then how would we as humans solve this?
+Intuitively, I think the answer is likely a new meta-orchestrator framework that is able to operate MCP, browser automations and even create integrations on the fly. The thing is, there are use-cases for each of these integration types that make sense. So it seems unlikely to me that we will find one approach that works best. I mean this is a recurring theme in AI - there are going to be multiple ways to do things and the hard part is figuring out when to use which tool.
 
-Let's take an example. Something that I would use an agent for is to create a ticket in Linear.
+I think it's likely that we see small, purpose-built models that can read documentation and call APIs that serve as entry points for other more generic models to use. For example, imagine that you have an agent that you built that is tryng to call a Github API, it might talk to the Github integration agent and say "I need all of the PRs in the last 7 days", and then that Github integration agent figures out how to accomplish that task and performs it better because it's been purpose-built to just handle Github integrations.
 
-My workflow is
+It's still early for AI integrations and something totally new might come out of nowhere. With the rate that things are moving at, I wouldn't doubt it!
 
-What if each MCP server was really just another agent that was trained on your documentation or application?
-
-The interaction would look sometihng like this:
-
-- I configure a client per server (similar to MCP)
-- i give my host a prompt like "create a ticket to add a new form on the pricing page"
-- my LLM then asks each server - "which one of you creates tickets and would be able to process this?" if we have a small list of tools then we could just pick the right integration. what i want to avoid here is teh overwhelming tool issue that i mentioned above?
-- linear agent which is an actual LLM agent says I can do that, here is what I need: ticket name, description, team name etc.
-- my agent then can either fill that information out or prompt the user if it doens't know something, once it has the info it sends it back to the linear agent
-- the linear agent then searches through it's own tools and picks the right one and then executes the task and then returns any datat like a link to the ticket back to the host agent
-- the host agent retusn the link to the user
-
-this is essentially how we as humans work if for example i went to a PM somewhere and said "hey create me ticket for this thing", they would say what do you want to call it and for who and then they would do it and then give back the link. almost like an agonistic task runner.
-
-so what are the tradeoffs with this?
-
-### pros
-
-- your host agent doesn't get overwhelmed with hundreds of tools from different servers and you don't have to ask the user to sepcificy exactly which integration they want
-- each agent only does one job
-
-### cons
-
-- maybe asking the user to specify the integration isn't all that bad? that at least allows you to filter the tools
-- take github and say that has 100 tools, if your agent isn't doing it then another agetn will and they'll get overwhelmed. you're just trading one agent for another
+Evis
