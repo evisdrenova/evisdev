@@ -1,0 +1,18 @@
+---
+name: "ember"
+date: "2025-07-14"
+tags: ["Python", "AI", "MCP", "Typescript"]
+publish: true
+---
+
+[ember](https://github.com/evisdrenova/ember) is an AI home assistant that is designed to replace a Google Home Mini or Amazon Alexa.
+
+Ember uses an OrangePi zero4 PCB as an edge device to to run a SST (speech to text) and TTS (text to speech) model to communicate with a user.
+
+I configured ember to listen for a wake word (like 'hey siri') and then take in a user prompt, process it and then process the text through a speech to text model.
+
+The backend is a typescript server which uses grpc to recieve the translated text from the edge device, call an LLM to get an answer the query and then stream the response back.
+
+The ultimate goal is to have ember be a custom home assistant that can help me manage my day to day and really be an ambient agent (see ambient agent blogpost) for me.
+
+Ember is still in development.
