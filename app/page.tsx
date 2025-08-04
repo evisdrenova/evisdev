@@ -8,8 +8,8 @@ import { PostList } from "./PostList";
 import { PostMetadata, ProjectMetadata } from "@/lib/types";
 
 export default function Home() {
-  const posts: PostMetadata[] = getAllPosts().slice(0, 6);
-  const projects: ProjectMetadata[] = getAllprojects().slice(0, 6);
+  const posts: PostMetadata[] = getAllPosts();
+  const projects: ProjectMetadata[] = getAllprojects();
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">

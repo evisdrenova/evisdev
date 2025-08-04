@@ -23,7 +23,7 @@ export default function Header() {
             {/* <ThemeToggle /> */}
           </div>
           <p className="text-gray-600 text-sm dark:text-gray-400 mb-5 w-[70%]">
-            Hey, I&apos;m Evis. I like to write code and learn new things.
+            Hey, I&apos;m Evis. I like to write code, and learn new things.
             Currently, I&apos;m focused on exploring topics in artificial
             intelligence and brain computer interfaces.
           </p>
