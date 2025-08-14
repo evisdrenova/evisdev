@@ -5,8 +5,8 @@ import { FaGithub, FaLinkedin } from "react-icons/fa";
 
 export default function Header() {
   return (
-    <header className="mb-16 ">
-      <div className="flex items-start gap-6">
+    <div className="mb-16">
+      <div className="flex flex-col sm:flex-row items-start gap-6">
         <Avatar className="w-20 h-20">
           <AvatarImage
             src="Circlevis.png"
@@ -15,9 +15,9 @@ export default function Header() {
           />
           <AvatarFallback>Ed</AvatarFallback>
         </Avatar>
-        <div className="flex-1">
-          <div className="flex flex-row items-center gap-4">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-300 mb-2">
+        <div className="flex-1 ">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:mb-0 mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-300 sm:mb-2">
               Evis Drenova
             </h1>
             <div className="flex gap-4">
@@ -35,7 +35,7 @@ export default function Header() {
             </div>
             {/* <ThemeToggle /> */}
           </div>
-          <p className="text-gray-600 text-sm dark:text-gray-400 mb-5 w-[70%]">
+          <p className="text-gray-600 text-sm dark:text-gray-400 mb-5 w-full sm:w-[70%] ">
             <span>
               Hey, I&apos;m Evis. I like to write code and learn new things.{" "}
             </span>
@@ -56,6 +56,6 @@ export default function Header() {
           </p>
         </div>
       </div>
-    </header>
+    </div>
   );
 }
