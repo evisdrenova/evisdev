@@ -19,7 +19,7 @@ export default function ProjectList({
         {projects.map((project, index) => (
           <Link
             key={project.slug}
-            href={`/project/${project.slug}`}
+            href={`/projects/${project.slug}`}
             className="block group cursor-pointer"
           >
             <article
