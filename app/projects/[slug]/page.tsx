@@ -55,8 +55,8 @@ export default async function projectPage({ params }: ProjectsPageProps) {
     <div className="max-w-4xl mx-auto p-8">
       <div className="mb-8">
         <Link
-          href="/projects"
-          className="text-blue-600 hover:text-blue-800 transition-colors mb-4 inline-block font-mono"
+          href="/"
+          className="text-gray-700 hover:text-gray-800 dark:text-gray-300 transition-colors text-sm mb-4 inline-block"
         >
           ← Back to projects
         </Link>
