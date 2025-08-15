@@ -1,0 +1,78 @@
+---
+title: "Do AI Companies Make Money?"
+date: "2025-08-14"
+publish: true
+---
+
+I've been reading a lot about app-layer AI companies are operating on razor thin margins given how much how they're paying model providers. Recently, I saw this chart that broke down revenue for Anthropic vs. OpenAI.
+
+![anthriopic](/anthropic-revenue.png)
+
+The most striking thing to me about this chart was that just about half of Anthropic's API revenue, or $1.55B, came from Cursor and Github Copilot. Even if you give a edge to Copilot in terms of market share, that's still something like $300M in revenue from Cursor alone! There's the obvious revenue concentration risk for Anthropic but immediately my mind went to thinking about Cursor's unit economics.
+
+So I wanted to dig deeper and investigate for myself.
+
+# The Wunderkid of AI
+
+In just over a year, Cursor has grown from $4 million ARR to over $500 million ARR and a $9.9 billion valuation. It's widely used and one of the fastest growing companies of all time.
+
+Cursor's pricing is deceptively simple:
+
+- **Free**: 50 slow requests monthly, limited features
+- **Pro ($20/month)**: 500 fast requests, unlimited slow requests
+- **Business ($40/month)**: Same as Pro plus team features
+
+When I first saw this pricing, my initial thought was that there was no way they were making money on this and they were purposely operating on negative margins in order to win the market. That and they were likely just banking on people not using all of their requests. Side note: this is how [many gyms make their money](https://www.npr.org/sections/money/2014/12/30/373996649/why-we-sign-up-for-gym-memberships-but-don-t-go-to-the-gym#:~:text=Gyms%20have%20built%20their%20business,like%20hotels%20and%20fancy%20restaurants.).
+
+Cursor's aggressive pricing is enabled by substantial venture capital funding—$800 million from firms like Andreessen Horowitz, Thrive, and Accel—allowing it to operate with thin margins while building market share.
+
+But even from what we know so far, the picture is grim. Right off the bat, they're operating on 40% gross margins which is about half of the normal 70-80% margins that most good SaaS companies operate on. This also doesn't include what they pay to OpenAI/other model providers, their likely expensive 150 employees and their (again) likely expensive infrastructure bill.
+
+Let's break this down even further.
+
+The largest cost for Cursor is paying AI model providers like OpenAI and Anthropic. Each "fast request" to a premium model like GPT-4o costs the company roughly $0.04 in raw API costs, meaning Cursor's $20 Pro plan theoretically covers $20 worth of API calls (500 requests × $0.04).
+
+However, the economics get complex quickly because different models have different input and output token costs (that damn BPE tokenizer isn't free!):
+
+**OpenAI API Pricing :**
+
+- GPT-4o: approximately $15-30 per million tokens
+- Input tokens are typically cheaper than output tokens
+
+**Anthropic Pricing:**
+
+- Claude 3.5 Sonnet offers 40% lower input token costs compared to GPT-4o, but Anthropic's tokenizer produces 16-30% more tokens for the same text, potentially offsetting the savings
+- This is assuming that Cursor hasn't negotiated some special rate for their API
+
+This is where things get nebulous and we have to speculate.
+
+**Revenue per user (monthly):** $20
+**Model costs (if fully utilized):** ~$20 (500 requests × $0.04)
+**Gross margin (full utilization):** ~0%
+**Gross margin (average user):** 60-80% (most users don't hit limits)
+
+Many developers pay for subscriptions for months without full utilizing them effectively giving the company free revenue (on a token basis). The users who are fully utilizing the tokens and exceeding it are losing the company money on the infrastructure side but likely not the model side of things since they're paying for their overages.
+
+So where does this all leave us?
+
+# The Anthropic Dilemma
+
+Cursor faces a unique challenge: Cursor's core product heavily relies on Anthropic's models, while Anthropic is simultaneously expanding Claude's coding capabilities and launching competitive products like Claude Code. This creates an interesting position where a key supplier is also becoming a direct competitor.
+
+It doesn't seem like a crazy idea to think that at some point the math changes and Anthropic eventually cuts Cursor off. But then again we thought the same thing with Apple and Google and Google still pays Apple $20B/year to be their search engine.
+
+# Enterprise Migration
+
+While historically most revenue came from individual developers, Cursor is now offering enterprise licenses, allowing companies to purchase the application for their teams at higher price points. These enterprise contracts are likely where the majority of their money will eventually come from in the future. So we should start to see a shift to better unit economics.
+
+# The Data Moat
+
+Beyond subscription revenue, Cursor likely collects valuable data that helps build better coding models. It's been reported that this was the main reason that OpenAI wanted to buy Windsurf. Having programmers accept/decline coding suggestions provides exceptionally valuable information for model training, similar to RLHF (Reinforcement Learning from Human Feedback).
+
+Cursor could, if they're not already, sell/license this data to the big model developers for a lot of money. Companies like Mercor, Scale, Surge and others are making a lot of money doing this.
+
+# What About Everyone Else?
+
+I think it comes down to where in the stack they are. Application-layer companies are likely all in the same boat. They're all leveraging VC funds to subsidize growth to try to win the market. Others at the infrastructure layer are not growing as quickly but also probably have better unit economics.
+
+But the fundamental question remains for companies at the application layer: will they be able to turn their unit economics around to build profitable long-lasting businesses?
