@@ -9,6 +9,13 @@ export interface BookMetadata {
 
 const books: BookMetadata[] = [
   {
+    title: "Introduction to Brain Computing Interfaces",
+    rating: 8.7,
+    author: "Rajesh P Rao",
+    comment:
+      "Great introduction into BCI, it's methods and applications. Good mix of ML, Hardware and Bio. ",
+  },
+  {
     title: "Through two doors at once",
     rating: 8.2,
     author: "Anil Ananthaswamy",
