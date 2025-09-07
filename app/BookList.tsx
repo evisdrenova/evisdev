@@ -171,7 +171,7 @@ export default function BookList() {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-300">
-        Recent books I&apos;ve read
+        Books
       </h2>
       <div className="space-y-4">
         {books.map((book: BookMetadata, index) => (
