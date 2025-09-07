@@ -9,6 +9,13 @@ export interface BookMetadata {
 
 const books: BookMetadata[] = [
   {
+    title: "The Hobbitt",
+    rating: 7.0,
+    author: "JRR Tolkein",
+    comment:
+      "Finally got around to reading this. Honestly, I thought it was okay. I liked the movies better if we're being honest ...  ",
+  },
+  {
     title: "Introduction to Brain Computing Interfaces",
     rating: 8.7,
     author: "Rajesh P Rao",
