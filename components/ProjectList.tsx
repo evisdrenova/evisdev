@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { ProjectMetadata } from "@/lib/types";
 import Tags from "@/components/tags";
+import posthog from "posthog-js";
 
 export default function ProjectList({
   projects,
@@ -21,6 +22,7 @@ export default function ProjectList({
             key={project.slug}
             href={`/projects/${project.slug}`}
             className="block group cursor-pointer"
+            onClick={() => posthog.capture(project.name)}
           >
             <article
               key={index}
@@ -30,9 +32,6 @@ export default function ProjectList({
                 <div className="text-sm font-medium transition-colors">
                   {project.name}
                 </div>
-                <time className="text-xs ml-4 flex-shrink-0">
-                  {formatDate(project.date)}
-                </time>
               </div>
               <div className="flex flex-wrap gap-2">
                 {project.tags.map((tag) => (

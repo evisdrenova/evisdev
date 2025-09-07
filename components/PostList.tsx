@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import type { PostMetadata } from "@/lib/types";
 import Tags from "@/components/tags";
+import posthog from "posthog-js";
 
 export function PostList({ posts }: { posts: PostMetadata[] }) {
   return (
@@ -17,6 +18,7 @@ export function PostList({ posts }: { posts: PostMetadata[] }) {
             key={post.slug}
             href={`/posts/${post.slug}`}
             className="block group cursor-pointer"
+            onClick={() => posthog.capture(post.title)}
           >
             <article className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 t">
               <div className="flex justify-between items-start mb-2">

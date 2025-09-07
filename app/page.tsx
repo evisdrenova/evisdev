@@ -3,8 +3,8 @@ import { getAllPosts } from "@/lib/posts.server";
 import { getAllprojects } from "@/lib/projects.server";
 import Header from "@/components/Header";
 import BookList from "./BookList";
-import ProjectList from "./ProjectList";
-import { PostList } from "./PostList";
+import ProjectList from "../components/ProjectList";
+import { PostList } from "../components/PostList";
 import { PostMetadata, ProjectMetadata } from "@/lib/types";
 
 export default function Home() {

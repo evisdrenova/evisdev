@@ -50,8 +50,8 @@ export default function Header() {
             <br />
             <br />
             <span>
-              I&apos;m focused on exploring topics in artificial intelligence
-              and brain computer interfaces.
+              I&apos;m focused on exploring topics in artificial intelligence,
+              brain computer interfaces and privacy engineering.
             </span>
           </p>
         </div>

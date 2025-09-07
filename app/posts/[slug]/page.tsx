@@ -10,7 +10,7 @@ import remarkBreaks from "remark-breaks";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeHighlight from "rehype-highlight";
-import { mdxComponents } from "@/app/mdxComponents";
+import { mdxComponents } from "@/components/mdxComponents";
 
 interface PostPageProps {
   params: Promise<{ slug: string }>;
