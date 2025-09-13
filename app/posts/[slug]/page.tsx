@@ -53,21 +53,23 @@ export default async function PostPage({ params }: PostPageProps) {
       <div className="max-w-5xl mx-auto p-8">
         <Link
           href="/"
-          className="text-gray-700 hover:text-gray-800 dark:text-gray-300 transition-colors text-sm mb-4 inline-block"
+          className="text-gray-700 hover:text-gray-900  text-sm mb-4 inline-block"
         >
           ← Posts
         </Link>
-        <header className="my-20">
-          <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+        <header className="my-20 flex flex-col gap-2">
+          <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100 justify-center flex">
             {post.title}
           </h1>
-
-          <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+          <div className="flex items-center gap-4 text-sm text-gray-700 mb-4  justify-center">
             <time dateTime={post.date}>
-              {new Date(post.date).toLocaleDateString("en-US")}
+              {new Date(post.date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
             </time>
           </div>
-
           {!!post.tags?.length && (
             <div className="flex flex-wrap gap-2">
               {post.tags.map((tag) => (

@@ -3,7 +3,6 @@
 @import "highlight.js/styles/github.css";
 
 @custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -383,4 +382,8 @@
     color: rgb(243 244 246);
     border-left-color: rgb(75 85 99);
   }
+}
+
+body {
+  font-family: var(--font-iowan), ui-serif, Georgia, "Times New Roman", serif;
 }
