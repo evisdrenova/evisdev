@@ -14,9 +14,7 @@ import TableOfContents from "@/components/ToC";
 import Footer from "@/components/Footer";
 
 type Params = { slug: string };
-interface PostPageProps {
-  params: Params;
-}
+type PostPageProps = { params: Promise<Params> };
 
 export async function generateStaticParams() {
   return getPostSlugs().map((slug) => ({ slug }));
@@ -25,7 +23,8 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: PostPageProps): Promise<Metadata> {
-  const post = getPostBySlug(params.slug);
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
   if (!post) return { title: "Post Not Found" };
   return {
     title: `${post.title} - Evis`,
@@ -34,7 +33,8 @@ export async function generateMetadata({
 }
 
 export default async function PostPage({ params }: PostPageProps) {
-  const post = getPostBySlug(params.slug);
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
   if (!post) notFound();
 
   const toc = await extractToc(post.content);
@@ -68,7 +68,7 @@ export default async function PostPage({ params }: PostPageProps) {
               ← Home
             </Link>
             <header className="mb-12 flex flex-col gap-6 h-[250px]">
-              <h1 className="text-4xl  mt-20 font-bold text-gray-900 dark:text-gray-100 text-center">
+              <h1 className="text-4xl mt-20 font-bold text-gray-900 dark:text-gray-100 text-center">
                 {post.title}
               </h1>
               <div className="flex items-center justify-center gap-4 text-sm text-gray-700">
