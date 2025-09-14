@@ -1,30 +1,33 @@
-// app/(posts)/[slug]/page.tsx
+// app/blog/[slug]/page.tsx
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { getPostBySlug, getPostSlugs } from "@/lib/posts.server";
-
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeHighlight from "rehype-highlight";
 import { mdxComponents } from "@/components/mdxComponents";
+import { extractToc } from "@/lib/toc";
+import TableOfContents from "@/components/ToC";
 
+type Params = { slug: string };
 interface PostPageProps {
-  params: Promise<{ slug: string }>;
+  params: Params;
 }
 
 export async function generateStaticParams() {
   return getPostSlugs().map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params }: PostPageProps) {
-  const { slug } = await params;
-  const post = getPostBySlug(slug);
+export async function generateMetadata({
+  params,
+}: PostPageProps): Promise<Metadata> {
+  const post = getPostBySlug(params.slug);
   if (!post) return { title: "Post Not Found" };
-
   return {
     title: `${post.title} - Evis`,
     description: post.subtitle,
@@ -32,10 +35,13 @@ export async function generateMetadata({ params }: PostPageProps) {
 }
 
 export default async function PostPage({ params }: PostPageProps) {
-  const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = getPostBySlug(params.slug);
   if (!post) notFound();
 
+  // Build TOC from the raw MDX string
+  const toc = await extractToc(post.content);
+
+  // Compile MDX for rendering (with slugs so links work)
   const { content } = await compileMDX({
     source: post.content,
     components: mdxComponents,
@@ -43,44 +49,47 @@ export default async function PostPage({ params }: PostPageProps) {
       parseFrontmatter: false,
       mdxOptions: {
         remarkPlugins: [remarkGfm, remarkBreaks],
-        rehypePlugins: [rehypeSlug, rehypeAutolinkHeadings, rehypeHighlight],
+        rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings], rehypeHighlight],
       },
     },
   });
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950">
-      <div className="max-w-5xl mx-auto p-8">
-        <Link
-          href="/"
-          className="text-gray-700 hover:text-gray-900  text-sm mb-4 inline-block"
-        >
-          ← Posts
-        </Link>
-        <header className="my-20 flex flex-col gap-2">
-          <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100 justify-center flex">
-            {post.title}
-          </h1>
-          <div className="flex items-center gap-4 text-sm text-gray-700 mb-4  justify-center">
-            <time dateTime={post.date}>
-              {new Date(post.date).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </time>
+    <div className="min-h-screen w-full bg-white dark:bg-zinc-950 flex justify-center">
+      <div className="flex w-full max-w-7xl gap-8 px-4 lg:px-8">
+        <aside className="hidden lg:block w-1/5 pt-8">
+          <div className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto pr-2">
+            <TableOfContents toc={toc} />
           </div>
-          {!!post.tags?.length && (
-            <div className="flex flex-wrap gap-2">
-              {post.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
+        </aside>
+        <main className="w-full lg:w-3/5 mx-auto py-8">
+          <Link
+            href="/"
+            className="text-gray-700 hover:text-gray-900 text-sm inline-block mb-6"
+          >
+            ← Posts
+          </Link>
+
+          <header className="mb-12 flex flex-col gap-2">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 text-center">
+              {post.title}
+            </h1>
+            <div className="flex items-center justify-center gap-4 text-sm text-gray-700">
+              <time dateTime={post.date}>
+                {new Date(post.date).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </time>
             </div>
-          )}
-        </header>
-        <div className="prose prose-gray dark:text-gray-100">{content}</div>
+          </header>
+
+          <article className="prose prose-gray dark:text-gray-100">
+            {content}
+          </article>
+        </main>
+        <div className="hidden lg:block w-1/5" />
       </div>
     </div>
   );
