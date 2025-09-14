@@ -109,11 +109,12 @@ export default function TableOfContents({ toc }: { toc: TocItem[] }) {
             <a
               href={`#${id}`}
               onClick={(e) => handleClick(e, id)}
-              className={
-                activeId === id
-                  ? "font-semibold text-gray-900"
-                  : "text-gray-600 hover:text-gray-900"
-              }
+              className={"text-gray-600 hover:text-gray-900"}
+              //   className={
+              //     activeId === id
+              //       ? "font-semibold text-gray-900"
+              //       : "text-gray-600 hover:text-gray-900"
+              //   }
             >
               {title}
             </a>

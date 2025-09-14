@@ -3,9 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/theme-provider";
 import localFont from "next/font/local";
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Evis - Always Building",
+  title: "Evis Drenova",
   description:
     "I like to build and learn stuff. Explore my posts, projects, and reading list.",
   keywords: [
