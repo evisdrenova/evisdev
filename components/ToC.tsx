@@ -5,23 +5,52 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 
 export default function TableOfContents({ toc }: { toc: TocItem[] }) {
   const [activeId, setActiveId] = useState<string>();
-
   const ids = useMemo(() => toc.map((t) => t.id), [toc]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const current = window.location.hash?.replace(/^#/, "");
-    if (current && ids.includes(current)) setActiveId(current);
+  // Helper: compute which heading should be active right now
+  const computeActiveNow = useCallback(() => {
+    const els = ids
+      .map((id) => document.getElementById(id))
+      .filter(Boolean) as HTMLElement[];
+    if (!els.length) return;
+
+    const TOP_OFFSET = 80; // match your scroll-margin-top-ish
+    // First heading whose top is at/above the top offset (i.e., the one we’re at)
+    const firstOnScreen = els.find(
+      (el) => el.getBoundingClientRect().top >= TOP_OFFSET
+    );
+    if (firstOnScreen) {
+      // The active one is either the previous section (just above) or this one if we’re before any
+      const idx = els.indexOf(firstOnScreen);
+      setActiveId(idx > 0 ? els[idx].id : els[0].id);
+      return;
+    }
+    // If we’re below all headings, pick the last
+    setActiveId(els[els.length - 1].id);
   }, [ids]);
 
+  // Initialize from hash or compute
+  useEffect(() => {
+    if (!ids.length) return;
+    const fromHash = window.location.hash?.replace(/^#/, "");
+    if (fromHash && ids.includes(fromHash)) {
+      setActiveId(fromHash);
+    } else {
+      // Wait a tick so layout/images settle
+      requestAnimationFrame(() => computeActiveNow());
+    }
+  }, [ids, computeActiveNow]);
+
+  // IntersectionObserver scroll-spy
   useEffect(() => {
     const elements = ids
       .map((id) => document.getElementById(id))
       .filter(Boolean) as HTMLElement[];
-    if (elements.length === 0) return;
+    if (!elements.length) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
+        // headings currently intersecting, pick the highest one
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort(
@@ -29,14 +58,11 @@ export default function TableOfContents({ toc }: { toc: TocItem[] }) {
               a.target.getBoundingClientRect().top -
               b.target.getBoundingClientRect().top
           );
+
         if (visible[0]?.target?.id) {
           setActiveId(visible[0].target.id);
         } else {
-          const tops = elements
-            .map((el) => ({ id: el.id, top: el.getBoundingClientRect().top }))
-            .filter((x) => x.top <= 80);
-          if (tops.length)
-            setActiveId(tops.sort((a, b) => a.top - b.top).pop()!.id);
+          computeActiveNow();
         }
       },
       {
@@ -47,10 +73,13 @@ export default function TableOfContents({ toc }: { toc: TocItem[] }) {
     );
 
     elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [ids]);
+    window.addEventListener("load", computeActiveNow, { once: true });
 
-  // Update active on hash navigation (keyboard, history back, manual edits)
+    return () => {
+      observer.disconnect();
+    };
+  }, [ids, computeActiveNow]);
+
   useEffect(() => {
     const onHash = () => {
       const id = window.location.hash.replace(/^#/, "");
@@ -60,12 +89,13 @@ export default function TableOfContents({ toc }: { toc: TocItem[] }) {
     return () => window.removeEventListener("hashchange", onHash);
   }, [ids]);
 
-  // Also set active immediately when user clicks a TOC link
-  const handleClick = useCallback((id: string) => {
+  const handleClick = useCallback((e: React.MouseEvent, id: string) => {
+    e.preventDefault();
     setActiveId(id);
     document
       .getElementById(id)
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    history.pushState(null, "", `#${id}`);
   }, []);
 
   return (
@@ -78,7 +108,7 @@ export default function TableOfContents({ toc }: { toc: TocItem[] }) {
           >
             <a
               href={`#${id}`}
-              onClick={() => handleClick(id)}
+              onClick={(e) => handleClick(e, id)}
               className={
                 activeId === id
                   ? "font-semibold text-gray-900"

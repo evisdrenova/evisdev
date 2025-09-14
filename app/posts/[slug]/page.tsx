@@ -38,10 +38,8 @@ export default async function PostPage({ params }: PostPageProps) {
   const post = getPostBySlug(params.slug);
   if (!post) notFound();
 
-  // Build TOC from the raw MDX string
   const toc = await extractToc(post.content);
 
-  // Compile MDX for rendering (with slugs so links work)
   const { content } = await compileMDX({
     source: post.content,
     components: mdxComponents,
@@ -57,8 +55,8 @@ export default async function PostPage({ params }: PostPageProps) {
   return (
     <div className="min-h-screen w-full bg-white dark:bg-zinc-950 flex justify-center">
       <div className="flex w-full max-w-7xl gap-8 px-4 lg:px-8">
-        <aside className="hidden lg:block w-1/5 pt-8">
-          <div className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto pr-2">
+        <aside className="hidden lg:block w-1/5">
+          <div className="sticky top-[380px] max-h-[calc(100vh-5rem)] overflow-y-auto pr-2">
             <TableOfContents toc={toc} />
           </div>
         </aside>
@@ -70,8 +68,8 @@ export default async function PostPage({ params }: PostPageProps) {
             ← Posts
           </Link>
 
-          <header className="mb-12 flex flex-col gap-2">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 text-center">
+          <header className="mb-12 flex flex-col gap-2 h-[250px]">
+            <h1 className="text-4xl  mt-20 font-bold text-gray-900 dark:text-gray-100 text-center">
               {post.title}
             </h1>
             <div className="flex items-center justify-center gap-4 text-sm text-gray-700">

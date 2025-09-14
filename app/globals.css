@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @import "highlight.js/styles/github.css";
 
+[id] {
+  scroll-margin-top: 80px;
+}
+
 @custom-variant dark (&:is(.dark *));
 @theme inline {
   --color-background: var(--background);
