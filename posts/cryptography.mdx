@@ -1,5 +1,5 @@
 ---
-title: "How does encryption really work?"
+title: "The beautiful math behind encryption"
 date: "2025-09-13"
 publish: false
 ---
@@ -8,7 +8,7 @@ We use encryption all of the time and, as developers, libraries make it easy to 
 
 I've been to a few crytography meetups and have watched a few talks and it's always amazed me how the math _just_ works. I think most developers understand _how_ encryption works but I think very few developers understand _why_ it works. And even fewer understand the math that makes it work.
 
-In this post, we’ll focus on elliptic curve cryptography and it's use within Asymmetric Encryption or Public-key cryptopgraphy. Cryptography is a broad field that also includes symmetric ciphers, post-quantum schemes, homomorphic encryption, and more. I may cover those in future posts, but for now, let’s dive into ECC.
+In this post, we’ll focus on Elliptic Curve Cryptography (ECC) and it's use within Asymmetric Encryption or Public-key cryptopgraphy. Cryptography is a broad field that also includes symmetric ciphers, post-quantum schemes, homomorphic encryption, and more. I may cover those in future posts, but for now, let’s dive into ECC.
 
 # Asymmetric Encryption 101
 
@@ -28,14 +28,31 @@ Okay, great, now onto the fun stuff.
 
 # What is an Elliptic Curve?
 
-Let's start with a formal mathematical defintion and then we'll break it apart and understand each compononent.
+An elliptic curve is a mathematical curve that is typically defined by a cubic equation such as:
 
-Mathematically, an elliptic curve is a plane curve over a finite field which consists of poitns satisfying the equation:
+$y^{2}=x^{3}+ax+b$
 
-`y^{2}=x^{3}+ax+b,`
+![ecc](/ecc.png)
 
-along with a distinguished point at infinity. The coordinates here are choosen from a fixed finite field of characteristic 2 or 3. This set of points, together with the group operation of elliptic curves is an abelian group with the point at infinity as an identity element.
+In elliptic curve crytography, we work with elliptic curves which are **nonsingular** cubic curves with a point at infinity over a finite field . These non-singular cubic curves have a few pretty cool characteristics that make them very useful in crytography:
 
-$$
-\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
-$$
+1. The curve never intersects with itself
+2. The point at infinity acts like a zero and it allows us to add points on the curve together
+3. Every point on the curve has an inverse
+4. If points $P$, $Q$ are on the curve then $P + Q$ is on the curve as well. This enables scalar multiplication of points and ensures that we never leave the curve.
+5. The curve must be **Associative** such that $(P+Q)+R = P+(Q+R)$. This lets us sum points without worrying about paranthesis and the order of the points.
+6. The curve must support **Commutativity** meaning that $P+Q = Q+P$. This just makes the math easier.
+
+We'll see why these features are critical for ECC to work is just a bit.
+
+One last thing, I mentioned above that we work with elliptic curves over a finite field. What does this mean?
+
+It means that the elliptic curves that we work with in practice look less like the image above and more like this:
+
+![ecc](/eccbase.png)
+
+This is a view of the elliptic curve $y^2 \equiv x^3 - x + 1$ but over $\mathbb{F}_{23}$. You can actually see that every point in the curve has an inverse in the graph if you were to draw a line at about 11 like so.
+
+![ecc](/eccbasepair.png)
+
+I think this is probably deep enough into elliptic curves for this blog but if you're interested in reading more about elliptic curves, [this is free book.](http://tomlr.free.fr/Math%E9matiques/Math%20Complete/Cryptography/Guide%20to%20Elliptic%20Curve%20Cryptography%20-%20D.%20Hankerson,%20A.%20Menezes,%20S.%20Vanstone.pdf)
