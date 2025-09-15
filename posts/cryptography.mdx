@@ -1,0 +1,41 @@
+---
+title: "How does encryption really work?"
+date: "2025-09-13"
+publish: false
+---
+
+We use encryption all of the time and, as developers, libraries make it easy to implement. In fact, most of the time we don't even have to do anything, it's just invisibly already implemented in background. But that's not really satisfying for me. I like to know how things work - usually at a very granular level.
+
+I've been to a few crytography meetups and have watched a few talks and it's always amazed me how the math _just_ works. I think most developers understand _how_ encryption works but I think very few developers understand _why_ it works. And even fewer understand the math that makes it work.
+
+In this post, we’ll focus on elliptic curve cryptography and it's use within Asymmetric Encryption or Public-key cryptopgraphy. Cryptography is a broad field that also includes symmetric ciphers, post-quantum schemes, homomorphic encryption, and more. I may cover those in future posts, but for now, let’s dive into ECC.
+
+# Asymmetric Encryption 101
+
+Just to make sure that we're on the same page, let's do a quick primer on asymmetric encryption.
+
+Asymmetric encryption, or sometimes called Public Key Encryption, uses a pair of keys - a public key and a private key, to securely encrypt and decrypt data.
+
+![asymmtric](/asymm.png)
+
+What makes it powerful is that the keys are mathematically linked. So you can share the public key with anyone in the world (hence:"public") and they can use it to encrypt a message that only the private key can decrypt.
+
+Many protocols such as TLS, SSH, Signal, WireGuard and others use asymmetric encyryption for authentication/key exchange before switching to symmetric encryption for data encryption. This hybrid approach is pretty common.
+
+Elliptic curve cryptography (which we'll get to in a second, I promise!), is just one way of doing asymmetric encryption. There are other ways such as RSA, Kyber, and Finite-field Diffie-Hellman but ECC is quickly becoming the standard.
+
+Okay, great, now onto the fun stuff.
+
+# What is an Elliptic Curve?
+
+Let's start with a formal mathematical defintion and then we'll break it apart and understand each compononent.
+
+Mathematically, an elliptic curve is a plane curve over a finite field which consists of poitns satisfying the equation:
+
+`y^{2}=x^{3}+ax+b,`
+
+along with a distinguished point at infinity. The coordinates here are choosen from a fixed finite field of characteristic 2 or 3. This set of points, together with the group operation of elliptic curves is an abelian group with the point at infinity as an identity element.
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
+$$

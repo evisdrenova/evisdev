@@ -12,6 +12,8 @@ import { mdxComponents } from "@/components/mdxComponents";
 import { extractToc } from "@/lib/toc";
 import TableOfContents from "@/components/ToC";
 import Footer from "@/components/Footer";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 
 type Params = { slug: string };
 type PostPageProps = { params: Promise<Params> };
@@ -45,8 +47,13 @@ export default async function PostPage({ params }: PostPageProps) {
     options: {
       parseFrontmatter: false,
       mdxOptions: {
-        remarkPlugins: [remarkGfm, remarkBreaks],
-        rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings], rehypeHighlight],
+        remarkPlugins: [remarkGfm, remarkBreaks, remarkMath],
+        rehypePlugins: [
+          rehypeSlug,
+          [rehypeAutolinkHeadings],
+          rehypeHighlight,
+          rehypeKatex,
+        ],
       },
     },
   });
