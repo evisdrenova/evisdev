@@ -1,5 +1,5 @@
 ---
-title: "The beautiful math behind encryption"
+title: "The Beautiful Math Behind Encryption"
 date: "2025-09-13"
 publish: false
 ---
@@ -63,7 +63,7 @@ For our purposes, we'll use the first picture because it's easier to show why th
 
 # Beautiful Symmetry
 
-In the section above, we talked about how every point in an elliptic curve has an inverse point which means that every point can be reflected over the X-axis and will still be on the same curve. This creates symmetry which we can express as:
+In the section above, we showed how every point in an elliptic curve has an inverse point which means that every point can be reflected over the x-axis and will still be on the same curve. This creates symmetry which we can express as:
 
 For every point $P = (x,y)$, the inverse is $-P=(x,-y\bmod p)$
 
@@ -71,7 +71,7 @@ For every point $P = (x,y)$, the inverse is $-P=(x,-y\bmod p)$
 
 This symmetry has a few very important features that make the math behind ECC work.
 
-The first is that any non-vertical line will intersect the curve in at most three places.
+The first is that any non-vertical line meets the curve in at most three points (counting multiplicity)
 
 ![ecc](/3inters.png)
 
@@ -81,24 +81,30 @@ We can also derive this mathematically. Substitute a line:
 
 $y=mx+c$ into $y^2=x^3-x+1$ and you get: $(mx+c)^2=x^3-x+1$,
 
-Which is a a **cubic equation in $x$**. You can see that it has the same form as the elliptic curve equation above. A cubic has ≤ 3 real roots, so a non-vertical line hits the curve in **at most three** real $x$’s.
+Which is a **cubic equation in $x$**. You can see that it has the same form as the elliptic curve equation above. A cubic has ≤ 3 real roots, so a non-vertical line hits the curve in **at most three** real $x$’s counting multiplicity.
 
 The second is what we call the **chord-and-tangent** addition law.
 
-The chord-and-tangent addition law says that if you plot two points on the curve: $P$ and $Q$, and then draw a line through them, they will intersect at $R$. We can then reflect $R$ across the X-axis to get it's inverse (which we proved at the beginning of the section) and then state that $P+Q = -R$.
+The chord-and-tangent addition law says that if you plot two points on the curve: $P$ and $Q$, and then draw a line through them, they will intersect at $R$. We can then reflect $R$ across the x-axis to get its inverse (which we noted at the beginning of the section) and then state that $P+Q = -R$.
 
 ![ecc](/chord.png)
-
-Why is this important?
-
-Reflecting the third intersection across the x-axis gives a closed, invertible addition rule with the point at infinity as the identity. This turns curve points into an abelian group, which is exactly the algebra ECC needs for well-defined, efficient scalar multiplication $Q=k⋅G.$
 
 This also works where $P = Q$. Instead of the drawing a line to connect $P$ and $Q$, you can just take the tangent at $P$, and where that tangent line intersects with the curve, we can call $R$.
 
 ![ecc](/tangent.png)
 
-Following the same math as above where we reflect $R$ over the X-axis, we get $2P = -R$.
+Following the same math as above where we reflect $R$ over the x-axis, we get $2P = -R$.
 
-Now for the beauty of scalar multiplication with abelian groups on elliptic curves.
+Why is this important?
 
-You can very easily and quickly perform many scalar multiplications in the form $Q=k⋅G.$.
+Reflecting the third intersection across the x-axis gives a closed addition with inverses and the point at infinity as identity. This makes the curve’s points an **abelian group**, which enables efficient scalar multiplication in the form: $Q = k \cdot G$, where $G$ is the standard base point (like $P$ in our example above), $k \in \{1,\dots,n-1\}$ is an integer scalar (mod $n$), and $Q$ is the resulting point on the curve.
+
+# The Power of Abelian Groups
+
+Now for the beauty of scalar multiplication with abelian groups on elliptic curves that makes this whole thing work.
+
+We can string together many of these scalar multiplication operations together and it's fast! In fact, we can perform them in constant-time.
+
+The best part? It's nearly impossible to reverse. Even if you know the resulting point $Q$ and the base point $G$, finding the scalar $k$ is incredibly difficult. This is called the "Elliptic curve discrete logarithm problem".
+
+But why? Isn't it just algebra?
