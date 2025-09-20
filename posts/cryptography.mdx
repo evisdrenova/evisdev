@@ -53,9 +53,52 @@ It means that the elliptic curves that we work with in practice look less like t
 
 ![ecc](/eccbase.png)
 
-This is a view of the elliptic curve $y^2 \equiv x^3 - x + 1$ but over $\mathbb{F}_{23}$. You can actually see that every point in the curve has an inverse in the graph if you were to draw a line at about 11 like so.
+This is a view of the elliptic curve $y^2 \equiv x^3 - x + 1$ but over $\mathbb{F}_{23}$. You can actually see that every point in the curve has an inverse in the graph if you were to draw a horizontal line at $y = 11$ like so.
 
 ![ecc](/eccbasepair.png)
 
-I think this is probably deep enough into elliptic curves for this blog but if you're interested in reading more about elliptic curves, [this is free book.](http://tomlr.free.fr/Math%E9matiques/Math%20Complete/Cryptography/Guide%20to%20Elliptic%20Curve%20Cryptography%20-%20D.%20Hankerson,%20A.%20Menezes,%20S.%20Vanstone.pdf)
+For our purposes, we'll use the first picture because it's easier to show why the math works but just remember that in practice we define elliptic curves over finite fields so they look more like the second picture.
 
+(If you're interested in reading more in depth about elliptic curves, [this is free book.](http://tomlr.free.fr/Math%E9matiques/Math%20Complete/Cryptography/Guide%20to%20Elliptic%20Curve%20Cryptography%20-%20D.%20Hankerson,%20A.%20Menezes,%20S.%20Vanstone.pdf))
+
+# Beautiful Symmetry
+
+In the section above, we talked about how every point in an elliptic curve has an inverse point which means that every point can be reflected over the X-axis and will still be on the same curve. This creates symmetry which we can express as:
+
+For every point $P = (x,y)$, the inverse is $-P=(x,-y\bmod p)$
+
+**Quite note**: We use $-y\bmod p$, since in ECC all arithmetic happens in a finite field $\mathbb F_p$, and elements of $\mathbb F_p$ are integers modulo p.
+
+This symmetry has a few very important features that make the math behind ECC work.
+
+The first is that any non-vertical line will intersect the curve in at most three places.
+
+![ecc](/3inters.png)
+
+Above, we plot the elliptic curve $y^2=x^3-x+1$ and then line $y=-2.5x-2$. You can see that it only intersects at 3 different points.
+
+We can also derive this mathematically. Substitute a line:
+
+$y=mx+c$ into $y^2=x^3-x+1$ and you get: $(mx+c)^2=x^3-x+1$,
+
+Which is a a **cubic equation in $x$**. You can see that it has the same form as the elliptic curve equation above. A cubic has ≤ 3 real roots, so a non-vertical line hits the curve in **at most three** real $x$’s.
+
+The second is what we call the **chord-and-tangent** addition law.
+
+The chord-and-tangent addition law says that if you plot two points on the curve: $P$ and $Q$, and then draw a line through them, they will intersect at $R$. We can then reflect $R$ across the X-axis to get it's inverse (which we proved at the beginning of the section) and then state that $P+Q = -R$.
+
+![ecc](/chord.png)
+
+Why is this important?
+
+Reflecting the third intersection across the x-axis gives a closed, invertible addition rule with the point at infinity as the identity. This turns curve points into an abelian group, which is exactly the algebra ECC needs for well-defined, efficient scalar multiplication $Q=k⋅G.$
+
+This also works where $P = Q$. Instead of the drawing a line to connect $P$ and $Q$, you can just take the tangent at $P$, and where that tangent line intersects with the curve, we can call $R$.
+
+![ecc](/tangent.png)
+
+Following the same math as above where we reflect $R$ over the X-axis, we get $2P = -R$.
+
+Now for the beauty of scalar multiplication with abelian groups on elliptic curves.
+
+You can very easily and quickly perform many scalar multiplications in the form $Q=k⋅G.$.
