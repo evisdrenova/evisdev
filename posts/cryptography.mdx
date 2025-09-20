@@ -101,10 +101,97 @@ Reflecting the third intersection across the x-axis gives a closed addition with
 
 # The Power of Abelian Groups
 
-Now for the beauty of scalar multiplication with abelian groups on elliptic curves that makes this whole thing work.
+Now for the beauty of scalar multiplication in abelian groups on elliptic curves that makes this whole thing work.
 
-We can string together many of these scalar multiplication operations together and it's fast! In fact, we can perform them in constant-time.
+We can pick an initial base point $G$ on the curve and then add it to itself $k$ times. This will give us the resulting point $Q$ on the curve. Since we're just doubling and adding points to itself, we can use constant-time formulas such as **Montegomery ladder (X25519)** or **Complete Edwards formulas(Ed25519)**, meaning this is really fast.
+
+Let's look at an example to build the intuition.
+
+![ecc](/3g.png)
+
+Here’s the extended diagram showing **$G$**, **$2G$**, and **$3G$**:
+
+- The **dashed chord** is the line through $G$ and $2G$.
+- It hits the curve a **third** time at $R$.
+- Reflect $R$ across the x-axis to get **$3G = -R$**.
+- I extended the x-axis to capture $x=56$, where $3G$ lands.
+
+[Download the image](sandbox:/mnt/data/ecc_G_3G_chord.png)
+
+For this curve $y^2=x^3-x+1$ with $G=(0,1)$:
+
+- $2G=\left(\tfrac{1}{4},-\tfrac{7}{8}\right)$
+- $R=(56,-419)$
+- $3G=(56,419)$
+
+string together many of these scalar multiplication operations together and it's fast! In fact, we can perform them in constant-time.
 
 The best part? It's nearly impossible to reverse. Even if you know the resulting point $Q$ and the base point $G$, finding the scalar $k$ is incredibly difficult. This is called the "Elliptic curve discrete logarithm problem".
 
 But why? Isn't it just algebra?
+
+## What the attacker wants (hard direction)
+
+Given $G$ and $Q=kG$, recover $k$. This is the **elliptic-curve discrete logarithm problem (ECDLP)**.
+
+### Why it’s hard (intuition + facts)
+
+- **Not ordinary algebra.** The “$\cdot$” is _repeated group addition_, not field multiplication; there’s no division by $G$ or a usable “log” map you can compute.
+- **Wrap-around & nonlinearity.** Operations are over $\mathbb F_p$ and in a subgroup of size $n$. Coordinates of $Q$ are messy rational functions of the bits of $k$; inverting that is not solving a linear equation.
+- **Best known generic attacks are square-root time.**
+
+  - **Baby-Step/Giant-Step:** $O(\sqrt{n})$ time _and_ memory.
+  - **Pollard’s rho:** $O(\sqrt{n})$ time, tiny memory.
+    For a 256-bit prime order $n$, $\sqrt{n}\approx 2^{128}$ steps — astronomically large.
+
+- **No subexponential index-calculus for generic prime-field curves.** (Contrast: finite-field DLP and integer factoring _do_ have subexponential algorithms, which is why ECC achieves similar security with much smaller parameters.)
+
+* **“$+$”** is the **group addition** between two **points** on the curve: e.g., $P+Q$.
+* **“$\cdot$”** is **scalar multiplication**: repeating that addition $k$ times with the **same** point $G$.
+
+So when you write:
+
+$$
+Q = k \cdot G,
+$$
+
+you’re saying “take $G$ and add it to itself $k$ times.” You don’t write another “$+$” after that; the **adding happens inside** the computation of $k\cdot G$.
+
+### How the “adding” shows up
+
+By definition:
+
+$$
+k\cdot G = \underbrace{G + G + \cdots + G}_{k \text{ times}}.
+$$
+
+In practice we don’t literally loop $k$ times. We use binary:
+
+- Write $k = \sum_i b_i 2^i$ with bits $b_i\in\{0,1\}$.
+- Then
+
+  $$
+  k\cdot G \;=\; \sum_i b_i \,\big(2^i G\big).
+  $$
+
+  That sum uses **point addition** $+$ and **doubling** $2P = P+P$.
+
+### Tiny example (k = 13 = 1101₂)
+
+- Precompute doublings:
+  $G,\; 2G,\; 4G=2(2G),\; 8G=2(4G)$.
+- Select the ones with bit $1$: $8G + 4G + 1G$.
+- Add them (group $+$) to get $Q$.
+
+### Pseudocode (double-and-add)
+
+```txt
+R := O           // identity point
+S := G
+for each bit b of k from LSB→MSB:
+  if b == 1: R = R + S   // point addition
+  S = 2S                 // point doubling
+return R  // equals k·G
+```
+
+So: you **don’t** write “$Q = k\cdot G + \dots$”. The **only** formula you need at the top level is $Q = k\cdot G$. The **adds** are the internal group operations used to compute that scalar multiple efficiently.
