@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "spellcheck": "cspell lint 'posts/*.mdx'"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -79,8 +80,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cspell": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "remark-cli": "^12.0.1",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.3",
     "typescript": "^5"

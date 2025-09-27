@@ -1,0 +1,7 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": ["openai", "startup", "saas", "moonshot", "YC", "Altman"],
+  "ignorePaths": ["node_modules", "package-lock.json", "dist"],
+  "dictionaries": ["en_US"]
+}

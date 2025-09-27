@@ -6,7 +6,7 @@ publish: true
 
 Solving memory is arguably the most important problem in getting AI agents to work as well as humans.
 
-By 'solving memory', specifically, I mean developing an efficient and performant way to embue AI agents with cross-session memory that is persistent.
+By 'solving memory', specifically, I mean developing an efficient and performant way to imbue AI agents with cross-session memory that is persistent.
 
 Today, most AI agents don't persist learned attributes or features across user sessions in a way that makes the human-to-agent interaction feel natural.
 
@@ -16,11 +16,11 @@ This might not be a big problem if we had unlimited context windows. One thought
 
 Second, there are a lot of details in a conversation that just aren't important and we likely wouldn't want to carry forward anyways. While our brains aren't perfect, they're quite good at identifying what is important to remember and what isn't.
 
-Intuitively I would describe human memory as a hierarchical strtucture that progressively gets noisier as you go deeper into the structure, and that noise causes you to misremember details or memories altogether. There has been a lot of interesting work done around how traumatic experiences shape memories and how, for example, we have better recall for memories that were shaped in situations with a lot of adrenaline.
+Intuitively I would describe human memory as a hierarchical structure that progressively gets noisier as you go deeper into the structure, and that noise causes you to misremember details or memories altogether. There has been a lot of interesting work done around how traumatic experiences shape memories and how, for example, we have better recall for memories that were shaped in situations with a lot of adrenaline.
 
 To reproduce something like this in an LLM, we would likely need to add some sort of "memory coefficient" for certain memories that, regardless of how far down the structure they are, can be remembered precisely.
 
-Today, in LLMs, we can create crude "memories". One way that I've done this is with a tool call in ChatGPT that says "if the user proviodes an important fact about themselves, save it." Here is what it looks like in code:
+Today, in LLMs, we can create crude "memories". One way that I've done this is with a tool call in ChatGPT that says "if the user provides an important fact about themselves, save it." Here is what it looks like in code:
 
 ```go
 		Tools: []openai.ChatCompletionToolParam{
@@ -59,4 +59,4 @@ I think in an ideal world, the LLM would recursively update a memory module, sim
 
 Alternatively, if it needs to be "part" of the LLM i.e. stored in some subsection of a hidden layer(s) somewhere then we would need to figure out how to recursively update those weights.
 
-Clearly, still a lot of work to be done here but I think folks are waking up to the fact that memory performance (efficiency and accuracy) is increasingly the bottleneck to geting human like behavior out of LLMs.
+Clearly, still a lot of work to be done here but I think folks are waking up to the fact that memory performance (efficiency and accuracy) is increasingly the bottleneck to getting human like behavior out of LLMs.

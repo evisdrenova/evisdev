@@ -87,7 +87,7 @@ However, as I built more projects with it, I started to realize that MCP actuall
 
 Also, remember that you have to pass in all of the tools for the LLM to determine the appropriate one, so with potentially hundreds of tools, you quickly clog up the context window. One thing I tried was to do was filter the tools ahead of time so that the LLM only got the tools that it needed without getting overwhelmed. And this helped in some instances but in order to do it well, you had to tell the user to pick the integration they wanted to use so you could filter to just those tools. You could do this by telling the user to '@' the integration i.e "@linear tell me which tickets are in the todo", but this felt goofy. The LLM _should_ be able to just figure it out.
 
-There were other issues too like authentication, deciding if you want to run the MCP server or use a remote one, and just general LLM accurary issues with picking the wrong tool.
+There were other issues too like authentication, deciding if you want to run the MCP server or use a remote one, and just general LLM accuracy issues with picking the wrong tool.
 
 So while MCP solved the problem of manually having to write and maintain all of these functions, it created the problem of overwhelming the LLM with too many tools.
 
@@ -107,7 +107,7 @@ I actually do think there is a valid use case for browsers but completely replac
 
 Intuitively, I think the answer is likely a new meta-orchestrator framework that is able to operate MCP, browser automations and even create integrations on the fly. The thing is, there are use-cases for each of these integration types that make sense. So it seems unlikely to me that we will find one approach that works best. I mean this is a recurring theme in AI - there are going to be multiple ways to do things and the hard part is figuring out when to use which tool.
 
-I think it's likely that we see small, purpose-built models that can read documentation and call APIs that serve as entry points for other more generic models to use. For example, imagine that you have an agent that you built that is tryng to call a Github API, it might talk to the Github integration agent and say "I need all of the PRs in the last 7 days", and then that Github integration agent figures out how to accomplish that task and performs it better because it's been purpose-built to just handle Github integrations.
+I think it's likely that we see small, purpose-built models that can read documentation and call APIs that serve as entry points for other more generic models to use. For example, imagine that you have an agent that you built that is trying to call a Github API, it might talk to the Github integration agent and say "I need all of the PRs in the last 7 days", and then that Github integration agent figures out how to accomplish that task and performs it better because it's been purpose-built to just handle Github integrations.
 
 It's still early for AI integrations and something totally new might come out of nowhere. With the rate that things are moving at, I wouldn't doubt it!
 
