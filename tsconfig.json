@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     "posts/proactive-agents.mdx",
     "lib/posts.server.ts"
-  ],
+, "posts/llana2port.mdx"  ],
   "exclude": ["node_modules"]
 }
