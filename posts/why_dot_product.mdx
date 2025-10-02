@@ -1,7 +1,11 @@
 ---
 title: "Why do we use dot products in ML"
-date: "2025-10-4"
+date: "2025-10-04"
 publish: false
 ---
 
-Over the past few months, I've worked on a few LLM projects, namely GPT-rs and llama2.rs. These are full re-writes of GPT-2 from Python to Rust and Llama2 from C to rust.
+Over the past few months, I've worked on a few LLM projects, namely GPT-rs and llama2.rs. These are full re-writes of GPT-2 from Python to Rust and Llama2 from C to Rust. At this point, I feel reasonably comfortable with a fairly straightforward transformer architecture and how it works.
+
+But I often find myself asking, _why_ does it work? Why is that matrix multiplying two matrices together is the _right_ operation and how does that lead to a system like ChatGPT giving us a coherent response to our prompts?
+
+I really wanted to deeply build the intuition behind this so I decided to write this blog. It's one thing to implement `matmul` it's another to deeply understand why it works.
