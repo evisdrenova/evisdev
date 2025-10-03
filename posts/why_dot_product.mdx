@@ -1,266 +1,106 @@
 ---
 title: "Why MatMul is the Beating Heart of Transformers"
 date: "2025-10-04"
-publish: false
+publish: true
 ---
 
-Over the past few months, I've worked on a few LLM projects, namely GPT-rs and llama2.rs. These are full re-writes of GPT-2 from Python to Rust and Llama2 from C to Rust. At this point, I feel reasonably comfortable with a fairly straightforward transformer architecture and how it works.
+Over the past few months, I've built a few LLMs from scratch, namely GPT-rs and llama2.rs. These are full re-writes of GPT-2 from Python to Rust and Llama2 from C to Rust. At this point, I feel reasonably comfortable with the transformer architecture and how it works.
 
 But I often find myself asking, _why_ does it work? Why is that matrix multiplying two matrices together is the _right_ operation and how does that lead to a system like ChatGPT giving us a coherent response to our prompts?
 
 It's one thing to implement `matmul` it's another to deeply understand why it works.
 
-I like to start most of my blogs from the beginning and assume the reader doesn't know much and build my way to the intuition. If you already know what `matmul` is then you might want to skip the first 1-2 sections.
+Hopefully this blog helps you to build that intuition.
 
 # What is Matrix Multiplication?
 
-If you've never had the pleasure of taking a linear algebra class then you might have never really encountered matrix operations.
+One of the core operations within the layers of a neural net is matrix multiplication or `matmul` as it's often referred to. Matrix multiplication is a way to linearly combine two vectors in order to create a new vector.
 
-## 1. The Core Intuition: Linear Combinations
+Let's break down exactly what the means.
 
-At its essence, **matrix multiplication** is just a way to combine vectors linearly.
+A **vector** is a direction in space that has a magnitude. We use the bracket notation to represent the vector in the form `[x,y]`. For example, the vector, $v_1$, at `[0,1]` can be drawn on a graph like:
 
-If you have an input vector $x \in \mathbb{R}^d$ and a weight matrix $W \in \mathbb{R}^{d \times k}$, the product $xW$ produces a new vector in $\mathbb{R}^k$.
+![ve](/vec1.png)
 
-- Each coordinate of the output is a **weighted sum of the input features**.
-- Said differently: _matmul lets you learn new “views” of the data by mixing the old features_.
+The **direction** of the vector is the direction of the arrowhead and usually is written as the angle the vector makes with regard to the positive x-axis or a compass direction. Since our vector points straight up, it has a direction of 90 degrees.
 
-💡 **Intuition:** If $x$ is a word embedding (“king”), and $W$ is trained, the output $xW$ can rotate, scale, or stretch that embedding to emphasize semantics the model cares about (“royalty”, “male”, etc.).
+The **magnitude** of the vector is the numerical size or length of the vector. Our vector has a magnitude of one since it starts at `[0,0]` and ends at `[0,1]`.
 
----
+I can then add another vector, $v_2$, here at `[1,0]` shown in orange:
 
-## 2. Geometry: Why Linear Maps Matter
+![ve](/vec2.png)
 
-Every matrix multiplication is a **linear transformation**: it preserves straight lines and the origin.
-
-- Scaling → change magnitude.
-- Rotation → change orientation.
-- Projection → drop dimensions.
-
-In LLMs, this means: “take the input embedding and re-map it into a space where the relationships we want (context, similarity, attention) become easier to see.”
-
-📉 Example: Plot a 2D toy embedding of words _cat, dog, car_. A well-trained $W$ could separate _animals_ vs _vehicles_ just by rotating and scaling.
-
----
-
-## 3. MatMul in Neural Nets: Why Not Something Else?
-
-Suppose instead of matmul, we only used elementwise operations ($\odot$).
-
-- $x \odot w$ scales each input independently — but there’s no mixing of features.
-- You’d never let “feature 3” influence “output dimension 1.”
-
-**MatMul’s power** is cross-talk: every output dimension can use _all_ input features.
-This mixing is why we can approximate arbitrary functions.
-
----
-
-## 4. Attention = MatMul Everywhere
-
-This is where the LLM magic comes in. Attention is **just matmul** three times:
-
-1. $Q = XW_Q$, $K = XW_K$, $V = XW_V$ → project inputs into Query, Key, Value spaces.
-2. Attention weights = $\text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)$ → another matmul.
-3. Weighted sum of values = $\text{softmax}(QK^T)V$ → another matmul.
-
-Why matmul?
-
-- $QK^T$ computes _all pairwise similarities_ between tokens in one shot.
-- Multiplying by $V$ lets us “blend” representations according to those similarities.
-
-⚡ **This is the core of why transformers work.** MatMul lets every token contextually remix information from every other token.
-
----
-
-## 5. Universal Approximation: Layers of MatMul + Nonlinearity
-
-One matmul is just a linear transformation — not enough to model complex functions. But stacking them with nonlinearities (like GELU/ReLU) means:
-
-- Linear → nonlinear → linear → nonlinear …
-- By the **universal approximation theorem**, this is enough to approximate _any_ continuous function.
-
-So: MatMul is the “mixing engine,” nonlinearity is the “curve bender.”
-
----
-
-## 6. Intuition Summary
-
-- MatMul mixes features into new bases (why we can represent abstract meaning).
-- MatMul computes relationships (why attention works).
-- MatMul layers approximate any function (why LLMs scale).
-
-In short: **MatMul is the bridge between raw vectors and emergent meaning.**
-
----
-
-## 7. (Optional) A Worked Toy Example
-
-Take a 3-word toy sequence: ["I", "love", "AI"].
-
-- Map to embeddings $X \in \mathbb{R}^{3 \times d}$.
-- Compute $Q, K, V$ with matmul.
-- Show $QK^T$ → which tokens attend to which.
-- Show weighted sum of $V$.
-
-Walk through the numbers (maybe with $d=2$) so readers see attention literally as matmuls.
-
----
-
-🔥 My suggestion: include little diagrams at each step (2D embeddings rotating, heatmap for $QK^T$, etc).
-
----
-
-Would you like me to **flesh out the toy example with numbers** (so your readers can see how $QK^T$ literally calculates attention)? That could make the intuition really click.
-
-Perfect — let’s do a small, worked-through **toy attention example** with real numbers. That way, in your blog you can walk the reader step by step through how matrix multiplication is the operation that makes attention tick.
-
----
-
-## Toy Example: "I love AI"
-
-Let’s pretend we have a tiny embedding space with dimension $d=2$ (so we can keep the math human-readable). Our input is the sequence:
-$X = \text{["I", "love", "AI"]}$
-
-### Step 1. Embeddings
-
-Assign small vectors to each token:
-
-- "I" → $x_1 = [1, 0]$
-- "love" → $x_2 = [0, 1]$
-- "AI" → $x_3 = [1, 1]$
-
-So $X \in \mathbb{R}^{3 \times 2}$:
+In order to linearly combine these vectors, we simply take the weighted sum of the vectors. We can represent the linear combination of two vectors with the equation:
 
 $$
-X = \begin{bmatrix}
-1 & 0 \\
-0 & 1 \\
-1 & 1
-\end{bmatrix}
+a v_1 + b v_2
 $$
 
----
-
-### Step 2. Project into $Q, K, V$
-
-We pick simple weight matrices (normally learned):
+Where $a$ and $b$ are weights (or scalars) between `[0,1]` that we use to _scale_ the vectors. If we randomly set these weights to $a = 0.5$, $b = 0.8$ and plug them into our equation, we get:
 
 $$
-W_Q = W_K = W_V =
-\begin{bmatrix}
-1 & 0 \\
-0 & 1
-\end{bmatrix}
+a v_1 + b v_2
 $$
 
-So $Q = XW_Q$, $K = XW_K$, $V = XW_V$ → all equal to $X$ in this toy case.
-
----
-
-### Step 3. Compute Attention Scores ($QK^T$)
-
-Now we take all pairwise dot products between tokens:
-
 $$
-QK^T =
-\begin{bmatrix}
-1 & 0 \\
-0 & 1 \\
-1 & 1
-\end{bmatrix}
-\begin{bmatrix}
-1 & 0 & 1 \\
-0 & 1 & 1
-\end{bmatrix}
-=
-\begin{bmatrix}
-1 & 0 & 1 \\
-0 & 1 & 1 \\
-1 & 1 & 2
-\end{bmatrix}
+0.5 \cdot [1,0] + 0.8 \cdot [0,1]
 $$
 
-Interpretation:
-
-- Token "I" has high similarity (1) with itself, and (1) with "AI".
-- "love" has high similarity with itself, and (1) with "AI".
-- "AI" is similar to everyone (1, 1, 2).
-
----
-
-### Step 4. Softmax the Scores
-
-Apply softmax row-wise (pretend temperature = 1):
-
-- For "I": $\text{softmax}([1,0,1]) \approx [0.42, 0.16, 0.42]$
-- For "love": $\text{softmax}([0,1,1]) \approx [0.16, 0.42, 0.42]$
-- For "AI": $\text{softmax}([1,1,2]) \approx [0.21, 0.21, 0.58]$
-
-So attention weights =
+We can now multiply each element in the $v_1$ `[1,0]` vector by $0.5$:
 
 $$
-A =
-\begin{bmatrix}
-0.42 & 0.16 & 0.42 \\
-0.16 & 0.42 & 0.42 \\
-0.21 & 0.21 & 0.58
-\end{bmatrix}
+a \cdot v_1 = 0.5 \cdot [1, 0] = [0.5 \cdot 1, 0.5 \cdot 0] = [0.5, 0]
 $$
 
----
+So we took our original `[1,0]` vector and then multiplied it by the scalar $0.5$ and got `[0.5,0]`. We just shrunk our vector or reduced it's magnitude by 50%!
 
-### Step 5. Weighted Sum of Values
-
-Now we multiply $AV$:
+We can do the same thing for the $v_2$ `[0,1]` vector and get:
 
 $$
-V = X =
-\begin{bmatrix}
-1 & 0 \\
-0 & 1 \\
-1 & 1
-\end{bmatrix}
+a \cdot v_2 = 0.8 \cdot [0, 1] = [0.8 \cdot 0, 0.8 \cdot 1] = [0, 0.8]
 $$
 
-So:
+This time, we only shrunk our vector by 20%.
+
+Lastly, we can add these two vectors by adding the `x` position of each vector and then the `y` position of each vector like this:
 
 $$
-AV =
-\begin{bmatrix}
-0.42 & 0.16 & 0.42 \\
-0.16 & 0.42 & 0.42 \\
-0.21 & 0.21 & 0.58
-\end{bmatrix}
-\begin{bmatrix}
-1 & 0 \\
-0 & 1 \\
-1 & 1
-\end{bmatrix}
-=
-\begin{bmatrix}
-0.84 & 0.58 \\
-0.58 & 0.84 \\
-0.79 & 0.79
-\end{bmatrix}
+\begin{align}
+a v_1 + b v_2 &= [0.5, 0] + [0, 0.8]\\
+&= [0.5 + 0, 0 + 0.8]\\
+&= [0.5, 0.8]
+\end{align}
 $$
 
----
+In case it's not clear, this is what we did:
 
-### Step 6. Interpretation
+![vec](/vecadds.png)
 
-- The output for "I" is $[0.84, 0.58]$ → it has picked up information from "AI" and a little from "love."
-- The output for "love" is $[0.58, 0.84]$ → similar structure, but weighted more toward itself and "AI."
-- The output for "AI" is $[0.79, 0.79]$ → a strong blend of everyone.
+This creates a new vector that we can plot along side the original two vectors:
 
-**And that’s it**: all we did was matrix multiply, but we ended up with each token enriched by context from every other token.
+![vec](/res_vec.png)
 
----
+So we've now taken the weighted sum of the two input vectors, $v_1$ and $v_2$ and created a new vector which is a combination of the two input vectors.
 
-💡 This toy walkthrough could go directly in your blog. It answers your “why matmul?” question by showing that:
+# From Geometry to Meaning
 
-- $QK^T$ is literally _all pairwise similarities in one shot_.
-- Multiplying by $V$ lets us _blend representations_ based on those similarities.
+At first glance, this might seem like simple geometry, and it is! But here's where it gets interesting: what if these vectors don't represent directions in space, but instead represent meaning in some abstract space?
 
----
+In a large language model like ChatGPT, every word is represented as a vector, typically with hundreds or thousands of dimensions instead of just 2. When the model sees the word "king", it's not just storing the letters k-i-n-g, it's storing a vector like [0.23, -0.45, 0.87, ...] that captures the meaning of "king" based on how it's used in language. It learns this meaning as it's being trained on every book, article and piece of data on the internet and ultiamtely spits out a vector like [0.23, -0.45, 0.87, ...].
 
-👉 Do you want me to also draft a **visual (matrix heatmap + arrows)** version of this so your readers see the numbers turning into contextualized vectors step by step?
+Here's the key insight: just like we combined our simple 2D vectors to create a new vector, neural networks combine word vectors to create new representations that capture more complex meanings.
+
+## A Concrete Example
+
+Let's say we have vectors for:
+
+"king" → [0.9, 0.1] (masculine, royalty)
+"woman" → [0.1, 0.9] (feminine, person)
+
+If we do the operation: king - man + woman, we're doing vector arithmetic that might give us something close to the vector for "queen"! This is because we're:
+
+Taking the "royalty" concept from "king"
+Removing the "masculine" aspect
+Adding the "feminine" aspect
+
+This is exactly the same weighted sum operation we just did, except now it's operating on semantic meaning rather than spatial directions.
