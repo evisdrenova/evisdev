@@ -1,0 +1,141 @@
+---
+title: "From matmul to ChatGPT"
+date: "2025-10-04"
+publish: false
+---
+
+Over the past few months, I've built two LLMs from scratch, namely GPT-rs and llama2.rs. These are full re-writes of GPT-2 from Python to Rust and Llama2 from C to Rust. At this point, I feel reasonably comfortable with the transformer architecture and how it works.
+
+But I often find myself asking, _why_ does it work? Why is that matrix multiplying two matrices together is the _right_ operation and how does that lead to a system like ChatGPT giving us a coherent response to our prompts?
+
+It's one thing to implement `matmul` it's another to deeply understand why it works.
+
+Like with many of my blogs, I start at the beginning and then build to the intuition. We'll first go through the basics of matrix multiplcation and then cover neural nets and then lastly bring them together.
+
+Hopefully you find this interesting!
+
+# Let's start with the basics
+
+One of the core operations within the layers of a neural net is matrix multiplication or `matmul` as it's often referred to. This `matmul` operation happens trillions of times within large langauge models (LLMs) like ChatGPT and is one the main reasons why ChatGPT is able to provide coherent (usually!) responses. Let's start by understanding matrix multiplication.
+
+## Vector Multiplication
+
+Matrix multiplication is a way to linearly combine two vectors in order to create a new vector that is the weighted sum of the two component vectors.
+
+Let's break down exactly what the means.
+
+A **vector** is a direction in space that has a magnitude. We use bracket notation to represent the vector in the form `[x,y]`, where `x` and `y` are dimensions in space. For example, the vector, $v_1$, at `[0,1]` can be drawn on a coordinate plane like:
+
+![ve](/whymatmul/vec1.png)
+
+The vector starts at the origin point of `[0,0]` and goes to `[0,1]`. Since it only has two dimensions (`x` and `y`), we can easily draw it on a 2-dimensional coordinate plane. However, in machine learning, we often use vectors with hundreds or thousands of dimensions. As humans, we can't visualize this many dimensions but computers can easily work with them.
+
+The **direction** of the vector is the direction of the arrowhead and usually is written as the angle the vector makes with regard to the positive x-axis or a compass direction. Since our vector points straight up, it has a direction of 90 degrees.
+
+The **magnitude** of the vector is the numerical size or length of the vector. Our vector has a magnitude of `1` since it starts at `[0,0]` and ends at `[0,1]`.
+
+I can then add another vector, $v_2$, here at `[1,0]` shown in orange:
+
+![ve](/whymatmul/vec2.png)
+
+These two vectors, `[0,1]` and `[1,0]`, are also called **basis vectors**. Why are they called basis vectors? Because every vector ([x,y]) can be built as:
+
+$[x,y] = x \cdot [1,0] + y \cdot [0,1]$
+
+So if we want to linearly combine these vectors, we simply take the weighted sum of the vectors, which we can represent using the equation:
+
+$$
+a v_1 + b v_2
+$$
+
+Where $a$ and $b$ is a **weight vector** that we use to _scale_ the basis vectors. If we randomly set these weights to $a = 0.5$, $b = 0.8$ and plug them into our equation, we get:
+
+$$
+a v_1 + b v_2
+$$
+
+$$
+0.5 \cdot [1,0] + 0.8 \cdot [0,1]
+$$
+
+We can now multiply each element in the $v_1$ `[1,0]` vector by $0.5$:
+
+$$
+a \cdot v_1 = 0.5 \cdot [1, 0] = [0.5 \cdot 1, 0.5 \cdot 0] = [0.5, 0]
+$$
+
+So we took our original `[1,0]` basis vector and then multiplied it by the $x$ element in our weight vector $0.5$ and got `[0.5,0]`. We just shrunk our vector or reduced it's magnitude by 50%! This is the heart of linear algebra. It's about stretching, scaling and rotating vectors in some dimensional space.
+
+We can also do the same thing for the $v_2$ `[0,1]` vector and get:
+
+$$
+a \cdot v_2 = 0.8 \cdot [0, 1] = [0.8 \cdot 0, 0.8 \cdot 1] = [0, 0.8]
+$$
+
+This time, we only shrunk our vector by 20%.
+
+Lastly, we can add these two vectors by adding the `x` position of each vector and then the `y` position of each vector like this:
+
+$$
+\begin{align}
+a v_1 + b v_2 &= [0.5, 0] + [0, 0.8]\\
+&= [0.5 + 0, 0 + 0.8]\\
+&= [0.5, 0.8]
+\end{align}
+$$
+
+Visually, this is what we did:
+
+![vec](/whymatmul/vecadds.png)
+
+This creates a new vector that we can plot along side the original two basis vectors:
+
+![vec](/whymatmul/res_vec.png)
+
+So we've now taken the weighted sum of the two input vectors, $v_1$ and $v_2$ and created a new vector which is a combination of the two input vectors.
+
+But what does this actually mean?
+
+# From Vectors to Matrices
+
+How do we move from vectors to matrices? Matrices are just a collection of column transformed basis vectors. For example, let's look at this matrix:
+
+$$
+M =
+\begin{bmatrix}
+2 & 1 \\
+1 & 3
+\end{bmatrix}
+$$
+
+Think of this as saying:
+
+- The **first column** ([2,1]) tells us where the (x)-axis “basis vector” ([1,0]) gets mapped in space.
+- The **second column** ([-1,3]) tells us where the (y)-axis “basis vector” ([0,1]) gets mapped in space.
+
+Visually, this looks like:
+
+Now, if you multiply this matrix by a vector $\mathbf{v} = [x,y]$:
+
+$$
+M \cdot \mathbf{v} =
+x \cdot [2,1] + y \cdot [-1,3].
+$$
+
+That’s just a linear combination again — but now it’s done automatically with the matrix. Let's look at it visually:
+
+## Geometric Intuition
+
+- If $M$ is diagonal (like $\begin{bmatrix} 2 & 0 \\ 0 & 3 \end{bmatrix}$), it just **scales** the $x$ and $y$ axes differently.
+- If $M$ contains off-diagonal elements, it can **shear** or **rotate** space.
+- A rotation matrix like
+  $$
+  R(\theta) =
+  \begin{bmatrix}
+  \cos \theta & -\sin \theta \\
+  \sin \theta & \cos \theta
+  \end{bmatrix}
+  $$
+  rotates every vector by an angle $\theta$.
+
+So a `matmul` is essentially: _"take your input vector, express it as a combination of basis vectors, and then remap those bases into new directions as dictated by the matrix."_
