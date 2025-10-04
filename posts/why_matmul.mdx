@@ -26,13 +26,17 @@ A **vector** is a direction in space that has a magnitude. We use bracket notati
 
 ![ve](/whymatmul/vec1.png)
 
-**Note:** Throughout this post, we'll write vectors as `[x, y]` for readability, but they formally represent column vectors $\begin{bmatrix} x \\ y \end{bmatrix}$.
+<Note>
+
+Throughout this post, we'll write vectors as `[x, y]` for readability, but they formally represent column vectors $\begin{bmatrix} x \\ y \end{bmatrix}$.
+
+</Note>
 
 The vector starts at the origin point of `[0,0]` and goes to `[0,1]`. Since it only has two dimensions (`x` and `y`), we can easily draw it on a 2-dimensional coordinate plane. However, in machine learning, we often use vectors with hundreds or thousands of dimensions. As humans, we can't visualize this many dimensions but computers can easily work with them.
 
 <Note>
 
-**Note:** Why so many dimensions? Because language is complex! A word might need dimensions for:
+Why so many dimensions? Because language is complex! A word might need dimensions for:
 
 - Sentiment (positive/negative)
 - Formality (casual/formal)
@@ -170,7 +174,7 @@ There are a few vectors here so let's go through them:
 1. The solid blue vector is the input vector of $[2,3]$. We can graph this in our coordinate plane starting from the origin $[0,0]$ and extending to $[2,3]$.
 2. The solid green vector is the 1st column of the matrix $M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}$, which is $\begin{bmatrix} 2 \\ 1 \end{bmatrix}$
 3. The dashed green vector is the 1st element of the input vector multiplied by the 1st column of the matrix, $2 \cdot [2,1] = [4,2]$
-4. The solid orange vector is the 2st column of the matrix $M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}$, which is $\begin{bmatrix} 1 \\ 3 \end{bmatrix}$53.
+4. The solid orange vector is the 2st column of the matrix $M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}$, which is $\begin{bmatrix} 1 \\ 3 \end{bmatrix}$.
 5. The dashed orange vector is the 2st element of the input vector multiplied by the 2st column of the matrix, $3 \cdot [1,3] = [3,9]$
 6. The solid red vector is resulting vector when we add the dashed orange vector and the dashed green vector.
 
@@ -192,7 +196,7 @@ You're not keeping the columns separate, you're **combining** them according to 
 
 So a `matmul` is essentially: _"take your input vector, express it as a combination of basis vectors, and then remap those bases into new directions as dictated by the matrix."_
 
-# From Geometry to Meaning
+# From Matrices to Meaning
 
 At first glance, this matrix multiplication might seem like simple geometry. We're scaling and stretching and, in some cases, rotating vectors but how does this eventually get us answers in ChatGPT? Here's where it gets interesting: what if these vectors don't represent directions in space, but instead represent meaning in some abstract space?
 
@@ -200,25 +204,42 @@ In a large language model like ChatGPT, every word is represented as a vector, t
 
 But how does it capture the meaning of words like "king"? I thought you'd never ask. Let's look at a simple example.
 
-Imagine we have simple 2D "word vectors" where each element in the vector represents some characteristic of the word. For example:
+Imagine we have simple 2D "word vectors" where:
 
-- "king" → `[0.9, 0.1]` (high masculinity, low femininity)
-- "queen" → `[0.9, 0.9]` (high masculinity/royalty, high femininity)
-- "man" → `[0.8, 0.0]` (masculine, neutral)
-- "woman" → `[0.0, 0.9]` (neutral, feminine)
+- The **first dimension** represents "royalty" (0 = common, 1 = royal)
+- The **second dimension** represents "femininity" (0 = masculine, 1 = feminine)
 
-Now if we do the vector arithmetic: `king - man + woman`:
+For example:
+
+- "king" → `[0.9, 0.1]` (high royalty, low femininity)
+- "queen" → `[0.9, 0.9]` (high royalty, high femininity)
+- "man" → `[0.1, 0.1]` (low royalty, low femininity)
+- "woman" → `[0.1, 0.9]` (low royalty, high femininity)
+
+Now if we do the some simple vector arithmetic: `king - man + woman`:
 
 $$
-[0.9, 0.1] - [0.8, 0.0] + [0.0, 0.9] = [0.1, 1.0]
+[0.9, 0.1] - [0.0, 0.1] + [0.0, 0.9] = [0.9, 0.9]
 $$
 
-This result is close to "queen"! We've done the same weighted sum operation,
-except now it's operating on **semantic meaning** rather than spatial directions.
+This result is `[0.9, 0.9]` which matches "queen"!
 
-Let's jump into neural networks.
+**Why does this work?** We:
 
-## Neural Net Basics
+1. Started with "king" (royal + masculine)
+2. Subtracted "man" (removing the masculine aspect)
+3. Added "woman" (adding the feminine aspect)
+4. Ended up with a royal + feminine concept = "queen"
+
+We've done the same weighted sum operation, except now it's operating on **semantic meaning** rather than spatial directions. We've taken our first step from matrix multiplication to meaning.
+
+As we mentioned above, LLMs like ChatGPT have billions (maybe trillions!) of weights that get refined during training. Through matrix multiplications, the model discovers that words used in similar contexts should have similar vectors.
+
+So how does a neural network actually learn these meaningful representations?
+
+This is where neural networks come into play.
+
+# Learning Meaning
 
 Let's look at a simple neural net to build the intuition.
 
