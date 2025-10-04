@@ -28,6 +28,8 @@ A **vector** is a direction in space that has a magnitude. We use bracket notati
 
 ![ve](/whymatmul/vec1.png)
 
+**Note:** Throughout this post, we'll write vectors as `[x, y]` for readability, but they formally represent column vectors $\begin{bmatrix} x \\ y \end{bmatrix}$.
+
 The vector starts at the origin point of `[0,0]` and goes to `[0,1]`. Since it only has two dimensions (`x` and `y`), we can easily draw it on a 2-dimensional coordinate plane. However, in machine learning, we often use vectors with hundreds or thousands of dimensions. As humans, we can't visualize this many dimensions but computers can easily work with them.
 
 The **direction** of the vector is the direction of the arrowhead and usually is written as the angle the vector makes with regard to the positive x-axis or a compass direction. Since our vector points straight up, it has a direction of 90 degrees.
@@ -115,27 +117,64 @@ Think of this as saying:
 
 Visually, this looks like:
 
-Now, if you multiply this matrix by a vector $\mathbf{v} = [x,y]$:
+![vec](/whymatmul/matrix1.png)
+
+Now we can clearly see that the original x-axis basis vector,`[1,0]`, has been transformed to `[2,1]` and the original y-axis basis vector, `[0,1]`, has been transformed to `[1,3]`. The matrix stores the transformed basis vectors which exactly matches our definition of a matrix from above!
+
+Lastly, if you wanted to multiply this matrix by an input vector, $\mathbf{v} = [x,y] = [2,3]$, you can just do the same thing we did above with the input vectors by taking each column of the matrix and multiplying it by the element in the same index in the vector. Let's walk through it step-by-step:
 
 $$
-M \cdot \mathbf{v} =
-x \cdot [2,1] + y \cdot [-1,3].
+M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}, \quad \mathbf{v} = \begin{bmatrix} 2 \\ 3 \end{bmatrix}
 $$
 
-That’s just a linear combination again — but now it’s done automatically with the matrix. Let's look at it visually:
+We multiply each **column** of $M$ by the corresponding element in $\mathbf{v}$:
 
-## Geometric Intuition
+$$
+M \cdot \mathbf{v} = 2 \cdot \begin{bmatrix} 2 \\ 1 \end{bmatrix} + 3 \cdot \begin{bmatrix} 1 \\ 3 \end{bmatrix}
+$$
 
-- If $M$ is diagonal (like $\begin{bmatrix} 2 & 0 \\ 0 & 3 \end{bmatrix}$), it just **scales** the $x$ and $y$ axes differently.
-- If $M$ contains off-diagonal elements, it can **shear** or **rotate** space.
-- A rotation matrix like
-  $$
-  R(\theta) =
-  \begin{bmatrix}
-  \cos \theta & -\sin \theta \\
-  \sin \theta & \cos \theta
-  \end{bmatrix}
-  $$
-  rotates every vector by an angle $\theta$.
+**Step 1: Scale the first column by 2**
+
+$$
+2 \cdot \begin{bmatrix} 2 \\ 1 \end{bmatrix} = \begin{bmatrix} 4 \\ 2 \end{bmatrix}
+$$
+
+**Step 2: Scale the second column by 3**
+
+$$
+3 \cdot \begin{bmatrix} 1 \\ 3 \end{bmatrix} = \begin{bmatrix} 3 \\ 9 \end{bmatrix}
+$$
+
+**Step 3: Add them together to get the result vector**
+
+$$
+\begin{bmatrix} 4 \\ 2 \end{bmatrix} + \begin{bmatrix} 3 \\ 9 \end{bmatrix} = \begin{bmatrix} 7 \\ 11 \end{bmatrix}
+$$
+
+**Final Answer**
+
+$$
+M \cdot \mathbf{v} = \begin{bmatrix} 7 \\ 11 \end{bmatrix}
+$$
+
+And there we have matrix multiplication!
+
+But wait! Why do we add the two vectors together at the end? I thought the matrix was a collection of two vectors, so wouldn't we expect to have two vectors in the final result?
+
+This is an excellent question and gets at the heart of matrix multiplication.
+
+## Why One Column, Not Two?
+
+When you multiply a **matrix** by a **vector** (like we did above), you get a **vector** (not a matrix).
+
+You're not combining two vectors to make a matrix, you're using the input vector to tell you "how much" of each column, in the matrix, to take, and then you sum them up into a single result vector.
+
+Think of it this way:
+
+- The matrix $M$ has two "basis directions" (its columns)
+- The input vector $[2, 3]$ says "give me **2 units** of the first direction and **3 units** of the second direction"
+- You add those scaled directions together to get the result vector
+
+You're not keeping the columns separate, you're **combining** them according to the weights in your input vector!
 
 So a `matmul` is essentially: _"take your input vector, express it as a combination of basis vectors, and then remap those bases into new directions as dictated by the matrix."_
