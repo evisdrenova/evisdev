@@ -112,7 +112,7 @@ Now we can clearly see that the original x-axis basis vector,`[1,0]`, has been t
 Lastly, if you wanted to multiply this matrix by an input vector, $\mathbf{v} = [x,y] = [2,3]$, you can just do the same thing we did above with the input vectors by taking each column of the matrix and multiplying it by the element in the same index in the vector. Let's walk through it step-by-step:
 
 $$
-M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}, \quad \mathbf{v} = \begin{bmatrix} 2 \\ 3 \end{bmatrix}
+M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}, \quad \mathbf{v} = [2,3]
 $$
 
 We multiply each **column** of $M$ by the corresponding element in $\mathbf{v}$:
@@ -145,13 +145,24 @@ $$
 M \cdot \mathbf{v} = \begin{bmatrix} 7 \\ 11 \end{bmatrix}
 $$
 
-And there we have matrix multiplication!
+And there we have matrix multiplication! Let's look at this visually:
+
+![vec](/whymatmul/mm.png)
+
+There are a few vectors here so let's go through them:
+
+1. The solid blue vector is the input vector of $[2,3]$. We can graph this in our coordinate plane starting from the origin $[0,0]$ and extending to $[2,3]$.
+2. The solid green vector is the 1st column of the matrix $M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}$, which is $\begin{bmatrix} 2 \\ 1 \end{bmatrix}$
+3. The dashed green vector is the 1st element of the input vector multiplied by the 1st column of the matrix, $2 \cdot [2,1] = [4,2]$
+4. The solid orange vector is the 2st column of the matrix $M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}$, which is $\begin{bmatrix} 1 \\ 3 \end{bmatrix}$53.
+5. The dashed orange vector is the 2st element of the input vector multiplied by the 2st column of the matrix, $3 \cdot [1,3] = [3,9]$
+6. The solid red vector is resulting vector when we add the dashed orange vector and the dashed green vector.
 
 But wait! Why do we add the two vectors together at the end? I thought the matrix was a collection of two vectors, so wouldn't we expect to have two vectors in the final result?
 
 This is an excellent question and gets at the heart of matrix multiplication.
 
-When you multiply a **matrix** by a **vector** (like we did above), you get a **vector** (not a matrix).
+When you multiply a **matrix** by a **vector**, you get a **vector**.
 
 You're not combining two vectors to make a matrix, you're using the input vector to tell you "how much" of each column, in the matrix, to take, and then you sum them up into a single result vector.
 
@@ -171,7 +182,23 @@ At first glance, this matrix multiplication might seem like simple geometry. We'
 
 In a large language model like ChatGPT, every word is represented as a vector, typically with hundreds or thousands of dimensions instead of just 2 that we saw above. When the model sees the word "king", it's not just storing the letters k-i-n-g, it's storing a vector like `[0.23, -0.45, 0.87, ...]` that captures the meaning of "king" based on how it's used in language. It learns this meaning as it's being trained on every book, article and piece of data on the internet and at the end of that training spits out a vector like `[0.23, -0.45, 0.87, ...]`.
 
-But how does it capture the meaning of words like "king"? I thought you'd never ask.
+But how does it capture the meaning of words like "king"? I thought you'd never ask. Let's look at a simple example.
+
+Imagine we have simple 2D "word vectors":
+
+- "king" → `[0.9, 0.1]` (high masculinity, low femininity)
+- "queen" → `[0.9, 0.9]` (high masculinity/royalty, high femininity)
+- "man" → `[0.8, 0.0]` (masculine, neutral)
+- "woman" → `[0.0, 0.9]` (neutral, feminine)
+
+Now if we do the vector arithmetic: `king - man + woman`:
+
+$$
+[0.9, 0.1] - [0.8, 0.0] + [0.0, 0.9] = [0.1, 1.0]
+$$
+
+This result is close to "queen"! We've done the same weighted sum operation,
+except now it's operating on **semantic meaning** rather than spatial directions.
 
 Let's jump into neural networks.
 
