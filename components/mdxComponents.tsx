@@ -1,7 +1,6 @@
-// src/mdx-components.tsx
 import type { MDXComponents } from "mdx/types";
 import Image from "next/image";
-
+import Note from "@/components/Note"; // Add this import
 /**
  * A plain object – **no hooks inside** – that lists all
  * component overrides you want MDX to use.
@@ -24,27 +23,10 @@ export const mdxComponents: MDXComponents = {
     />
   ),
   p: (props) => (
-    <p
-      {...props}
-      className="mb-4 leading-relaxed whitespace-pre-wrap"
-    />
+    <p {...props} className="mb-4 leading-relaxed whitespace-pre-wrap" />
   ),
-  ul: (props) => (
-    <ul
-      {...props}
-      className="list-disc ml-6 mb-4 space-y-2"
-    />
-  ),
-  ol: (props) => (
-    <ol
-      {...props}
-      className="list-decimal ml-6 mb-4 space-y-2"
-    />
-  ),
-  li: (props) => (
-    <li
-      {...props}
-      className="mb-2 leading-relaxed"
-    />
-  ),
+  ul: (props) => <ul {...props} className="list-disc ml-6 mb-4 space-y-2" />,
+  ol: (props) => <ol {...props} className="list-decimal ml-6 mb-4 space-y-2" />,
+  li: (props) => <li {...props} className="mb-2 leading-relaxed" />,
+  Note,
 };

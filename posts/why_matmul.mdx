@@ -4,6 +4,8 @@ date: "2025-10-04"
 publish: false
 ---
 
+import Note from "../components/Note";
+
 Over the past few months, I've built two LLMs from scratch, namely GPT-rs and llama2.rs. These are full re-writes of GPT-2 from Python to Rust and Llama2 from C to Rust. At this point, I feel reasonably comfortable with the transformer architecture and how it works.
 
 One of the core operations within the layers of a neural net is matrix multiplication or `matmul` as it's often referred to. This `matmul` operation happens trillions of times within large langauge models (LLMs) like ChatGPT and is one the main reasons why ChatGPT is able to provide coherent (usually!) responses.
@@ -27,6 +29,20 @@ A **vector** is a direction in space that has a magnitude. We use bracket notati
 **Note:** Throughout this post, we'll write vectors as `[x, y]` for readability, but they formally represent column vectors $\begin{bmatrix} x \\ y \end{bmatrix}$.
 
 The vector starts at the origin point of `[0,0]` and goes to `[0,1]`. Since it only has two dimensions (`x` and `y`), we can easily draw it on a 2-dimensional coordinate plane. However, in machine learning, we often use vectors with hundreds or thousands of dimensions. As humans, we can't visualize this many dimensions but computers can easily work with them.
+
+<Note>
+
+**Note:** Why so many dimensions? Because language is complex! A word might need dimensions for:
+
+- Sentiment (positive/negative)
+- Formality (casual/formal)
+- Tense (past/present/future)
+- Category (animal/object/action)
+- And hundreds more nuanced aspects of meaning
+
+This is one of the key parameters that engineers tune when building models. Too many dimensions and the model becomes slow and prone to overfitting. Too few dimensions and it can't capture language's complexity. Modern LLMs typically use between 768 and 4096 dimensions per word.
+
+</Note>
 
 The **direction** of the vector is the direction of the arrowhead and usually is written as the angle the vector makes with regard to the positive x-axis or a compass direction. Since our vector points straight up, it has a direction of 90 degrees.
 
@@ -178,13 +194,13 @@ So a `matmul` is essentially: _"take your input vector, express it as a combinat
 
 # From Geometry to Meaning
 
-At first glance, this matrix multiplication might seem like simple geometry. We're scaling and stretching and in some cases rotating vectors but how does this get us answers in ChatGPT? Here's where it gets interesting: what if these vectors don't represent directions in space, but instead represent meaning in some abstract space?
+At first glance, this matrix multiplication might seem like simple geometry. We're scaling and stretching and, in some cases, rotating vectors but how does this eventually get us answers in ChatGPT? Here's where it gets interesting: what if these vectors don't represent directions in space, but instead represent meaning in some abstract space?
 
 In a large language model like ChatGPT, every word is represented as a vector, typically with hundreds or thousands of dimensions instead of just 2 that we saw above. When the model sees the word "king", it's not just storing the letters k-i-n-g, it's storing a vector like `[0.23, -0.45, 0.87, ...]` that captures the meaning of "king" based on how it's used in language. It learns this meaning as it's being trained on every book, article and piece of data on the internet and at the end of that training spits out a vector like `[0.23, -0.45, 0.87, ...]`.
 
 But how does it capture the meaning of words like "king"? I thought you'd never ask. Let's look at a simple example.
 
-Imagine we have simple 2D "word vectors":
+Imagine we have simple 2D "word vectors" where each element in the vector represents some characteristic of the word. For example:
 
 - "king" → `[0.9, 0.1]` (high masculinity, low femininity)
 - "queen" → `[0.9, 0.9]` (high masculinity/royalty, high femininity)
