@@ -6,39 +6,35 @@ publish: false
 
 import Note from "../components/Note";
 
-Over the past few months, I've built two LLMs from scratch, namely GPT-rs and llama2.rs. These are full re-writes of GPT-2 from Python to Rust and Llama2 from C to Rust. At this point, I feel reasonably comfortable with the transformer architecture and how it works.
+Over the past few months, I've built two LLMs from scratch, namely GPT-rs and llama2.rs. At this point, I feel reasonably comfortable with the transformer architecture and how it works.
 
 One of the core operations within the layers of a neural net is matrix multiplication or `matmul` as it's often referred to. This `matmul` operation happens trillions of times within large langauge models (LLMs) like ChatGPT and is one the main reasons why ChatGPT is able to provide coherent (usually!) responses.
 
-But I often find myself asking, _how_ does multiplying two matrices together lead to a system like ChatGPT giving us a coherent response to our prompts?
+But I often find myself asking, _how_ and _why_ does multiplying matrices trillions of times lead to ChatGPT giving us a coherent response to our prompts?
 
 It's one thing to implement `matmul` it's another to deeply understand why it works.
 
-Like with many of my blogs, I start at the beginning and then build to the intuition.
-
-Let's dive in .
+Let's start at the beginning and build our way to the intuition.
 
 # Vector Multiplication
 
-Matrix multiplication is a way to linearly combine two vectors in order to create a new vector that is the weighted sum of the two component vectors.
-
-Let's break down exactly what that means.
-
-A **vector** is a direction in space that has a magnitude. We use bracket notation to represent the vector in the form `[x,y]`, where `x` and `y` are dimensions in space. For example, the vector, $v_1$, at `[0,1]` can be drawn on a coordinate plane like:
-
-![ve](/whymatmul/vec1.png)
+The most fundamental component of matrix multiplication is the **vector**. A **vector** is a direction in space that has a magnitude. We use bracket notation to represent the vector in the form `[x,y]`, where `x` and `y` are dimensions in space.
 
 <Note>
 
-Throughout this post, we'll write vectors as `[x, y]` for readability, but they formally represent column vectors $\begin{bmatrix} x \\ y \end{bmatrix}$.
+Throughout this post, I write vectors as `[x, y]` for readability, but they formally represent column vectors $\begin{bmatrix} x \\ y \end{bmatrix}$.
 
 </Note>
+
+For example, we can draw the vector, $v_1$, at `[0,1]` on a coordinate plane:
+
+![ve](/whymatmul/vec1.png)
 
 The vector starts at the origin point of `[0,0]` and goes to `[0,1]`. Since it only has two dimensions (`x` and `y`), we can easily draw it on a 2-dimensional coordinate plane. However, in machine learning, we often use vectors with hundreds or thousands of dimensions. As humans, we can't visualize this many dimensions but computers can easily work with them.
 
 <Note>
 
-Why so many dimensions? Because language is complex! A word might need dimensions for:
+Why do we use so many dimensions? Because language is complex! Every dimension can represent a "feature" of a word. So a word might need dimensions for:
 
 - Sentiment (positive/negative)
 - Formality (casual/formal)
@@ -50,21 +46,21 @@ This is one of the key parameters that engineers tune when building models. Too 
 
 </Note>
 
-The **direction** of the vector is the direction of the arrowhead and usually is written as the angle the vector makes with regard to the positive x-axis or a compass direction. Since our vector points straight up, it has a direction of 90 degrees.
+The **direction** of the vector is the direction of the arrowhead and usually is written as the angle the vector makes with regard to the positive x-axis or a compass direction. Since our vector points straight up, it has a direction of 90 degrees relative to the x-axis.
 
 The **magnitude** of the vector is the numerical size or length of the vector. Our vector has a magnitude of `1` since it starts at `[0,0]` and ends at `[0,1]`.
 
-I can then add another vector, $v_2$, here at `[1,0]` shown in orange:
+I can add another vector, $v_2$, here at `[1,0]` shown in orange:
 
 ![ve](/whymatmul/vec2.png)
 
-These two vectors, `[0,1]` and `[1,0]`, are also called **basis vectors**. So if we want to linearly combine these vectors, we simply take the weighted sum of the vectors, which we can represent using the equation:
+These two vectors, `[0,1]` and `[1,0]`, are also called **basis vectors**. So if we want to combine these vectors, we take the weighted sum of the vectors, which we can represent using the equation:
 
 $$
 a v_1 + b v_2
 $$
 
-Where $a$ and $b$ are weights (scalars) or $[a,b]$ is a **weight vector**. If we randomly set these weights to $a = 0.5$, $b = 0.8$ and plug them into our equation, we get:
+Where $a$ and $b$ are weights or $[a,b]$ is a **weight vector** (we'll see an example of this below). If we randomly set these weights to $a = 0.5$, $b = 0.8$ and plug them into our equation, we get:
 
 $$
 a v_1 + b v_2
@@ -74,13 +70,13 @@ $$
 0.5 \cdot [0,1] + 0.8 \cdot [1,0]
 $$
 
-We can now multiply each element in the $v_1$ `[0,1]` vector by $0.5$:
+We can now multiply each element in the $v_1$ vector by $0.5$:
 
 $$
 a \cdot v_1 = 0.5 \cdot [0, 1] = [0.5 \cdot 0, 0.5 \cdot 1] = [0, 0.5]
 $$
 
-So we took our original `[0,1]` basis vector and then multiplied it by the $x$ element in our weight vector $0.5$ and got `[0,0.5]`. We just shrunk our vector or reduced it's magnitude by 50%! This is the heart of linear algebra. It's about stretching, scaling and rotating vectors in some dimensional space.
+So we took our original `[0,1]` basis vector and then multiplied it by the $x$ element in our weight vector and got `[0,0.5]`. We just shrunk our vector or, more precisely, reduced it's magnitude by 50%! This is the heart of linear algebra. It's about stretching, scaling and rotating vectors in some dimensional space.
 
 We can also do the same thing for the $v_2$ `[1,0]` vector and get:
 
@@ -104,13 +100,13 @@ This creates a new vector that we can plot along side the original two basis vec
 
 ![vec](/whymatmul/res_vec.png)
 
-So we've now taken the weighted sum of the two input vectors, $v_1$ and $v_2$ and created a new vector which is a combination of the two input vectors.
+So we've now taken the weighted sum of the two input vectors, $v_1$ and $v_2$ and created a new vector which is the linear combination of the two input vectors.
 
 But what does this actually mean? How do we move from vectors to matrices?
 
 # From Vectors to Matrices
 
-Matrices are just a collection of column transformed basis vectors. For example, let's look at this matrix:
+Matrices are collections of basis vectors (as columns) that have been transformed by some weights. For example, if we take our basis vectors from above,`[0,1]` and `[1,0]`, we can transform them with:
 
 $$
 M =
@@ -120,18 +116,26 @@ M =
 \end{bmatrix}
 $$
 
-Think of this as saying:
+This tells us that:
 
-- The **first column** ([2,1]) tells us where the (x)-axis “basis vector” ([1,0]) gets mapped in space.
-- The **second column** ([1,3]) tells us where the (y)-axis “basis vector” ([0,1]) gets mapped in space.
+- The **x-axis basis vector** `[1,0]` is mapped to `[2,1]`.
+- The **y-axis basis vector** `[0,1]` is mapped to `[1,3]`.
 
-Visually, this looks like:
+Visually, the transformation looks like:
 
 ![vec](/whymatmul/matrix1.png)
 
-Now we can clearly see that the original x-axis basis vector,`[1,0]`, has been transformed to `[2,1]` and the original y-axis basis vector, `[0,1]`, has been transformed to `[1,3]`. The matrix stores the transformed basis vectors which exactly matches our definition of a matrix from above!
+An important point here: the vectors themselves aren't actually moving. The original coordinate grid gets stretched and rotated so that the new “x-axis” now points toward `[2,1]`, and the new “y-axis” points toward `[1,3]`. The actual _coordinate space_ that the vectors are in is stretching and rotating which causes the vectors to stretch and rotate as well.
 
-Lastly, if you wanted to multiply this matrix by an input vector, $\mathbf{v} = [x,y] = [2,3]$, you can just do the same thing we did above with the input vectors by taking each column of the matrix and multiplying it by the element in the same index in the vector. Let's walk through it step-by-step:
+Now, when we multiply this matrix by a vector ( v = [x, y] ), we’re expressing ( v ) in this new basis:
+
+$M \cdot v = x \cdot [2,1] + y \cdot [1,3]$
+
+So if ( v = [2, 3] ), then:
+
+$M \cdot v = 2[2,1] + 3[1,3] = [7,11]$
+
+Now, if we wanted to multiply this matrix by an input vector, $\mathbf{v} = [x,y] = [2,3]$, we can just take each column of the matrix and multiply it by the element in the same index in the vector. Let's walk through it step-by-step:
 
 $$
 M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}, \quad \mathbf{v} = [2,3]
@@ -190,13 +194,81 @@ You're not combining two vectors to make a matrix, you're using the input vector
 
 Think of it this way:
 
-- The matrix $M$ has two "basis directions" (its columns)s
+- The matrix $M$ has two "basis directions" (its columns)
 - The input vector $[2, 3]$ says "give me **2 units** of the first direction and **3 units** of the second direction"
 - You add those scaled directions together to get the result vector
 
 You're not keeping the columns separate, you're **combining** them according to the weights in your input vector!
 
+This operation is also called the **Dot Product**. I
+
 So a `matmul` is essentially: _"take your input vector, express it as a combination of basis vectors, and then remap those bases into new directions as dictated by the matrix."_
+
+What you end up getting is an output that is a weighted combination of the inputs.
+
+# Multiplying Matrices
+
+We learned how to multiply a matrix by a vector above
+
+When you perform matrix multiplication, you’re essentially doing **a lot of dot products**.
+
+For example:
+
+$$
+[
+A =
+\begin{bmatrix}
+a_{11} & a_{12} \
+a_{21} & a_{22}
+\end{bmatrix}, \quad
+B =
+\begin{bmatrix}
+b_{11} & b_{12} \
+b_{21} & b_{22}
+\end{bmatrix}
+]
+$$
+
+Then:
+
+$$
+[
+A \times B =
+\begin{bmatrix}
+a_{11}b_{11} + a_{12}b_{21} & a_{11}b_{12} + a_{12}b_{22} \
+a_{21}b_{11} + a_{22}b_{21} & a_{21}b_{12} + a_{22}b_{22}
+\end{bmatrix}
+]
+$$
+
+Each entry in the output matrix is a **dot product** between:
+
+- a **row** of the first matrix, and
+- a **column** of the second matrix.
+
+So, if (A) is 2×3 and (B) is 3×2, the (i, j)th entry of (A \times B) is:
+
+$$
+[
+(A \times B)*{ij} = \text{dot}(A*{i,*}, B_{*,j})
+]
+$$
+
+---
+
+### Conceptual View
+
+- The **dot product** measures how aligned two vectors are — it’s a single scalar.
+- **Matrix multiplication** applies this operation across multiple pairs of vectors to project and combine data — producing a new set of vectors.
+
+In other words:
+
+- Dot product → one projection (single output)
+- Matrix multiplication → many projections at once (multi-dimensional transformation)
+
+---
+
+Would you like me to show a **visual** of how one matrix multiplies another using the dot-product view — with arrows or grids showing each row·column interaction? It’s very helpful for intuition, especially in the context of attention and LLMs.
 
 # From Matrices to Meaning
 
@@ -226,139 +298,229 @@ $$
 
 This result is `[0.9, 0.9]` which matches "queen"!
 
-**Why does this work?** We:
+Why does this work? We:
 
 1. Started with "king" (royal + masculine)
 2. Subtracted "man" (removing the masculine aspect)
 3. Added "woman" (adding the feminine aspect)
 4. Ended up with a royal + feminine concept = "queen"
 
-We've done the same weighted sum operation, except now it's operating on **semantic meaning** rather than spatial directions. We've taken our first step from matrix multiplication to meaning.
+We've done the same weighted sum operation, except now it's operating on **semantic meaning** rather than spatial directions. We're now moving from matrix multiplication to meaning.
 
-As we mentioned above, LLMs like ChatGPT have billions (maybe trillions!) of weights that get refined during training. Through matrix multiplications, the model discovers that words used in similar contexts should have similar vectors.
+As we mentioned above, LLMs like ChatGPT have billions (maybe trillions!) of weights that get refined during training. Through matrix multiplications, the model discovers that words used in simil'ar contexts should have similar vectors.
 
 So how does a neural network actually learn these meaningful representations?
 
-This is where neural networks come into play.
-
 # Learning Meaning
 
-Let's look at a simple neural net to build the intuition.
+Now that we understand how matrix multiplications (also called linear transformations) stretch and rotate vectors in space, let’s connect this to how language models _learn meaning_.
 
-![nn](/whymatmul/nn.png)
+When you feed a word embedding like `king` → `[0.23, -0.45, 0.87, ...]` into a neural network, the model applies a matrix multiplication to it — that’s just a linear transformation. Each column of the weight matrix represents a new **feature direction** the model has learned: maybe one captures "royalty," another "gender," another "formality," etc.
 
-In our simple neural net, we have 3 layers:
-
-- **Input layer:** 3 inputs → $x_1, x_2, x_3$
-- **Hidden layer:** 3 hidden units → $h_1, h_2, h_3$
-- **Output layer:** 1 output → $\bar{y}$
-
-Each connection (represented as lines) between nodes corresponds to a **weight** in a matrix. Since we have 3 input nodes feeding into 3 hidden nodes, we can create a 3×3 **weight matrix**:
+Formally, if we denote the input embedding as a vector **x** and the learned weight matrix as **W**, the layer computes:
 
 $$
-W^{(1)} =
-\begin{bmatrix}
-w_{11} & w_{12} & w_{13} \\
-w_{21} & w_{22} & w_{23} \\
-w_{31} & w_{32} & w_{33}
-\end{bmatrix}
+h = x \cdot W
 $$
 
-In practice, we would randomly initialize these weights before we train the neural net. So it might look something like:
+This is just a rotation and scaling of the original embedding into a new space.
+But the key insight is: during training, the model learns the **geometry** of meaning — it adjusts **W** so that similar meanings land close together, and dissimilar meanings are pushed apart.
+
+Over billions of examples, the model discovers that “dog” and “cat” should point in similar directions, while “dog” and “keyboard” should be nearly orthogonal.
+
+---
+
+# The Attention Mechanism: How Context Emerges
+
+So far, we’ve looked at how a single vector (a single word) is transformed.
+But ChatGPT doesn’t just understand words — it understands **sentences**, **context**, and **relationships** between words. That’s where **attention** comes in.
+
+At its core, attention asks a simple question:
+
+> “Given this word, which other words in the sentence should I pay attention to?”
+
+Let’s see how that’s done mathematically — and yes, again, it’s all just matrix multiplications.
+
+---
+
+## Step 1: Projecting into Query, Key, and Value Spaces
+
+For each token in the input (say, the words “The cat sat”), the model has an embedding vector.
+Each of these embeddings is multiplied by **three** learned matrices:
 
 $$
-W^{(1)} =
-\begin{bmatrix}
-0.01 & -0.02 & 0.03 \\
--0.04 & 0.05 & -0.01 \\
-0.02 & 0.01 & -0.03
-\end{bmatrix}
+Q = X \cdot W_Q \
+K = X \cdot W_K \
+V = X \cdot W_V
 $$
 
-In order to calculate the hidden layer, we can represent our input layer $x_1, x_2, x_3$ as the vector $[x_1, x_2, x_3]$.
+where:
 
-To calculate our hidden layer, we multiply our input vector with our weight matrix:
+- **Q (Query):** represents what this word is looking for
+- **K (Key):** represents what this word contains
+- **V (Value):** represents the actual information to be passed along
 
-- Each **row** corresponds to an input ($x_1, x_2, x_3$)
-- Each **column** corresponds to a hidden unit ($h_1, h_2, h_3$)
+So each word embedding gets projected into three separate subspaces — the _asking_, _offering_, and _informing_ spaces.
 
-So the hidden activations are:
+---
 
-$$
-\begin{bmatrix}
-h_1 & h_2 & h_3
-\end{bmatrix}
-=
-\begin{bmatrix}
-x_1 & x_2 & x_3
-\end{bmatrix}
-\cdot
-W^{(1)}
-$$
+### Diagram: Attention as MatMul Flow
 
-## Step 1: Input → Hidden Layer Weights
+```
+ Input Embeddings (X)
+       │
+       ├── matmul → W_Q → Queries (Q)
+       ├── matmul → W_K → Keys (K)
+       └── matmul → W_V → Values (V)
+              ↓
+      Attention = softmax(Q × Kᵀ / √d)
+              ↓
+     Weighted sum → Attention × V
+              ↓
+   Contextualized Output Vectors
+```
 
-Since you have **3 inputs feeding into 3 hidden units**, you need a **weight matrix** of shape $W^{(1)} \in \mathbb{R}^{3 \times 3}$ (3 rows for inputs × 3 columns for hidden units).
+Each line above represents a matrix multiplication.
 
-The hidden activations are computed as:
+---
 
-$$
-\begin{bmatrix}
-h_1 & h_2 & h_3
-\end{bmatrix}
-=
-\begin{bmatrix}
-x_1 & x_2 & x_3
-\end{bmatrix}
-\cdot
-W^{(1)}
-$$
+## Step 2: Computing “Who Looks at Whom”
 
-## Step 2: Hidden → Output Layer Weights
-
-Now we have **3 hidden units feeding into 1 output**. That means a weight matrix of shape $W^{(2)} \in \mathbb{R}^{3 \times 1}$.
-
-Explicitly:
+Now that every token has its own Q, K, and V vectors, the model computes how strongly each token should attend to every other token using the **dot product** of Q and K:
 
 $$
-W^{(2)} =
-\begin{bmatrix}
-w_{h1} \\
-w_{h2} \\
-w_{h3}
-\end{bmatrix}
+\text{attention scores} = Q \cdot K^T
 $$
 
-So the output is:
+This is a matrix of pairwise similarities — every entry says “how much token _i_ cares about token _j_.”
+For example, in the sentence:
+
+> “The cat sat on the mat.”
+
+the token “cat” will have a high similarity score with “sat” and “mat”, but low with “the”.
+
+We then scale and normalize these scores:
 
 $$
-\bar{y} =
-\begin{bmatrix}
-h_1 & h_2 & h_3
-\end{bmatrix}
-\cdot
-W^{(2)}
+A = \text{softmax}\left(\frac{Q \cdot K^T}{\sqrt{d_k}}\right)
 $$
 
-## Step 3: Putting It All Together
+The **softmax** ensures that all attention weights sum to 1, turning raw similarities into probabilities.
 
-The entire forward pass is just **two matmuls in sequence**:
+---
+
+## Step 3: Weighted Sum of Values
+
+Finally, each word’s **contextualized meaning** is computed as a weighted sum of the value vectors (V), using the attention scores (A):
 
 $$
-\bar{y} = \left( [x_1, x_2, x_3] \cdot W^{(1)} \right) \cdot W^{(2)}
+Z = A \cdot V
 $$
 
-That's the core of what every layer in a neural net does:
+That’s another matrix multiplication.
 
-- First **linear combination of inputs → hidden layer**
-- Then another **linear combination of hidden layer → output**
+Now, every word embedding becomes a new vector — one that reflects its context.
 
-Add nonlinearities (like ReLU, GELU, softmax) between these matmuls and you get the expressive power of neural networks.
+For instance:
 
-## Why It Matters for LLMs
+- “bank” in “river bank” and “bank” in “central bank” start the same.
+- After attention, their meanings diverge based on nearby words.
 
-When LLMs apply a weight matrix to an embedding vector:
+---
 
-- They're transforming the input representation into a new **feature space**.
-- Each layer tweaks the orientation, scaling, and mixing of features so that relationships (like "cat" and "dog" being semantically close) become geometrically encoded.
-- The self-attention operation itself is just a specialized sequence of matmuls that project vectors into Query, Key, and Value spaces, then combine them.
+### Diagram: Visualizing Attention Flow
+
+```
+       ┌────────────────────────────┐
+       │   Q × Kᵀ  → Attention Map  │  ← (How much each word attends to others)
+       └────────────────────────────┘
+                    │
+                    ▼
+          Weighted Sum with V
+                    │
+                    ▼
+         Contextualized Representation
+```
+
+At every layer, this process repeats — each token updates its meaning based on everything it sees around it.
+
+---
+
+# Why Matrix Multiplication Works (and Nothing Else Would)
+
+So why do we use matrix multiplication — and not some other operation?
+
+Because **matrix multiplication is the most expressive linear operation** that still allows:
+
+1. **Composability** – multiple layers can be stacked to approximate complex nonlinear relationships.
+2. **Differentiability** – gradients flow easily through matmuls during training.
+3. **Geometry** – matmuls preserve spatial relationships; they rotate and scale meaning vectors in continuous space.
+
+If we used something nonlinear or discrete (like lookup tables or symbolic rules), gradients wouldn’t propagate smoothly — and the model couldn’t learn through backpropagation.
+
+Every matmul encodes a local, differentiable geometric transformation that contributes to global understanding.
+
+---
+
+# From MatMul to Coherence
+
+Now let’s zoom out.
+In one transformer block, the computation looks like this:
+
+```
+Input Embedding
+    ↓
+LayerNorm
+    ↓
+MatMul → W_Q, W_K, W_V
+    ↓
+Attention (Q × Kᵀ, softmax, × V)
+    ↓
+MatMul → W_O  (output projection)
+    ↓
+Residual Add
+    ↓
+Feed-Forward (two more matmuls + GELU)
+    ↓
+Residual Add
+```
+
+So even a single transformer block performs **six matrix multiplications**, each one bending the geometry of meaning slightly.
+
+Stack hundreds of these layers — and each time, the representation of the sentence gets more contextual, abstract, and coherent.
+
+By the time you reach the final layer, the model has rotated your prompt vector into a position that best predicts the next word.
+
+---
+
+### Diagram: The Lifecycle of a Token Through the Model
+
+```
+ Word Embedding → Linear Transformations → Attention → Feed-Forward → Next Token Prediction
+```
+
+Each arrow is powered by `matmul`.
+Each `matmul` moves the token embedding through a high-dimensional semantic landscape — from raw text → contextual meaning → coherent continuation.
+
+---
+
+# Closing the Loop
+
+When you ask ChatGPT a question, you’re really projecting your words into a vast high-dimensional vector space.
+Each transformer layer — powered entirely by matrix multiplication — refines, contextualizes, and transforms these embeddings until the geometry of your input aligns with the geometry of likely next words.
+
+So when ChatGPT replies coherently, it’s because all those `matmuls` have learned how to **rotate meaning itself**.
+
+---
+
+> “Every `matmul` is a thought — a rotation of meaning in a space we can’t see, but can feel.”
+
+---
+
+Would you like me to generate matching diagrams (in your “hand-drawn math sketch” style) for:
+
+- the **Q/K/V attention flow**
+- the **Q×Kᵀ attention map + softmax + V weighted sum**
+- the **transformer block overview** (showing all the matmuls stacked)?
+
+They’ll visually tie this narrative together perfectly.
