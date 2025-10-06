@@ -127,51 +127,44 @@ Visually, the transformation looks like:
 
 An important point here: the vectors themselves aren't actually moving. The original coordinate grid gets stretched and rotated so that the new “x-axis” now points toward `[2,1]`, and the new “y-axis” points toward `[1,3]`. The actual _coordinate space_ that the vectors are in is stretching and rotating which causes the vectors to stretch and rotate as well.
 
-Now, when we multiply this matrix by a vector ( v = [x, y] ), we’re expressing ( v ) in this new basis:
-
-$M \cdot v = x \cdot [2,1] + y \cdot [1,3]$
-
-So if ( v = [2, 3] ), then:
-
-$M \cdot v = 2[2,1] + 3[1,3] = [7,11]$
-
-Now, if we wanted to multiply this matrix by an input vector, $\mathbf{v} = [x,y] = [2,3]$, we can just take each column of the matrix and multiply it by the element in the same index in the vector. Let's walk through it step-by-step:
+What if we wanted to multiply this matrix by an input vector? Starting with our matrix and input vector:
 
 $$
-M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}, \quad \mathbf{v} = [2,3]
+M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}, \quad \mathbf{v} = \begin{bmatrix} 2 \\ 3 \end{bmatrix}
 $$
 
-We multiply each **column** of $M$ by the corresponding element in $\mathbf{v}$:
+We can take each row of the input vector and multiply it by each column of the matrix. Here's how it goes:
 
 $$
-M \cdot \mathbf{v} = 2 \cdot \begin{bmatrix} 2 \\ 1 \end{bmatrix} + 3 \cdot \begin{bmatrix} 1 \\ 3 \end{bmatrix}
+\begin{bmatrix}
+2 & 1 \\ 1 & 3
+\end{bmatrix}
+\cdot
+\begin{bmatrix}
+2 \\
+3
+\end{bmatrix}
+=
+
+\begin{bmatrix}
+2\cdot2 + 1\cdot3 \\
+1\cdot2 + 3\cdot3
+\end{bmatrix}
+=
+
+\begin{bmatrix}
+7 \\
+11
+\end{bmatrix}
 $$
 
-**Step 1: Scale the first column by 2**
+Or, visually with color codes showing the steps:
 
-$$
-2 \cdot \begin{bmatrix} 2 \\ 1 \end{bmatrix} = \begin{bmatrix} 4 \\ 2 \end{bmatrix}
-$$
+![vec](/whymatmul/dot.png)
 
-**Step 2: Scale the second column by 3**
+Each row of the matrix that we multiply with the input vector, we are performing the **Dot Product** of the matrix and the vector. So a matrix–vector multiplication is just two dot products, one per row of the matrix, producing a new vector.
 
-$$
-3 \cdot \begin{bmatrix} 1 \\ 3 \end{bmatrix} = \begin{bmatrix} 3 \\ 9 \end{bmatrix}
-$$
-
-**Step 3: Add them together to get the result vector**
-
-$$
-\begin{bmatrix} 4 \\ 2 \end{bmatrix} + \begin{bmatrix} 3 \\ 9 \end{bmatrix} = \begin{bmatrix} 7 \\ 11 \end{bmatrix}
-$$
-
-**Final Answer**
-
-$$
-M \cdot \mathbf{v} = \begin{bmatrix} 7 \\ 11 \end{bmatrix}
-$$
-
-And there we have matrix multiplication! Let's look at this visually:
+Let's look at this visually:
 
 ![vec](/whymatmul/mm.png)
 
@@ -184,38 +177,31 @@ There are a few vectors here so let's go through them:
 5. The dashed orange vector is the 2st element of the input vector multiplied by the 2st column of the matrix, $3 \cdot [1,3] = [3,9]$
 6. The solid red vector is resulting vector when we add the dashed orange vector and the dashed green vector.
 
-But wait! Why do we add the two vectors together at the end? I thought the matrix was a collection of two vectors, so wouldn't we expect to have two vectors in the final result?
+But wait! Why do we just have one result vector? I thought the matrix was a combination of vectors, so shouldn't we have two vectors? This is an excellent question and gets at the heart of matrix multiplication.
 
-This is an excellent question and gets at the heart of matrix multiplication.
+When you multiply a **matrix** by a **vector**, you get a **vector**. Why?
 
-When you multiply a **matrix** by a **vector**, you get a **vector**.
-
-You're not combining two vectors to make a matrix, you're using the input vector to tell you "how much" of each column, in the matrix, to take, and then you sum them up into a single result vector.
+You get a vector because the matrix acts on the vector. That means each column of the matrix gets scaled by the corresponding element of the vector and then all of those scaled columns are added up to produce the weighted sum.
 
 Think of it this way:
 
 - The matrix $M$ has two "basis directions" (its columns)
-- The input vector $[2, 3]$ says "give me **2 units** of the first direction and **3 units** of the second direction"
+- The matrix says to the input vector $[2, 3]$ "give me **2 units** of the first direction and **3 units** of the second direction"
 - You add those scaled directions together to get the result vector
 
-You're not keeping the columns separate, you're **combining** them according to the weights in your input vector!
+By taking the dot product of each matrix and vector, we're stretching and rotating the input vector by the matrix in order to project it into a new space.
 
-This operation is also called the **Dot Product**. I
-
-So a `matmul` is essentially: _"take your input vector, express it as a combination of basis vectors, and then remap those bases into new directions as dictated by the matrix."_
-
-What you end up getting is an output that is a weighted combination of the inputs.
+The cool thing is that this scales and works with matrices that have as many dimensions as you want! Let's look at an example in the next section.
 
 # Multiplying Matrices
 
 We learned how to multiply a matrix by a vector above
 
-When you perform matrix multiplication, you’re essentially doing **a lot of dot products**.
+When you perform matrix multiplication, you’re essentially doing a lot of dot products.
 
 For example:
 
 $$
-[
 A =
 \begin{bmatrix}
 a_{11} & a_{12} \
@@ -226,19 +212,16 @@ B =
 b_{11} & b_{12} \
 b_{21} & b_{22}
 \end{bmatrix}
-]
 $$
 
 Then:
 
 $$
-[
 A \times B =
 \begin{bmatrix}
-a_{11}b_{11} + a_{12}b_{21} & a_{11}b_{12} + a_{12}b_{22} \
+a_{11}b_{11} + a_{12}b_{21} & a_{11}b_{12} + a_{12}b_{22} \\
 a_{21}b_{11} + a_{22}b_{21} & a_{21}b_{12} + a_{22}b_{22}
 \end{bmatrix}
-]
 $$
 
 Each entry in the output matrix is a **dot product** between:
@@ -246,33 +229,23 @@ Each entry in the output matrix is a **dot product** between:
 - a **row** of the first matrix, and
 - a **column** of the second matrix.
 
-So, if (A) is 2×3 and (B) is 3×2, the (i, j)th entry of (A \times B) is:
+So, if (A) is a 2×3 matrix and (B) is a 3×2 matrix, the (i, j)th entry of (A \times B) is:
 
 $$
-[
-(A \times B)*{ij} = \text{dot}(A*{i,*}, B_{*,j})
-]
+(A \cdot B)_{ij} = \text{dot}(A*_{i,*}, B_{*,j})
 $$
 
----
+**Matrix multiplication** applies this operation across multiple pairs of vectors to project and combine data — producing a new set of vectors.
 
-### Conceptual View
+How do we think about this intuitively?
 
-- The **dot product** measures how aligned two vectors are — it’s a single scalar.
-- **Matrix multiplication** applies this operation across multiple pairs of vectors to project and combine data — producing a new set of vectors.
+The **dot product** measures how "aligned" two vectors are. If they are very aligned then they will have a large dot product, if they are not aligned they will have a small dot product. So we can use the dot product as a measure to tell us how similar two vectors are.
 
-In other words:
-
-- Dot product → one projection (single output)
-- Matrix multiplication → many projections at once (multi-dimensional transformation)
-
----
-
-Would you like me to show a **visual** of how one matrix multiplies another using the dot-product view — with arrows or grids showing each row·column interaction? It’s very helpful for intuition, especially in the context of attention and LLMs.
+Now we tie it all together.
 
 # From Matrices to Meaning
 
-At first glance, this matrix multiplication might seem like simple geometry. We're scaling and stretching and, in some cases, rotating vectors but how does this eventually get us answers in ChatGPT? Here's where it gets interesting: what if these vectors don't represent directions in space, but instead represent meaning in some abstract space?
+What if these vectors don't represent directions in space, but instead represent meaning in some abstract space?
 
 In a large language model like ChatGPT, every word is represented as a vector, typically with hundreds or thousands of dimensions instead of just 2 that we saw above. When the model sees the word "king", it's not just storing the letters k-i-n-g, it's storing a vector like `[0.23, -0.45, 0.87, ...]` that captures the meaning of "king" based on how it's used in language. It learns this meaning as it's being trained on every book, article and piece of data on the internet and at the end of that training spits out a vector like `[0.23, -0.45, 0.87, ...]`.
 
