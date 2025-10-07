@@ -1,14 +1,14 @@
 ---
 title: "From matmul to ChatGPT"
 date: "2025-10-04"
-publish: false
+publish: true
 ---
 
 import Note from "../components/Note";
 
 Over the past few months, I've built two LLMs from scratch, namely GPT-rs and llama2.rs. At this point, I feel reasonably comfortable with the transformer architecture and how it works.
 
-One of the core operations within the layers of a neural net is matrix multiplication or `matmul` as it's often referred to. This `matmul` operation happens trillions of times within large langauge models (LLMs) like ChatGPT and is one the main reasons why ChatGPT is able to provide coherent (usually!) responses.
+One of the core operations within the layers of a neural net is matrix multiplication or `matmul` as it's often referred to. This `matmul` operation happens trillions of times within large langauges models (LLMs) like ChatGPT and is one the main reasons why ChatGPT is able to provide coherent (usually!) responses.
 
 But I often find myself asking, _how_ and _why_ does multiplying matrices trillions of times lead to ChatGPT giving us a coherent response to our prompts?
 
@@ -139,17 +139,20 @@ $$
 \begin{bmatrix}
 2 & 1 \\ 1 & 3
 \end{bmatrix}
+
 \cdot
+
 \begin{bmatrix}
-2 \\
-3
+2 \\ 3
 \end{bmatrix}
+
 =
 
 \begin{bmatrix}
 2\cdot2 + 1\cdot3 \\
 1\cdot2 + 3\cdot3
 \end{bmatrix}
+
 =
 
 \begin{bmatrix}
@@ -247,272 +250,84 @@ Now we tie it all together.
 
 What if these vectors don't represent directions in space, but instead represent meaning in some abstract space?
 
-In a large language model like ChatGPT, every word is represented as a vector, typically with hundreds or thousands of dimensions instead of just 2 that we saw above. When the model sees the word "king", it's not just storing the letters k-i-n-g, it's storing a vector like `[0.23, -0.45, 0.87, ...]` that captures the meaning of "king" based on how it's used in language. It learns this meaning as it's being trained on every book, article and piece of data on the internet and at the end of that training spits out a vector like `[0.23, -0.45, 0.87, ...]`.
+In a large language model like ChatGPT, every word is represented as a vector, typically with hundreds or thousands of dimensions instead of just 2 that we saw above. When the model sees the word "king", it's not just storing the letters k-i-n-g, it's storing a vector like `[0.23, -0.45, 0.87, ...]` that captures the meaning of "king" based on how it's used in language. It learns this meaning as it's being trained on every book, article and piece of data on the internet and at the end of that training outputs out a vector like `[0.23, -0.45, 0.87, ...]`.
 
-But how does it capture the meaning of words like "king"? I thought you'd never ask. Let's look at a simple example.
+But how does it capture the meaning of words like "king"? I thought you'd never ask.
 
-Imagine we have simple 2D "word vectors" where:
+## Learning Meaning
 
-- The **first dimension** represents "royalty" (0 = common, 1 = royal)
-- The **second dimension** represents "femininity" (0 = masculine, 1 = feminine)
+Imagine we have a simple 2D "word space" (picture the 2D coordinate space from the earlier sections) where:
 
-For example:
+- The first dimension represents _royalty_ (0 = common, 1 = royal)
+- The second dimension represents _femininity_ (0 = masculine, 1 = feminine)
 
-- "king" → `[0.9, 0.1]` (high royalty, low femininity)
-- "queen" → `[0.9, 0.9]` (high royalty, high femininity)
-- "man" → `[0.1, 0.1]` (low royalty, low femininity)
-- "woman" → `[0.1, 0.9]` (low royalty, high femininity)
+So our mini vocabulary looks like this:
 
-Now if we do the some simple vector arithmetic: `king - man + woman`:
+| Word      | Vector (royalty, femininity) |
+| --------- | ---------------------------- |
+| **king**  | [0.9, 0.1]                   |
+| **queen** | [0.9, 0.9]                   |
+| **man**   | [0.1, 0.1]                   |
+| **woman** | [0.1, 0.9]                   |
+
+Now, if we do the simple vector arithmetic:
 
 $$
-[0.9, 0.1] - [0.0, 0.1] + [0.0, 0.9] = [0.9, 0.9]
+\text{king} - \text{man} + \text{woman}
+= [0.9, 0.1] - [0.1, 0.1] + [0.1, 0.9]
+= [0.9, 0.9]
 $$
 
-This result is `[0.9, 0.9]` which matches "queen"!
+That result `[0.9, 0.9]` corresponds to **queen**.
 
-Why does this work? We:
+So what just happened?
 
-1. Started with "king" (royal + masculine)
-2. Subtracted "man" (removing the masculine aspect)
-3. Added "woman" (adding the feminine aspect)
-4. Ended up with a royal + feminine concept = "queen"
+1. We started with "king" (royal + masculine)
+2. Subtracted "man" (removing masculinity)
+3. Added "woman" (adding femininity)
+4. Ended up with a royal + feminine concept = **queen**
 
-This is effectively what happens inside of ChatGPT trillions of times. We're performing We've done the same weighted sum operation as, except now it's operating on **semantic meaning** rather than spatial directions. We're now moving from matrix multiplication to meaning.
+This simple arithmetic works because each dimension encodes a **semantic direction**: “royalty” and “femininity.”
+You can think of this as operating in a tiny semantic universe where vector directions _represent concepts_.
 
-As we mentioned above, LLMs like ChatGPT have billions (maybe trillions!) of weights that get refined during training. Through matrix multiplications, the model discovers that words used in similar contexts should have similar vectors.
+## Scaling up
 
-So how does a neural network actually learn these meaningful representations?
+Inside ChatGPT (and all transformers), the same principle holds but across thousands of dimensions and billions of parameters.
 
-# Learning Meaning
+Every word (or token) starts as a vector like:
 
-Now that we understand how matrix multiplications (also called linear transformations) stretch and rotate vectors in space, let’s connect this to how language models _learn meaning_.
+$$
+\text{king} = [0.23, -0.45, 0.87, ...]
+$$
 
-When you feed a word embedding like `king` → `[0.23, -0.45, 0.87, ...]` into a neural network, the model applies a matrix multiplication to it — that’s just a linear transformation. Each column of the weight matrix represents a new **feature direction** the model has learned: maybe one captures "royalty," another "gender," another "formality," etc.
-
-Formally, if we denote the input embedding as a vector **x** and the learned weight matrix as **W**, the layer computes:
+The model then applies a matrix multiplication:
 
 $$
 h = x \cdot W
 $$
 
-This is just a rotation and scaling of the original embedding into a new space.
-But the key insight is: during training, the model learns the **geometry** of meaning — it adjusts **W** so that similar meanings land close together, and dissimilar meanings are pushed apart.
+where
 
-Over billions of examples, the model discovers that “dog” and “cat” should point in similar directions, while “dog” and “keyboard” should be nearly orthogonal.
+- **x** = input vector (e.g., "king")
+- **W** = learned weight matrix
+- **h** = transformed vector (new representation)
 
----
+Each column of $W$ represents a _direction_ that the model has learned to recognize — things like “royalty,” “gender,” “plurality,” “formality,” or even more abstract ones like “causality” or “emotion.”
 
-# The Attention Mechanism: How Context Emerges
+Over billions of training examples, the model adjusts $W$ so that words used in similar contexts get pulled closer together (high dot product → high alignment), and unrelated words get pushed apart (low or negative dot product → orthogonal or opposing directions).
 
-So far, we’ve looked at how a single vector (a single word) is transformed.
-But ChatGPT doesn’t just understand words — it understands **sentences**, **context**, and **relationships** between words. That’s where **attention** comes in.
+That’s why “dog” and “cat” sit near each other in vector space, while “dog” and “keyboard” are far apart.
+It’s the same geometry as the “king − man + woman = queen” example just happening in thousands of dimensions and at massive scale.
 
-At its core, attention asks a simple question:
+# But Why Matrix Multiplication?
 
-> “Given this word, which other words in the sentence should I pay attention to?”
+By this point, hopefully you have a good understanding of how matrix multiplication is used in LLMs to understand words. Now, I think we can finally answer the question that I posed at the beginning of this blog: why does matrix multiplication work? Why not just add vectors together? Why not multiply them element-wise? Why not use some completely different operation?
 
-Let’s see how that’s done mathematically — and yes, again, it’s all just matrix multiplications.
+There are three reasons why.
 
----
+## Preserves relationships
 
-## Step 1: Projecting into Query, Key, and Value Spaces
-
-For each token in the input (say, the words “The cat sat”), the model has an embedding vector.
-Each of these embeddings is multiplied by **three** learned matrices:
-
-$$
-Q = X \cdot W_Q \
-K = X \cdot W_K \
-V = X \cdot W_V
-$$
-
-where:
-
-- **Q (Query):** represents what this word is looking for
-- **K (Key):** represents what this word contains
-- **V (Value):** represents the actual information to be passed along
-
-So each word embedding gets projected into three separate subspaces — the _asking_, _offering_, and _informing_ spaces.
-
----
-
-### Diagram: Attention as MatMul Flow
-
-```
- Input Embeddings (X)
-       │
-       ├── matmul → W_Q → Queries (Q)
-       ├── matmul → W_K → Keys (K)
-       └── matmul → W_V → Values (V)
-              ↓
-      Attention = softmax(Q × Kᵀ / √d)
-              ↓
-     Weighted sum → Attention × V
-              ↓
-   Contextualized Output Vectors
-```
-
-Each line above represents a matrix multiplication.
-
----
-
-## Step 2: Computing “Who Looks at Whom”
-
-Now that every token has its own Q, K, and V vectors, the model computes how strongly each token should attend to every other token using the **dot product** of Q and K:
-
-$$
-\text{attention scores} = Q \cdot K^T
-$$
-
-This is a matrix of pairwise similarities — every entry says “how much token _i_ cares about token _j_.”
-For example, in the sentence:
-
-> “The cat sat on the mat.”
-
-the token “cat” will have a high similarity score with “sat” and “mat”, but low with “the”.
-
-We then scale and normalize these scores:
-
-$$
-A = \text{softmax}\left(\frac{Q \cdot K^T}{\sqrt{d_k}}\right)
-$$
-
-The **softmax** ensures that all attention weights sum to 1, turning raw similarities into probabilities.
-
----
-
-## Step 3: Weighted Sum of Values
-
-Finally, each word’s **contextualized meaning** is computed as a weighted sum of the value vectors (V), using the attention scores (A):
-
-$$
-Z = A \cdot V
-$$
-
-That’s another matrix multiplication.
-
-Now, every word embedding becomes a new vector — one that reflects its context.
-
-For instance:
-
-- “bank” in “river bank” and “bank” in “central bank” start the same.
-- After attention, their meanings diverge based on nearby words.
-
----
-
-### Diagram: Visualizing Attention Flow
-
-```
-       ┌────────────────────────────┐
-       │   Q × Kᵀ  → Attention Map  │  ← (How much each word attends to others)
-       └────────────────────────────┘
-                    │
-                    ▼
-          Weighted Sum with V
-                    │
-                    ▼
-         Contextualized Representation
-```
-
-At every layer, this process repeats — each token updates its meaning based on everything it sees around it.
-
----
-
-# Why Matrix Multiplication Works (and Nothing Else Would)
-
-So why do we use matrix multiplication — and not some other operation?
-
-Because **matrix multiplication is the most expressive linear operation** that still allows:
-
-1. **Composability** – multiple layers can be stacked to approximate complex nonlinear relationships.
-2. **Differentiability** – gradients flow easily through matmuls during training.
-3. **Geometry** – matmuls preserve spatial relationships; they rotate and scale meaning vectors in continuous space.
-
-If we used something nonlinear or discrete (like lookup tables or symbolic rules), gradients wouldn’t propagate smoothly — and the model couldn’t learn through backpropagation.
-
-Every matmul encodes a local, differentiable geometric transformation that contributes to global understanding.
-
----
-
-# From MatMul to Coherence
-
-Now let’s zoom out.
-In one transformer block, the computation looks like this:
-
-```
-Input Embedding
-    ↓
-LayerNorm
-    ↓
-MatMul → W_Q, W_K, W_V
-    ↓
-Attention (Q × Kᵀ, softmax, × V)
-    ↓
-MatMul → W_O  (output projection)
-    ↓
-Residual Add
-    ↓
-Feed-Forward (two more matmuls + GELU)
-    ↓
-Residual Add
-```
-
-So even a single transformer block performs **six matrix multiplications**, each one bending the geometry of meaning slightly.
-
-Stack hundreds of these layers — and each time, the representation of the sentence gets more contextual, abstract, and coherent.
-
-By the time you reach the final layer, the model has rotated your prompt vector into a position that best predicts the next word.
-
----
-
-### Diagram: The Lifecycle of a Token Through the Model
-
-```
- Word Embedding → Linear Transformations → Attention → Feed-Forward → Next Token Prediction
-```
-
-Each arrow is powered by `matmul`.
-Each `matmul` moves the token embedding through a high-dimensional semantic landscape — from raw text → contextual meaning → coherent continuation.
-
----
-
-# Closing the Loop
-
-When you ask ChatGPT a question, you’re really projecting your words into a vast high-dimensional vector space.
-Each transformer layer — powered entirely by matrix multiplication — refines, contextualizes, and transforms these embeddings until the geometry of your input aligns with the geometry of likely next words.
-
-So when ChatGPT replies coherently, it’s because all those `matmuls` have learned how to **rotate meaning itself**.
-
----
-
-> “Every `matmul` is a thought — a rotation of meaning in a space we can’t see, but can feel.”
-
----
-
-Would you like me to generate matching diagrams (in your “hand-drawn math sketch” style) for:
-
-- the **Q/K/V attention flow**
-- the **Q×Kᵀ attention map + softmax + V weighted sum**
-- the **transformer block overview** (showing all the matmuls stacked)?
-
-They’ll visually tie this narrative together perfectly.
-
-# Why Matrix Multiplication?
-
-Before we dive deeper into how LLMs work, let's pause and ask a fundamental question: **why matrix multiplication?**
-
-Why not just add vectors together? Why not multiply them element-wise? Why not use some completely different operation?
-
-The answer reveals why matmul is uniquely suited for learning meaning.
-
-## The Three Properties That Matter
-
-Matrix multiplication has three critical properties that make it perfect for language models:
-
-### 1. It Preserves Relationships While Transforming Them
-
-Remember our "king - man + woman = queen" example? That worked because the _relationship_ between king and queen is the same as the relationship between man and woman.
+MAtrix multiplication preserves relationships when transforming them. Remember our "king - man + woman = queen" example? That worked because the _relationship_ between king and queen is the same as the relationship between man and woman.
 
 Matrix multiplication can apply the _same transformation_ to different vectors. If we have a matrix $M$ that represents "changing gender," it will transform both:
 
@@ -520,9 +335,9 @@ Matrix multiplication can apply the _same transformation_ to different vectors. 
 - "man" → "woman"
 - "prince" → "princess"
 
-All with the same operation! This is impossible with element-wise operations.
+All with the same operation! That's the beauty of vector spaces. Let's see why this is impossible with element-wise operations.
 
-Let's see why element-wise multiplication fails. Suppose we want to transform masculine words to feminine:
+Suppose we want to transform masculine words to feminine:
 
 ```
 king  = [0.9, 0.1]  (royal, masculine)
@@ -543,17 +358,15 @@ But then for man → woman:
 
 Great! Except... what if we want to also shift "prince" → "princess"?
 
-```
-prince = [0.7, 0.1]  (somewhat royal, masculine)
-```
+Let's say that prince = `[0.7, 0.1]` (somewhat royal, masculine).
 
 Using our `[1, 9]`:
 
 - `[0.7, 0.1] * [1, 9] = [0.7, 0.9]`
 
-But that's wrong! We wanted the royalty to stay at 0.7, but the multiplication is _ratio-based_, not _additive_. We can't preserve the "add femininity" transformation across different levels of royalty.
+But that's wrong! We wanted the royalty to stay at 0.7. It's not like a princess is anymore royal than a prince. But the multiplication is _ratio-based_, not _additive_. We can't preserve the "add femininity" transformation across different levels of royalty.
 
-**Matrix multiplication solves this** because it can do things like "keep the first dimension, change the second dimension by adding a fixed amount":
+Matrix multiplication solves this because it can do things like "keep the first dimension, change the second dimension by adding a fixed amount":
 
 $$
 M = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix} + \begin{bmatrix} 0 & 0 \\ 0.8 & 0 \end{bmatrix} = \begin{bmatrix} 1 & 0 \\ 0.8 & 1 \end{bmatrix}
@@ -561,546 +374,46 @@ $$
 
 Now watch:
 
-- King: $\begin{bmatrix} 1 & 0 \\ 0.8 & 1 \end{bmatrix} \begin{bmatrix} 0.9 \\ 0.1 \end{bmatrix} = \begin{bmatrix} 0.9 \\ 0.82 \end{bmatrix}$ ✓
-- Man: $\begin{bmatrix} 1 & 0 \\ 0.8 & 1 \end{bmatrix} \begin{bmatrix} 0.1 \\ 0.1 \end{bmatrix} = \begin{bmatrix} 0.1 \\ 0.18 \end{bmatrix}$ ✓
-- Prince: $\begin{bmatrix} 1 & 0 \\ 0.8 & 1 \end{bmatrix} \begin{bmatrix} 0.7 \\ 0.1 \end{bmatrix} = \begin{bmatrix} 0.7 \\ 0.66 \end{bmatrix}$ ✓
+- King: $\begin{bmatrix} 1 & 0 \\ 0.8 & 1 \end{bmatrix} \begin{bmatrix} 0.9 \\ 0.1 \end{bmatrix} = \begin{bmatrix} 0.9 \\ 0.82 \end{bmatrix}$
+- Man: $\begin{bmatrix} 1 & 0 \\ 0.8 & 1 \end{bmatrix} \begin{bmatrix} 0.1 \\ 0.1 \end{bmatrix} = \begin{bmatrix} 0.1 \\ 0.18 \end{bmatrix}$
+- Prince: $\begin{bmatrix} 1 & 0 \\ 0.8 & 1 \end{bmatrix} \begin{bmatrix} 0.7 \\ 0.1 \end{bmatrix} = \begin{bmatrix} 0.7 \\ 0.66 \end{bmatrix}$
 
 The relationship is preserved across _all_ inputs! This is the power of linear transformations.
 
-### 2. It's Differentiable and Efficient
+## It's Differentiable
 
-Neural networks learn through **backpropagation** - adjusting weights based on errors. Matrix multiplication is:
+I know we haven't covered neural networks but we need to jump forward a tiny bit. Neural networks learn through **backpropagation** - adjusting weights based on errors. The core backpropagation algorithm uses something called the **Chain Rule** (from calculus) to figure out how changing each weight in the neural network affects the final loss.
 
-- **Differentiable**: We can calculate exactly how changing each weight affects the output
-- **GPU-optimized**: Modern hardware can perform trillions of matmuls per second
-- **Parallelizable**: We can process thousands of words simultaneously
+This is only possible because matrix multiplication is **differentiable**. This means that we can calculate exactly how changing each weight affects the output. Each column of the weight matrix gets updated based on how sensitive the output of that weight matrix is to that input.
 
-Element-wise operations are differentiable too, but they don't have the expressive power. More complex operations (like division or exponentiation) are either non-differentiable at certain points or computationally expensive.
+Element-wise operations are differentiable too, but they're not as expressive as we saw in the first point above. More complex operations (like division or exponentiation) are either non-differentiable at certain points or computationally expensive.
 
-### 3. It Enables Meaningful Linear Combinations
+## It Enables Meaningful Linear Combinations
 
-This is the most important property. Matrix multiplication lets us say:
+This is arguably the most important property. Matrix multiplication lets us say:
 
 **"The output should be a weighted combination of inputs, where the weights are learned from data."**
 
 For language, this is exactly what we need:
 
-- The meaning of "bank" is a weighted combination of "river" and "account" based on context
+- The meaning of "bank" is a weighted combination of "river" and "account" based on context (_eyes emoji_: Attention)
 - The next word in a sentence is a weighted combination of all previous words
 - The answer to a question is a weighted combination of facts in the model's training data
 
-Addition can't do this (it treats everything equally). Element-wise multiplication can't do this (it can't mix dimensions). **Only matrix multiplication gives us learnable, flexible weighted combinations.**
+Addition can't do this (it treats everything equally). Element-wise multiplication can't do this (it can't mix dimensions).
 
----
+Which leaves only matrix multiplication gives us learnable, flexible weighted combinations.
 
-# The Context Problem
+# Wrapping Up
 
-We've established that matrix multiplication can transform word vectors in meaningful ways. But there's a huge problem with what we've described so far.
+Matrix multiplication works because understanding language becomes a problem of placing and moving vectors in a space where relationships are linear, comparisons are dot products, and decisions are weighted sums. Matmul is the only operation that's minimal, trainable, and massively parallel enough to do all three at the scale required for intelligence.
 
-## The Static Word Problem
+In a way, transformers are like giant Rubik's cubes: rotating pieces into place, comparing to see if patterns align, shuffling when they don't, and repeating until something coherent emerges. Each twist of the cube is a matmul. Each alignment check is a dot product. Each shuffle is a weighted combination.
 
-In everything we've discussed, each word has a **fixed vector**:
+I wanted to keep this blog focused on matrix multiplication because it's the fundamental building block, but there are other critical pieces that make ChatGPT work. Without activation functions like ReLU or GELU between matmuls, the entire network would collapse into a single linear transformation - no matter how many layers you stack. The nonlinearities are what give neural networks their power to learn complex patterns.
 
-- "bank" → `[0.23, -0.45, 0.87, ...]`
+Maybe I'll tackle activation functions next...
 
-But wait... the word "bank" means completely different things in these sentences:
+Until then!
 
-1. "I sat by the river **bank**" (meaning: shore)
-2. "I deposited money at the **bank**" (meaning: financial institution)
-3. "The plane started to **bank** left" (meaning: to tilt)
-
-How can one fixed vector `[0.23, -0.45, 0.87, ...]` capture all three meanings?
-
-**It can't.**
-
-This is called the **context problem**, and it's the fundamental challenge that makes language understanding difficult.
-
-## Why Context Matters
-
-Let's look at another example:
-
-> "The animal didn't cross the street because **it** was too tired."
-
-What does "it" refer to? The animal, obviously - it was tired.
-
-> "The animal didn't cross the street because **it** was too wide."
-
-Now what does "it" refer to? The street - streets can't be tired!
-
-The word "it" is identical in both sentences, but its meaning completely depends on the surrounding context. A static vector can't handle this.
-
-## The Solution: Dynamic Representations
-
-What we need is a way to compute **different vectors for the same word based on context**.
-
-In the first sentence, "it" should have a vector close to "animal."
-In the second sentence, "it" should have a vector close to "street."
-
-**This is where attention comes in.**
-
-Attention is a mechanism that uses matrix multiplication to let words "look at" other words in the sentence and dynamically adjust their representations based on what they find.
-
-It's doing something like:
-
-- "Hey, I'm the word 'it'. Let me look at all the other words in this sentence."
-- "Hmm, 'animal' and 'tired' seem relevant. Let me pull some meaning from them."
-- "I'll create a new representation of myself that's a weighted combination of these relevant words."
-
-And the weights? **Learned through matrix multiplication.**
-
----
-
-# Attention: Contextual Matrix Multiplication
-
-Attention is the breakthrough that made modern LLMs possible. It's also, at its core, just a clever application of matrix multiplication.
-
-Let's build the intuition step by step.
-
-## The Core Idea
-
-Imagine you're reading this sentence:
-
-> "The cat sat on the mat because it was soft."
-
-When you process the word "it," your brain automatically:
-
-1. **Searches** through previous words (cat? mat?)
-2. **Scores** which ones are relevant ("mat" is more relevant than "cat" for "soft")
-3. **Combines** those relevant words to understand "it" means "mat"
-
-Attention does exactly this, using three learned matrices.
-
-## The Three Matrices: Query, Key, Value
-
-Every attention mechanism uses three weight matrices:
-
-- $W_Q$ (Query): "What am I looking for?"
-- $W_K$ (Key): "What do I contain?"
-- $W_V$ (Value): "What do I contribute?"
-
-Let's say we have a simple sentence: "cat sat mat"
-
-Each word starts with an embedding vector. For simplicity, let's say 4-dimensional:
-
-```
-cat = [1.0, 0.2, 0.5, 0.1]
-sat = [0.3, 1.0, 0.2, 0.4]
-mat = [0.8, 0.1, 0.9, 0.2]
-```
-
-### Step 1: Create Queries, Keys, and Values
-
-We multiply each word's embedding by three different weight matrices:
-
-$$
-Q_{\text{cat}} = \text{cat} \cdot W_Q
-$$
-
-$$
-K_{\text{cat}} = \text{cat} \cdot W_K
-$$
-
-$$
-V_{\text{cat}} = \text{cat} \cdot W_V
-$$
-
-(Same for "sat" and "mat")
-
-**Intuition:**
-
-- The **Query** is "what I'm looking for in other words"
-- The **Key** is "what I can offer to other words"
-- The **Value** is "what information I'll contribute if selected"
-
-Think of it like a database:
-
-- **Query**: Your search terms
-- **Key**: The index/tags on each entry
-- **Value**: The actual content you retrieve
-
-### Step 2: Calculate Attention Scores
-
-For each word, we want to know: **"How much should I pay attention to every other word?"**
-
-Let's focus on the word "mat." Its query $Q_{\text{mat}}$ will be compared against all the keys:
-
-$$
-\text{score}_{\text{mat},\text{cat}} = Q_{\text{mat}} \cdot K_{\text{cat}}^T
-$$
-
-$$
-\text{score}_{\text{mat},\text{sat}} = Q_{\text{mat}} \cdot K_{\text{sat}}^T
-$$
-
-$$
-\text{score}_{\text{mat},\text{mat}} = Q_{\text{mat}} \cdot K_{\text{mat}}^T
-$$
-
-This is just a **dot product** - another form of matrix multiplication! High dot product = high similarity = high relevance.
-
-Then we apply **softmax** to turn these scores into probabilities that sum to 1:
-
-$$
-\text{attention}_{\text{mat}} = \text{softmax}([\text{score}_{\text{mat},\text{cat}}, \text{score}_{\text{mat},\text{sat}}, \text{score}_{\text{mat},\text{mat}}])
-$$
-
-Let's say we get:
-
-```
-attention_mat = [0.1, 0.2, 0.7]
-```
-
-This means:
-
-- 10% attention to "cat"
-- 20% attention to "sat"
-- 70% attention to "mat" (itself)
-
-### Step 3: Create Weighted Combination
-
-Now we take a weighted sum of the **values**:
-
-$$
-\text{output}_{\text{mat}} = 0.1 \cdot V_{\text{cat}} + 0.2 \cdot V_{\text{sat}} + 0.7 \cdot V_{\text{mat}}
-$$
-
-**This is exactly the weighted sum we learned about at the beginning!** We're taking a linear combination of the value vectors, weighted by how relevant each word is.
-
-## The Full Picture
-
-Here's what's happening for _every_ word in the sentence simultaneously:
-
-![attention](/whymatmul/attention.png)
-
-Each word:
-
-1. Projects itself into Query, Key, Value spaces (3 matmuls per word)
-2. Computes attention scores with all other words (matmul between all Queries and all Keys)
-3. Combines Values based on attention scores (final matmul)
-
-In matrix form, for all words at once:
-
-$$
-\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
-$$
-
-Where:
-
-- $Q$ is a matrix of all queries (one row per word)
-- $K$ is a matrix of all keys
-- $V$ is a matrix of all values
-- $d_k$ is a scaling factor (dimension of keys)
-
-**It's matrix multiplication all the way down.**
-
-## Why This Solves the Context Problem
-
-Remember our "it" problem?
-
-> "The animal didn't cross the street because **it** was too tired."
-
-When attention processes "it":
-
-1. Its **query** asks: "What noun am I referring to?"
-2. It compares against **keys** from "animal" and "street"
-3. "animal" + "tired" have high similarity → high attention score
-4. It pulls in the **value** vector from "animal"
-5. Now "it" has a representation similar to "animal"!
-
-For the other sentence:
-
-> "The animal didn't cross the street because **it** was too wide."
-
-Same process, but:
-
-- "street" + "wide" have high similarity → high attention score
-- "it" pulls in the **value** vector from "street"
-- Now "it" has a representation similar to "street"!
-
-**The same word "it" gets different representations based on context, all through learned matrix multiplications.**
-
----
-
-# From One Layer to ChatGPT
-
-We've seen how a single attention layer uses matrix multiplication to create context-aware representations. But ChatGPT doesn't use just one layer - it uses **96 layers** stacked on top of each other (in GPT-4 scale models).
-
-What's happening in all those layers?
-
-## Hierarchical Feature Learning
-
-Each layer refines the representation in increasingly abstract ways:
-
-**Layers 1-10: Syntax and Grammar**
-
-- Which words are nouns, verbs, adjectives?
-- What are the phrase boundaries?
-- Which words modify which other words?
-
-After these layers, the model "knows" that in "the quick brown fox," the words "quick" and "brown" both modify "fox."
-
-**Layers 11-30: Semantic Relationships**
-
-- Entity recognition (Barack Obama is a person, a president)
-- Relationship extraction (Paris is the capital of France)
-- Coreference (understanding that "he" refers to "Obama" in a paragraph)
-
-After these layers, the model understands what entities exist and how they relate.
-
-**Layers 31-60: Reasoning and Inference**
-
-- Logical deduction (If A → B and B → C, then A → C)
-- Analogical reasoning (king:queen :: man:woman)
-- Contradiction detection (If sentence 1 says X and sentence 2 says not-X)
-
-After these layers, the model can make inferences beyond what's explicitly stated.
-
-**Layers 61-90: Task Understanding**
-
-- What kind of question is being asked?
-- What format should the answer take?
-- What tone is appropriate?
-
-After these layers, the model knows whether you want a poem, code, or an explanation.
-
-**Layers 91-96: Output Generation**
-
-- Selecting the specific words to generate
-- Maintaining consistency and coherence
-- Applying safety filters
-
-These final layers produce the actual text.
-
-## The Cascade of Matmuls
-
-Let's trace what happens to a single word through all 96 layers. Suppose we're processing the word "bank" in this sentence:
-
-> "I deposited money at the bank on the river bank."
-
-**Layer 1:**
-
-```
-Input: bank₁ (first occurrence)
-After attention: [heavily weighted toward "deposited" and "money"]
-After feedforward: vector shifted toward "financial institution" meaning
-```
-
-**Layer 20:**
-
-```
-Input: refined bank₁ vector
-After attention: [context includes "money", "deposited", overall sentence structure]
-After feedforward: strongly associated with "financial services" concept cluster
-```
-
-**Layer 50:**
-
-```
-Input: highly refined bank₁ vector
-After attention: [understood as subject of financial transaction]
-After feedforward: prepared for potential questions about banking
-```
-
-**Layer 96:**
-
-```
-Input: final bank₁ representation
-After attention: [fully contextualized]
-Output: ready to predict next word or answer questions about this specific bank
-```
-
-For the _second_ "bank":
-
-**Layer 1:**
-
-```
-Input: bank₂ (second occurrence)
-After attention: [heavily weighted toward "river"]
-After feedforward: vector shifted toward "shore/edge" meaning
-```
-
-And so on. **Same word, completely different transformation path through the network.**
-
-## The Math Behind the Depth
-
-Each layer applies this transformation:
-
-$$
-\text{output} = \text{LayerNorm}(x + \text{Attention}(x))
-$$
-
-$$
-\text{output} = \text{LayerNorm}(\text{output} + \text{FeedForward}(\text{output}))
-$$
-
-Where each component is matmuls:
-
-- Attention: 4 matmuls (Q, K, V projections + weighted combination)
-- FeedForward: 2 matmuls (up-projection and down-projection)
-
-**Total: 6 matrix multiplications per layer × 96 layers = 576 matmuls per forward pass.**
-
-For a 1000-word input, with each matmul operating on matrices of dimension 4096×4096:
-
-$$
-576 \text{ matmuls} \times 1000 \text{ tokens} \times (4096 \times 4096) \approx 9.7 \text{ trillion operations}
-$$
-
-**ChatGPT is doing trillions of weighted combinations to generate each response.**
-
-## Why So Many Layers?
-
-You might ask: why not just use 10 really good layers instead of 96?
-
-The answer is **compositionality**. Language is hierarchically structured:
-
-- Letters → words
-- Words → phrases
-- Phrases → sentences
-- Sentences → paragraphs
-- Paragraphs → arguments
-
-Each layer can only capture one level of abstraction. You need deep stacks to go from "what are these characters?" all the way up to "what is the philosophical implication of this argument?"
-
-Think of it like building a skyscraper:
-
-- You can't build floor 50 without floor 49
-- You can't understand advanced reasoning without first understanding basic grammar
-- Each layer builds on the representations from the layer below
-
----
-
-# Why Matrix Multiplication Leads to Coherent Responses
-
-We've now traced the full path from simple vector addition to ChatGPT. Let's tie it all together with a concrete example.
-
-## Following a Thought Through ChatGPT
-
-Suppose you ask: **"Why is the sky blue?"**
-
-### Token → Embedding (Matmul #1)
-
-Your question is split into tokens: `["Why", "is", "the", "sky", "blue", "?"]`
-
-Each token is multiplied by an **embedding matrix** to get initial vectors:
-
-$$
-\text{Why}_0 = \text{TokenID}_{324} \cdot W_{\text{embed}}
-$$
-
-This first matmul maps a sparse one-hot vector (the token ID) into dense semantic space.
-
-### Layer 1: Basic Syntax (Matmuls #2-7)
-
-The attention mechanism:
-
-```
-Q = Why₀ · W_Q
-K = [Why, is, the, sky, blue, ?] · W_K
-V = [Why, is, the, sky, blue, ?] · W_V
-
-Attention = softmax(QK^T) · V
-```
-
-After layer 1, the model knows:
-
-- "Why" is a question word
-- "is" is a linking verb
-- "sky" and "blue" are the key content words
-
-### Layer 20: Semantic Understanding (Matmuls #114-119)
-
-After many layers of refinement:
-
-- "sky" is understood as atmosphere
-- "blue" is understood as a color
-- "Why" indicates a causal explanation is needed
-- The model activates concepts related to: light, wavelengths, scattering, Rayleigh scattering
-
-### Layer 50: Knowledge Retrieval (Matmuls #294-299)
-
-The model's weights contain compressed knowledge from training:
-
-- Rayleigh scattering facts are encoded in specific weight patterns
-- The model "retrieves" this by the activation patterns flowing through matmuls
-- It's not looking up a database - the knowledge IS the weights
-
-Through matrix multiplications, the model finds:
-
-```
-sky + blue + why → [high activation in "light scattering" region of semantic space]
-```
-
-### Layer 80: Response Formulation (Matmuls #474-479)
-
-The model decides:
-
-- This needs a scientific explanation
-- Start with a clear thesis ("The sky is blue because...")
-- Include the mechanism (Rayleigh scattering)
-- Keep it accessible (no need for advanced physics equations)
-
-### Layer 96: Word Selection (Matmuls #570-576)
-
-The final layer projects back to vocabulary:
-
-$$
-\text{logits} = \text{hidden}_{96} \cdot W_{\text{output}}
-$$
-
-This final matmul produces a probability distribution over all 50,000+ words in the vocabulary:
-
-```
-P("The") = 0.73
-P("Sky") = 0.15
-P("Blue") = 0.08
-...
-```
-
-The model picks "The" (highest probability), adds it to the context, and repeats the entire process for the next word.
-
-## The Answer to Our Original Question
-
-So why does matrix multiplication lead to coherent responses?
-
-**Because language is fundamentally about relationships and combinations:**
-
-1. **Meaning emerges from relationships**: A word's meaning comes from its relationships to other words. Matrix multiplication excels at encoding and transforming relationships.
-
-2. **Understanding requires combining information**: To answer "why is the sky blue?" requires combining knowledge about:
-
-   - Light (wavelengths)
-   - Atmosphere (composition)
-   - Physics (scattering)
-   - Question-answering (how to structure an explanation)
-
-   Matrix multiplication lets the model take weighted combinations of all these pieces of knowledge.
-
-3. **Context determines everything**: The same word means different things in different contexts. Attention uses matrix multiplication to dynamically reweight representations based on context.
-
-4. **Learning is finding the right weights**: During training, the model adjusts billions of weights to minimize errors. Matrix multiplication makes this optimization possible - it's differentiable, efficient, and expressive enough to learn complex patterns.
-
-5. **Coherence comes from consistency**: By using the same operation (matmul) throughout, the model learns consistent representations. The relationship between "king" and "queen" is encoded the same way as the relationship between "man" and "woman", which is encoded the same way as the relationship between "question" and "answer."
-
-## The Final Insight
-
-Matrix multiplication works because **it's the mathematical operation that says "this depends on a weighted combination of those."**
-
-And that's exactly what language is:
-
-- Every word depends on surrounding words
-- Every sentence depends on previous sentences
-- Every answer depends on the question and knowledge
-- Every generated token depends on all previous tokens
-
-ChatGPT generates coherent responses because through **trillions of matrix multiplications** during training:
-
-- On billions of examples
-- Across 96 layers of abstraction
-- With 175 billion learned weights
-
-It has learned which combinations of inputs reliably produce which outputs. When you type "Why is the sky blue?", you're triggering a cascade of weighted combinations that have been optimized to produce coherent explanations about atmospheric optics.
-
-It's not magic. It's just matrix multiplication - done trillions of times, at massive scale, with carefully learned weights.
-
-And that's why `matmul` leads to ChatGPT.
+Evis
