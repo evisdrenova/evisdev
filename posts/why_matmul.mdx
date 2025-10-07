@@ -1,6 +1,6 @@
 ---
-title: "From matmul to ChatGPT"
-date: "2025-10-04"
+title: "From Matmul to Meaning"
+date: "2025-10-06"
 publish: true
 ---
 
@@ -8,7 +8,7 @@ import Note from "../components/Note";
 
 Over the past few months, I've built two LLMs from scratch, namely GPT-rs and llama2.rs. At this point, I feel reasonably comfortable with the transformer architecture and how it works.
 
-One of the core operations within the layers of a neural net is matrix multiplication or `matmul` as it's often referred to. This `matmul` operation happens trillions of times within large langauges models (LLMs) like ChatGPT and is one the main reasons why ChatGPT is able to provide coherent (usually!) responses.
+One of the core operations within the layers of a neural net is matrix multiplication or `matmul` as it's often referred to. This `matmul` operation happens trillions of times within large language models (LLMs) like ChatGPT and is one the main reasons why ChatGPT is able to provide coherent (usually!) responses.
 
 But I often find myself asking, _how_ and _why_ does multiplying matrices trillions of times lead to ChatGPT giving us a coherent response to our prompts?
 
@@ -176,8 +176,8 @@ There are a few vectors here so let's go through them:
 1. The solid blue vector is the input vector of $[2,3]$. We can graph this in our coordinate plane starting from the origin $[0,0]$ and extending to $[2,3]$.
 2. The solid green vector is the 1st column of the matrix $M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}$, which is $\begin{bmatrix} 2 \\ 1 \end{bmatrix}$
 3. The dashed green vector is the 1st element of the input vector multiplied by the 1st column of the matrix, $2 \cdot [2,1] = [4,2]$
-4. The solid orange vector is the 2st column of the matrix $M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}$, which is $\begin{bmatrix} 1 \\ 3 \end{bmatrix}$.
-5. The dashed orange vector is the 2st element of the input vector multiplied by the 2st column of the matrix, $3 \cdot [1,3] = [3,9]$
+4. The solid orange vector is the 2nd column of the matrix $M = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}$, which is $\begin{bmatrix} 1 \\ 3 \end{bmatrix}$.
+5. The dashed orange vector is the 2nd element of the input vector multiplied by the 2st column of the matrix, $3 \cdot [1,3] = [3,9]$
 6. The solid red vector is resulting vector when we add the dashed orange vector and the dashed green vector.
 
 But wait! Why do we just have one result vector? I thought the matrix was a combination of vectors, so shouldn't we have two vectors? This is an excellent question and gets at the heart of matrix multiplication.
@@ -194,25 +194,80 @@ Think of it this way:
 
 By taking the dot product of each matrix and vector, we're stretching and rotating the input vector by the matrix in order to project it into a new space.
 
-The cool thing is that this scales and works with matrices that have as many dimensions as you want! Let's look at an example in the next section.
+The cool thing is that this scales and works with matrices that have as many dimensions as you want!
+
+Let's look at an example in the next section.
 
 # Multiplying Matrices
 
-We learned how to multiply a matrix by a vector above
+We learned how to multiply a matrix by a vector above. Now let's see what happens when we multiply two matrices together.
 
-When you perform matrix multiplication, you’re essentially doing a lot of dot products.
+When you perform matrix multiplication, you're essentially doing a lot of dot products between rows and columns.
 
-For example:
+Let's start with a concrete example:
 
 $$
 A =
 \begin{bmatrix}
-a_{11} & a_{12} \
+1 & 2 \\
+3 & 4
+\end{bmatrix}, \quad
+B =
+\begin{bmatrix}
+5 & 6 \\
+7 & 8
+\end{bmatrix}
+$$
+
+To compute $A \times B$, we take each **row** of $A$ and dot it with each **column** of $B$:
+
+**Top-left entry:** Row 1 of $A$ · Column 1 of $B$
+
+$$
+[1, 2] \cdot [5, 7] = 1 \cdot 5 + 2 \cdot 7 = 5 + 14 = 19
+$$
+
+**Top-right entry:** Row 1 of $A$ · Column 2 of $B$
+
+$$
+[1, 2] \cdot [6, 8] = 1 \cdot 6 + 2 \cdot 8 = 6 + 16 = 22
+$$
+
+**Bottom-left entry:** Row 2 of $A$ · Column 1 of $B$
+
+$$
+[3, 4] \cdot [5, 7] = 3 \cdot 5 + 4 \cdot 7 = 15 + 28 = 43
+$$
+
+**Bottom-right entry:** Row 2 of $A$ · Column 2 of $B$
+
+$$
+[3, 4] \cdot [6, 8] = 3 \cdot 6 + 4 \cdot 8 = 18 + 32 = 50
+$$
+
+Putting it all together:
+
+$$
+A \times B =
+\begin{bmatrix}
+19 & 22 \\
+43 & 50
+\end{bmatrix}
+$$
+
+## The General Pattern
+
+For any two matrices, the pattern is the same:
+
+$$
+A =
+\begin{bmatrix}
+a_{11} & a_{12} \\
 a_{21} & a_{22}
 \end{bmatrix}, \quad
 B =
 \begin{bmatrix}
-b_{11} & b_{12} \
+b_{11} & b_{12} \\
 b_{21} & b_{22}
 \end{bmatrix}
 $$
@@ -238,11 +293,13 @@ $$
 (A \cdot B)_{ij} = \text{dot}(A*_{i,*}, B_{*,j})
 $$
 
-**Matrix multiplication** applies this operation across multiple pairs of vectors to project and combine data — producing a new set of vectors.
+The **dot product** measures how "aligned" two vectors are:
 
-How do we think about this intuitively?
+- High dot product → vectors point in similar directions (high similarity)
+- Low dot product → vectors are perpendicular (no similarity)
+- Negative dot product → vectors point in opposite directions
 
-The **dot product** measures how "aligned" two vectors are. If they are very aligned then they will have a large dot product, if they are not aligned they will have a small dot product. So we can use the dot product as a measure to tell us how similar two vectors are.
+This is why we can use the dot product to measure similarity between word vectors in language models. When we multiply matrices in a neural network, we're essentially computing how aligned different feature directions are, which helps the model understand relationships between concepts.
 
 Now we tie it all together.
 
@@ -312,12 +369,55 @@ where
 - **W** = learned weight matrix
 - **h** = transformed vector (new representation)
 
-Each column of $W$ represents a _direction_ that the model has learned to recognize — things like “royalty,” “gender,” “plurality,” “formality,” or even more abstract ones like “causality” or “emotion.”
+Let's see a concrete example with small numbers. Suppose we have a 3-dimensional word vector and a 3×3 weight matrix:
+
+$$
+x = [0.9, 0.1, 0.2], \quad
+W = \begin{bmatrix}
+0.5 & 0.1 & 0.3 \\
+0.2 & 0.8 & 0.1 \\
+0.3 & 0.4 & 0.6
+\end{bmatrix}
+$$
+
+The transformed vector $h$ is:
+
+$$
+h = x \cdot W = [0.9, 0.1, 0.2] \cdot \begin{bmatrix}
+0.5 & 0.1 & 0.3 \\
+0.2 & 0.8 & 0.1 \\
+0.3 & 0.4 & 0.6
+\end{bmatrix}
+$$
+
+Computing each element:
+
+$$
+h_1 = 0.9 \cdot 0.5 + 0.1 \cdot 0.2 + 0.2 \cdot 0.3 = 0.45 + 0.02 + 0.06 = 0.53
+$$
+
+$$
+h_2 = 0.9 \cdot 0.1 + 0.1 \cdot 0.8 + 0.2 \cdot 0.4 = 0.09 + 0.08 + 0.08 = 0.25
+$$
+
+$$
+h_3 = 0.9 \cdot 0.3 + 0.1 \cdot 0.1 + 0.2 \cdot 0.6 = 0.27 + 0.01 + 0.12 = 0.40
+$$
+
+So our transformed vector is:
+
+$$
+h = [0.53, 0.25, 0.40]
+$$
+
+The original vector $[0.9, 0.1, 0.2]$ (high first dimension, low second) has been transformed into $[0.53, 0.25, 0.40]$ (more balanced across dimensions). The weight matrix learned to redistribute the information across different semantic directions.
+
+Each column of $W$ represents a _direction_ that the model has learned to recognize — things like "royalty," "gender," "plurality," "formality," or even more abstract ones like "causality" or "emotion."
 
 Over billions of training examples, the model adjusts $W$ so that words used in similar contexts get pulled closer together (high dot product → high alignment), and unrelated words get pushed apart (low or negative dot product → orthogonal or opposing directions).
 
-That’s why “dog” and “cat” sit near each other in vector space, while “dog” and “keyboard” are far apart.
-It’s the same geometry as the “king − man + woman = queen” example just happening in thousands of dimensions and at massive scale.
+That's why "dog" and "cat" sit near each other in vector space, while "dog" and "keyboard" are far apart.
+It's the same geometry as the "king − man + woman = queen" example just happening in thousands of dimensions and at massive scale.
 
 # But Why Matrix Multiplication?
 
@@ -327,7 +427,7 @@ There are three reasons why.
 
 ## Preserves relationships
 
-MAtrix multiplication preserves relationships when transforming them. Remember our "king - man + woman = queen" example? That worked because the _relationship_ between king and queen is the same as the relationship between man and woman.
+Matrix multiplication preserves relationships when transforming them. Remember our "king - man + woman = queen" example? That worked because the _relationship_ between king and queen is the same as the relationship between man and woman.
 
 Matrix multiplication can apply the _same transformation_ to different vectors. If we have a matrix $M$ that represents "changing gender," it will transform both:
 
