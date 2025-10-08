@@ -180,31 +180,45 @@ Easy enough! This function is non-linear!
 
 # Breaking Linearity
 
-An **activation function** is a non-linear function applied element-wise to the output of each layer. Instead of:
+Now that we have the background context, we can get to activation functions.
+
+An **activation function** is a non-linear function applied element-wise to the output of each layer. Remember that when we multiply an input vector by a matrix, we get another vector as output. "Element-wise" means we apply the activation function to each element in that output vector individually.
+
+For example, if our layer outputs the vector `[2, -1, 3]`, and our activation function is $\sigma$, we compute:
 
 $$
-h_2 = (x \cdot W_1) \cdot W_2
+\sigma([2, -1, 3]) = [\sigma(2), \sigma(-1), \sigma(3)]
 $$
 
-We insert a non-linear function $\sigma$ (the activation):
+Each element gets transformed independently by the same function.
+
+So how does an activation function break linearity? Let's go through it.
+
+In the first section, we combined our two equations and got:
+
+$$
+\hat{y} = (x \cdot W_1) \cdot W_2
+$$
+
+Now let's insert a non-linear function $\sigma$ (the activation):
 
 $$
 h_1 = \sigma(x \cdot W_1)
 $$
 
 $$
-h_2 = \sigma(h_1 \cdot W_2)
+\hat{y} = \sigma(h_1 \cdot W_2)
 $$
 
-Now we **can't** collapse the layers because $\sigma$ breaks the associative property:
+Even though $\sigma$ operates element-wise on individual vectors, when you try to combine the entire computation (two matmuls with two activations) into a single equivalent operation, you can't. There's no single matrix $W$ and single activation that can replicate:
 
 $$
-h_2 = \sigma(\sigma(x \cdot W_1) \cdot W_2)
+\sigma(\sigma(x \cdot W_1) \cdot W_2) \neq \sigma(x \cdot W)
 $$
 
-There's no way to simplify this into a single matrix! Each layer genuinely adds expressive power.
+The activations are independent operations on each layer's output, but that's exactly what prevents the layers from collapsing into one. Adding a non-linear step in between breaks that compatibility. You can't "undo" or "skip over" the activation function to combine the matrices, it's permanently inserted into the computation chain.
 
-Let's see the most common activation functions.
+Let's see the most common activation functions and then talk about how activation functions preventing layer collapse drives learing.
 
 ## ReLU (Rectified Linear Unit)
 
