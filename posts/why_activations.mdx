@@ -142,9 +142,11 @@ But language is complex and rarely linear.
 
 Linear transformations can't capture this complexity. You need something that can learn the curves, corners, and complex decision boundaries that comes with modeling language in a higher dimensional space.
 
-So how do we model this non-linearity?
+So how do we create this non-linearity? Simple - we use a non-linear function!
 
 # What Makes a Function Non-Linear?
+
+(Okay, I'll admit that I had to dig this out of Wikipedia but I swear I double checked it. )
 
 A function $f$ is **linear** if it satisfies two properties:
 
@@ -156,7 +158,7 @@ Matrix multiplication is linear because it satisfies both:
 - $(x + y) \cdot W = x \cdot W + y \cdot W$
 - $(a \cdot x) \cdot W = a \cdot (x \cdot W)$
 
-A function is **non-linear** if it breaks at least one of these properties.
+We saw this in the first section where we could our two weight matrices into one. A function is **non-linear** if it breaks at least one of these properties.
 
 Let's look at a simple non-linear function: $f(x) = x^2$
 
@@ -174,9 +176,9 @@ $$
 25 \neq 13 \text{ ✗}
 $$
 
-The function is non-linear! This "breaking" of linearity is exactly what we need.
+Easy enough! This function is non-linear!
 
-# Activation Functions: Breaking Linearity
+# Breaking Linearity
 
 An **activation function** is a non-linear function applied element-wise to the output of each layer. Instead of:
 
