@@ -14,7 +14,7 @@ Even a 96-layer LLM like GPT-4 would collapse into a single matrix multiplicatio
 
 Let's start at the beginning and build our way to the intuition.
 
-# The Problem With Matrix Multiplication
+# The Problem With Matmul
 
 Let's say we have a simple 2-layer neural network.
 
@@ -43,6 +43,11 @@ W_1 = \begin{bmatrix}
 w_{x_1 h_1} & w_{x_1 h_2} & w_{x_1 h_3} \\
 w_{x_2 h_1} & w_{x_2 h_2} & w_{x_2 h_3} \\
 w_{x_3 h_1} & w_{x_3 h_2} & w_{x_3 h_3}
+\end{bmatrix}, \quad
+W_2 = \begin{bmatrix}
+w_{h_1 \hat{y}} \\
+w_{h_2 \hat{y}} \\
+w_{h_3 \hat{y}}
 \end{bmatrix}
 $$
 
@@ -50,21 +55,21 @@ Where the $w_{x_1 h_1}$ represents the weight going from the ${x_1}$ node to the
 
 </Note>
 
-We can substitute the first equation into the second:
+We can simplify our matrices above by substituting the first equation into the second (reading from left to right):
 
 $$
-h_2 = (x \cdot W_1) \cdot W_2 = x \cdot (W_1 \cdot W_2)
+\hat{y} = (x \cdot W_1) \cdot W_2 = x \cdot (W_1 \cdot W_2)
 $$
 
-By the **associative property** of matrix multiplication, we can combine $W_1 \cdot W_2$ into a single matrix $W$:
+We know that we can easily multiply two matrices together and get a single resulting matrix, so we can combine $W_1 \cdot W_2$ into a single matrix $W$:
 
 $$
-h_2 = x \cdot W
+\hat{y} = x \cdot W
 $$
 
 Our "2-layer" network just collapsed into a single matrix multiplication!
 
-Let's see this with actual numbers. Suppose:
+Let's do this with actual numbers to really drive the point home. Suppose:
 
 $$
 x = [1, 2], \quad W_1 = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}, \quad W_2 = \begin{bmatrix} 1 & 2 \\ 2 & 1 \end{bmatrix}
@@ -79,7 +84,7 @@ $$
 **Layer 2:**
 
 $$
-h_2 = [4, 7] \cdot \begin{bmatrix} 1 & 2 \\ 2 & 1 \end{bmatrix} = [18, 15]
+\hat{y} = [4, 7] \cdot \begin{bmatrix} 1 & 2 \\ 2 & 1 \end{bmatrix} = [18, 15]
 $$
 
 Now let's compute $W_1 \cdot W_2$ directly:
@@ -91,20 +96,53 @@ $$
 **Single layer:**
 
 $$
-h_2 = [1, 2] \cdot \begin{bmatrix} 4 & 5 \\ 7 & 5 \end{bmatrix} = [18, 15]
+\hat{y} = [1, 2] \cdot \begin{bmatrix} 4 & 5 \\ 7 & 5 \end{bmatrix} = [18, 15]
 $$
 
-Same answer! The two-layer network did nothing that a single layer couldn't do.
+Same answer!
 
-This is called **linearity**, and it's a fundamental limitation. No matter how many layers you stack, pure matrix multiplication can only represent **linear transformations**: rotations, scalings, and shears.
+This is called **linearity**, and it holds true for any number of layers in a neural network that are purely doing matrix multiplication. No matter how many layers you stack, pure matrix multiplication can only represent linear transformations: rotations, scalings, and shears.
 
-But language isn't linear. Relationships in language are complex, conditional, and context-dependent:
+Okay, so layer collapse is bad. But why? But why aren't linear transformations enough?
+
+# Why Matmul Isn't Enough
+
+Remember our "king - man + woman = queen" example from the previous blog post? If not, no worries. Let's say we have a simple 2D "word space" where:
+
+- The first dimension represents _royalty_ (0 = common, 1 = royal)
+- The second dimension represents _femininity_ (0 = masculine, 1 = feminine)
+
+So our mini vocabulary looks like this:
+
+| Word      | Vector (royalty, femininity) |
+| --------- | ---------------------------- |
+| **king**  | [0.9, 0.1]                   |
+| **queen** | [0.9, 0.9]                   |
+| **man**   | [0.1, 0.1]                   |
+| **woman** | [0.1, 0.9]                   |
+
+To get from "king" to "queen", we can do some simple vector math:
+
+$$
+\text{king} - \text{man} + \text{woman} = [0.9, 0.1] - [0.1, 0.1] + [0.1, 0.9] = [0.9, 0.9] = \text{queen}
+$$
+
+This works because it was a _linear_ operation in vector space. This is linear because:
+
+- We know: king → `[0.9, 0.1]`, man → `[0.1, 0.1]`, woman → `[0.1, 0.9]`
+- We can predict: king - man + woman → `[0.9, 0.1]` - `[0.1, 0.1]` + `[0.1, 0.9]` = `[0.9, 0.9]`
+
+The result is exactly the sum of the individual transformations. That's what makes it linear.
+
+But language is complex and rarely linear.
 
 - "Bank" means different things near "river" vs "money"
 - "Not bad" means "good" (negation reverses sentiment)
 - "The animal didn't cross because it was tired" requires reasoning
 
-**Linear transformations can't capture this complexity.**
+Linear transformations can't capture this complexity. You need something that can learn the curves, corners, and complex decision boundaries that comes with modeling language in a higher dimensional space.
+
+So how do we model this non-linearity?
 
 # What Makes a Function Non-Linear?
 
