@@ -144,9 +144,9 @@ Linear transformations can't capture this complexity. You need something that ca
 
 So how do we create this non-linearity? Simple - we use a non-linear function!
 
-# What Makes a Function Non-Linear?
+# Non-Linear Functions?
 
-(Okay, I'll admit that I had to dig this out of Wikipedia but I swear I double checked it. )
+But what is a non-linear function? Let's approach it from the other side. What is a linear function?
 
 A function $f$ is **linear** if it satisfies two properties:
 
@@ -176,7 +176,7 @@ $$
 25 \neq 13 \text{ ✗}
 $$
 
-Easy enough! This function is non-linear!
+Since this test fails, this function is non-linear!
 
 # Breaking Linearity
 
@@ -190,15 +190,15 @@ $$
 \sigma([2, -1, 3]) = [\sigma(2), \sigma(-1), \sigma(3)]
 $$
 
-Each element gets transformed independently by the same function.
+Each element gets transformed independently by the same function. Okay, that makes sense, but how does an activation function break linearity?
 
-So how does an activation function break linearity? Let's go through it.
-
-In the first section, we combined our two equations and got:
+In the top section, we combined our two equations and got:
 
 $$
 \hat{y} = (x \cdot W_1) \cdot W_2
 $$
+
+Since matrix multiplication is associative (you can regroup: $(A \cdot B) \cdot C = A \cdot (B \cdot C)$), we can merge multiple matrices into one.
 
 Now let's insert a non-linear function $\sigma$ (the activation):
 
@@ -210,15 +210,27 @@ $$
 \hat{y} = \sigma(h_1 \cdot W_2)
 $$
 
-Even though $\sigma$ operates element-wise on individual vectors, when you try to combine the entire computation (two matmuls with two activations) into a single equivalent operation, you can't. There's no single matrix $W$ and single activation that can replicate:
+Now we're stuck. We can't collapse this into a single matrix because the activation is in the way:
 
 $$
-\sigma(\sigma(x \cdot W_1) \cdot W_2) \neq \sigma(x \cdot W)
+\sigma(\sigma(x \cdot W_1) \cdot W_2) \neq \sigma(x \cdot W_{\text{combined}})
 $$
 
-The activations are independent operations on each layer's output, but that's exactly what prevents the layers from collapsing into one. Adding a non-linear step in between breaks that compatibility. You can't "undo" or "skip over" the activation function to combine the matrices, it's permanently inserted into the computation chain.
+But, why not? This gets at the heart of linear algebra. In linear algebra, Matrix multiplication is **linear**, so it distributes:
 
-Let's see the most common activation functions and then talk about how activation functions preventing layer collapse drives learing.
+$$
+(x \cdot W_1) \cdot W_2 = x \cdot (W_1 \cdot W_2)
+$$
+
+But activation functions are inherently **non-linear**, so they don't distribute:
+
+$$
+\sigma(A \cdot B) \neq \sigma(A) \cdot \sigma(B)
+$$
+
+You can't "push" the $\sigma$ through the matrix multiplication or split it up. Once applied, it fundamentally changes the values in a way that can't be undone or rearranged.
+
+Let's look at the most common activation functions.
 
 ## ReLU (Rectified Linear Unit)
 
@@ -231,13 +243,13 @@ x & \text{if } x > 0 \\
 \end{cases}
 $$
 
+ReLU zeros out negative values but keeps positive values unchanged.
+
 Graphically:
 
-![relu](/activations/relu.png)
+![relu](/whyactivation/relu.png)
 
-**What it does:** Zeroes out negative values, keeps positive values unchanged.
-
-Let's see it in action with numbers:
+For example:
 
 $$
 x = [-2, -1, 0, 1, 2]
