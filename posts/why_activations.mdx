@@ -349,16 +349,16 @@ Now that we've developed some intuition about activation functions, let's see an
 
 Suppose we want to learn the **XOR function** (exclusive or):
 
-| Input ($x_1$, $x_2$) | Output |
-| -------------------- | ------ |
-| (0, 0)               | 0      |
-| (0, 1)               | 1      |
-| (1, 0)               | 1      |
-| (1, 1)               | 0      |
+| Input ($x_1$, $x_2$) | Output   |
+| -------------------- | -------- |
+| (0, 0)               | 0 (blue) |
+| (0, 1)               | 1 (red)  |
+| (1, 0)               | 1 (red)  |
+| (1, 1)               | 0 (blue) |
 
-![relu](/whyactivation/xor.png)
+![relu](/whyactivation/before.png)
 
-This is the classic example of a **non-linearly separable** function. You can't draw a single straight line to separate the 1s(blue) from the 0s(red). This is what we saw in the "Breaking Linearity" section. No matter what weight matrix $W$ you use, $y = x \cdot W$ can't solve XOR. It can only produce linear decision boundaries.
+This is the classic example of a **non-linearly separable** function. You can't draw a single straight line to separate the 1s from the 0s. This is what we saw in the "Breaking Linearity" section. No matter what weight matrix $W$ you use, $y = x \cdot W$ can't solve XOR. It can only produce linear decision boundaries.
 
 Now let's use activations.
 
@@ -392,22 +392,22 @@ Let's trace through all four XOR inputs to see the pattern:
 **Input (0, 0) → Should output 0:**
 
 - Layer 1: $h = \text{ReLU}([0,0] \cdot W_1) = \text{ReLU}([0,0]) = [0,0]$
-- Layer 2: $\hat{y} = [0,0] \cdot [1, -2]^T = 0$ ✓
+- Layer 2: $\hat{y} = [0,0] \cdot [1, -2]^T = 0$
 
 **Input (0, 1) → Should output 1:**
 
 - Layer 1: $h = \text{ReLU}([0,1] \cdot W_1) = \text{ReLU}([1,1]) = [1,1]$
-- Layer 2: $\hat{y} = [1,1] \cdot [1, -2]^T = 1 - 2 = -1 \approx$ **1** (after threshold) ✓
+- Layer 2: $\hat{y} = [1,1] \cdot [1, -2]^T = 1 - 2 = -1 \approx$ **1** (after threshold)
 
 **Input (1, 0) → Should output 1:**
 
 - Layer 1: $h = \text{ReLU}([1,0] \cdot W_1) = \text{ReLU}([1,1]) = [1,1]$
-- Layer 2: $\hat{y} = [1,1] \cdot [1, -2]^T = -1 \approx$ **1** ✓
+- Layer 2: $\hat{y} = [1,1] \cdot [1, -2]^T = -1 \approx$ **1**
 
 **Input (1, 1) → Should output 0:**
 
 - Layer 1: $h = \text{ReLU}([1,1] \cdot W_1) = \text{ReLU}([2,2]) = [2,2]$
-- Layer 2: $\hat{y} = [2,2] \cdot [1, -2]^T = 2 - 4 = -2 \approx$ **0** ✓
+- Layer 2: $\hat{y} = [2,2] \cdot [1, -2]^T = 2 - 4 = -2 \approx$ **0**
 
 **What created the non-linear boundary?**
 
@@ -416,6 +416,12 @@ The ReLU in Layer 1 transformed the input space. Here's what happened:
 - Inputs (0,1) and (1,0) both became [1,1] after ReLU
 - Input (1,1) became [2,2] - **different from the others**
 - Input (0,0) stayed [0,0]
+
+Visually:
+
+![relu](/whyactivation/a.png)
+
+Note: that's just one possible linear boundary, in reality, there are an infinite number of linear boundaries you can draw.
 
 The ReLU created a new space (the hidden layer) where Layer 2 can draw a simple linear boundary to separate XOR! But it required transforming the feature space first using the activation function.
 
