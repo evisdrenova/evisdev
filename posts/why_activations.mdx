@@ -230,7 +230,7 @@ $$
 
 You can't "push" the $\sigma$ through the matrix multiplication or split it up. Once applied, it fundamentally changes the values in a way that can't be undone or rearranged.
 
-Let's look at the most common activation functions.
+Let's look at two of the most common activation functions.
 
 ## ReLU (Rectified Linear Unit)
 
@@ -245,10 +245,6 @@ $$
 
 ReLU zeros out negative values but keeps positive values unchanged.
 
-Graphically:
-
-![relu](/whyactivation/relu.png)
-
 For example:
 
 $$
@@ -259,13 +255,47 @@ $$
 \text{ReLU}(x) = [0, 0, 0, 1, 2]
 $$
 
-**Why it works:**
+Graphically:
 
-- **Sparsity**: About half the neurons are zero (inactive), making the network efficient
-- **Simple gradient**: Derivative is either 0 or 1, making backpropagation fast
-- **Non-saturating**: Unlike older activations (sigmoid, tanh), ReLU doesn't "saturate" for large inputs
+![relu](/whyactivation/relu.png)
 
-**The intuition:** ReLU acts like a gate. If a neuron's activation is negative (not relevant), shut it off. If positive (relevant), let it through. This creates **selective pathways** through the network.
+Why ReLU works so well:
+
+**1. Sparsity**
+
+ReLU zeros out negative values. In a typical network, about half the values going through each layer are negative, which means:
+
+- About 50% of neurons output zero (they're "off")
+- The network only computes with the active neurons
+- This makes the network faster and uses less memory
+
+But wait - wouldn't zero'ing out half of the neurons mean that network doesn't learn as well? Actually, no! When ReLU zeros out a neuron, it's saying: "This feature isn't relevant for this input." That's a decision the network learned to make during training, not a random deletion.
+
+**2. Simple gradient**
+
+During training, the network needs to calculate derivatives (gradients) to know how to adjust weights (backpropagation). ReLU's derivative is incredibly simple:
+
+Either 1 or 0. That's it!
+
+**3. Non-saturating (Doesn't get stuck)**
+
+"Saturation" means a function's output stops changing even when the input keeps changing. For example, let's look at Sigmoid activation functions which saturates.
+
+- Input: 5 → Output: 0.993
+- Input: 10 → Output: 0.99995
+- Input: 100 → Output: 0.9999999...
+
+The output is stuck near 1, barely moving. This means the gradient (how much to adjust weights) becomes nearly zero, so learning stops. This is called the **vanishing gradient problem**.
+
+**ReLU (doesn't saturate for positive values):**
+
+- Input: 5 → Output: 5
+- Input: 10 → Output: 10
+- Input: 100 → Output: 100
+
+The output keeps growing! The gradient stays at 1, so learning never slows down. This is huge for training deep networks where gradients need to flow back through 96+ layers.
+
+ReLU acts like a smart filter that creates selective pathways through the network where only the neurons that found relevant patterns pass information forward.
 
 ## GELU (Gaussian Error Linear Unit)
 
@@ -281,13 +311,7 @@ $$
 \text{GELU}(x) \approx 0.5x \left(1 + \tanh\left[\sqrt{\frac{2}{\pi}} \left(x + 0.044715x^3\right)\right]\right)
 $$
 
-Graphically:
-
-![gelu](/activations/gelu.png)
-
-**What it does:** Similar to ReLU but with smooth transitions instead of a hard cutoff at zero.
-
-Example:
+For example:
 
 $$
 x = [-2, -1, 0, 1, 2]
@@ -296,6 +320,12 @@ $$
 $$
 \text{GELU}(x) \approx [-0.04, -0.16, 0, 0.84, 1.96]
 $$
+
+Graphically:
+
+![relu](/whyactivation/gl.png)
+
+**What it does:** Similar to ReLU but with smooth transitions instead of a hard cutoff at zero.
 
 Notice that small negative values get small negative outputs (not zero like ReLU). This "soft gating" preserves more information.
 
@@ -312,32 +342,6 @@ Notice that small negative values get small negative outputs (not zero like ReLU
 Modern LLMs like GPT-3, GPT-4, and LLaMA all use GELU or variants of it. The smooth gradients help with training stability at massive scale.
 
 </Note>
-
-## SiLU / Swish (Sigmoid Linear Unit)
-
-Another smooth alternative:
-
-$$
-\text{SiLU}(x) = x \cdot \sigma(x) = \frac{x}{1 + e^{-x}}
-$$
-
-Where $\sigma(x)$ is the sigmoid function.
-
-Example:
-
-$$
-x = [-2, -1, 0, 1, 2]
-$$
-
-$$
-\text{SiLU}(x) \approx [-0.24, -0.27, 0, 0.73, 1.76]
-$$
-
-**Why it works:**
-
-- Even smoother than GELU
-- Self-gated: the input modulates itself
-- Used in some vision models and efficient architectures
 
 # How Activation Functions Enable Learning
 
