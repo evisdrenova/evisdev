@@ -343,9 +343,9 @@ Modern LLMs like GPT-3, GPT-4, and LLaMA all use GELU or variants of it. The smo
 
 </Note>
 
-# How Activation Functions Enable Learning
+# Learning with Activation Functions
 
-Let's see concretely how activations let us learn non-linear patterns.
+Now that we've developed some intuition about activation functions, let's see an example of how activations let us learn non-linear patterns.
 
 Suppose we want to learn the **XOR function** (exclusive or):
 
@@ -356,24 +356,22 @@ Suppose we want to learn the **XOR function** (exclusive or):
 | (1, 0)               | 1      |
 | (1, 1)               | 0      |
 
-This is the classic example of a **non-linearly separable** function. You can't draw a single straight line to separate the 1s from the 0s.
+![relu](/whyactivation/xor.png)
 
-![xor](/activations/xor_problem.png)
+This is the classic example of a **non-linearly separable** function. You can't draw a single straight line to separate the 1s(blue) from the 0s(red). This is what we saw in the "Breaking Linearity" section. No matter what weight matrix $W$ you use, $y = x \cdot W$ can't solve XOR. It can only produce linear decision boundaries.
 
-**A linear model fails:**
+Now let's use activations.
 
-No matter what weight matrix $W$ you use, $y = x \cdot W$ can't solve XOR. It can only produce linear decision boundaries.
+Great question! Let me explain what's happening with the XOR example more clearly:
 
-**A network with activations succeeds:**
-
-Let's use a 2-layer network with ReLU:
+Let's use a 2-layer network with ReLU to solve XOR:
 
 $$
 h = \text{ReLU}(x \cdot W_1)
 $$
 
 $$
-y = h \cdot W_2
+\hat{y} = h \cdot W_2
 $$
 
 With learned weights:
@@ -382,23 +380,46 @@ $$
 W_1 = \begin{bmatrix} 1 & 1 \\ 1 & 1 \end{bmatrix}, \quad W_2 = \begin{bmatrix} 1 \\ -2 \end{bmatrix}
 $$
 
-Let's trace through input $(1, 1)$:
+Let's trace through all four XOR inputs to see the pattern:
 
-**Layer 1:**
+<Note>
+  The $^T$ superscript that you'll see below (like, $[1, -2]^T$) is a shorthand
+  marker that means to transpose the matrix. You transpose a matrix by switching
+  the rows and columns. For example, if you have a row vector $[1, -2]$, and you
+  transpose it, you get a column vector $\begin{bmatrix} 1 \\ -2 \end{bmatrix}$.
+</Note>
 
-$$
-h = \text{ReLU}([1, 1] \cdot \begin{bmatrix} 1 & 1 \\ 1 & 1 \end{bmatrix}) = \text{ReLU}([2, 2]) = [2, 2]
-$$
+**Input (0, 0) → Should output 0:**
 
-**Layer 2:**
+- Layer 1: $h = \text{ReLU}([0,0] \cdot W_1) = \text{ReLU}([0,0]) = [0,0]$
+- Layer 2: $\hat{y} = [0,0] \cdot [1, -2]^T = 0$ ✓
 
-$$
-y = [2, 2] \cdot \begin{bmatrix} 1 \\ -2 \end{bmatrix} = 2 - 4 = -2 \approx 0 \text{ ✓}
-$$
+**Input (0, 1) → Should output 1:**
 
-The ReLU activation created a **non-linear decision boundary** that separates the XOR classes.
+- Layer 1: $h = \text{ReLU}([0,1] \cdot W_1) = \text{ReLU}([1,1]) = [1,1]$
+- Layer 2: $\hat{y} = [1,1] \cdot [1, -2]^T = 1 - 2 = -1 \approx$ **1** (after threshold) ✓
 
-**The key insight:** Activations let each layer create **new feature spaces** where previously inseparable patterns become separable.
+**Input (1, 0) → Should output 1:**
+
+- Layer 1: $h = \text{ReLU}([1,0] \cdot W_1) = \text{ReLU}([1,1]) = [1,1]$
+- Layer 2: $\hat{y} = [1,1] \cdot [1, -2]^T = -1 \approx$ **1** ✓
+
+**Input (1, 1) → Should output 0:**
+
+- Layer 1: $h = \text{ReLU}([1,1] \cdot W_1) = \text{ReLU}([2,2]) = [2,2]$
+- Layer 2: $\hat{y} = [2,2] \cdot [1, -2]^T = 2 - 4 = -2 \approx$ **0** ✓
+
+**What created the non-linear boundary?**
+
+The ReLU in Layer 1 transformed the input space. Here's what happened:
+
+- Inputs (0,1) and (1,0) both became [1,1] after ReLU
+- Input (1,1) became [2,2] - **different from the others**
+- Input (0,0) stayed [0,0]
+
+The ReLU created a new space (the hidden layer) where Layer 2 can draw a simple linear boundary to separate XOR! But it required transforming the feature space first using the activation function.
+
+The key insight is that ReLU and other activations functions allow you to transform the feature space, bending and warping it like a sheet of paper so that XOR becomes linearly separable in the new space.
 
 # From XOR to Language Understanding
 
@@ -500,12 +521,3 @@ Pretty wild that $\max(0, x)$ is part of what makes ChatGPT possible, huh?
 Until next time!
 
 Evis
-
----
-
-**Further Reading:**
-
-- My previous post on matrix multiplication and meaning
-- The original ReLU paper (Nair & Hinton, 2010)
-- GELU paper (Hendrycks & Gimpel, 2016)
-- Universal Approximation Theorem (Cybenko, 1989)
