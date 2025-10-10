@@ -1,6 +1,6 @@
 ---
 title: "From Activations to Meaning"
-date: "2025-10-07"
+date: "2025-10-09"
 publish: false
 ---
 
@@ -335,7 +335,7 @@ Notice that small negative values get small negative outputs (not zero like ReLU
 - **Probabilistic interpretation**: It's like asking "what's the probability this neuron should be active?"
 - **Better performance**: Empirically outperforms ReLU on large language models
 
-**The intuition:** GELU is like a probabilistic gate. Instead of a hard on/off switch, it asks "how confident am I that this feature is relevant?" and scales the output accordingly.
+ELU is like a probabilistic gate. Instead of a hard on/off switch, it asks "how confident am I that this feature is relevant?" and scales the output accordingly.
 
 <Note>
 
@@ -384,9 +384,10 @@ Let's trace through all four XOR inputs to see the pattern:
 
 <Note>
   The $^T$ superscript that you'll see below (like, $[1, -2]^T$) is a shorthand
-  marker that means to transpose the matrix. You transpose a matrix by switching
-  the rows and columns. For example, if you have a row vector $[1, -2]$, and you
-  transpose it, you get a column vector $\begin{bmatrix} 1 \\ -2 \end{bmatrix}$.
+  marker that means to **transpose** the matrix. You transpose a matrix by
+  switching the rows and columns. For example, if you have a row vector $[1,
+  -2]$, and you transpose it, you get a column vector $\begin{bmatrix} 1 \\ -2
+  \end{bmatrix}$.
 </Note>
 
 **Input (0, 0) → Should output 0:**
@@ -421,41 +422,35 @@ Visually:
 
 ![relu](/whyactivation/a.png)
 
-Note: that's just one possible linear boundary, in reality, there are an infinite number of linear boundaries you can draw.
-
 The ReLU created a new space (the hidden layer) where Layer 2 can draw a simple linear boundary to separate XOR! But it required transforming the feature space first using the activation function.
 
 The key insight is that ReLU and other activations functions allow you to transform the feature space, bending and warping it like a sheet of paper so that XOR becomes linearly separable in the new space.
 
 # From XOR to Language Understanding
 
-The XOR example seems trivial, but the principle scales to language.
+The XOR example seems pretty basic, but the principle scales to language as well.
 
-Consider understanding negation: "not good" vs "not bad"
+Consider understanding negation (we saw an example of this above): "not good" vs "not bad"
 
 - "good" → positive sentiment
 - "not good" → negative sentiment
 - "bad" → negative sentiment
 - "not bad" → positive sentiment (!)
 
-This is non-linear! The word "not" doesn't just shift sentiment by a fixed amount—it reverses it based on context.
+This is non-linear! The word "not" doesn't just shift sentiment by a fixed amount (if we were to do vector arithmetic), it reverses it based on context.
 
-**How activations help:**
-
-After several layers with activations:
+Here's an example of how a neural net could learn the nuances of language layer by layer using activations:
 
 1. **Layer 1-20**: Learn that "not" is a modifier
 2. **Layer 21-40**: Learn that "not" near sentiment words reverses polarity
 3. **Layer 41-60**: Learn that "not bad" is idiomatic (means "good", not just "not negative")
 4. **Layer 61-80**: Learn when this pattern applies vs when "not bad" means "terrible"
 
-Each layer with its activation function creates a new feature space where these increasingly complex patterns become learnable via linear transformations.
-
-Without activations, the model would be stuck with: "not" + "good" = some fixed weighted sum. It couldn't learn the conditional, context-dependent reversal.
+The activation functions at each layer creates a new feature space where these increasingly complex patterns become learnable via linear transformations.
 
 # Why Not Just Use One Big Activation?
 
-You might ask: why put activations between **every** layer? Why not just:
+Why do we need to use activation functions are every layer? Why not just use one activation function? Something like:
 
 $$
 y = \sigma(x \cdot W_1 \cdot W_2 \cdot W_3 \cdot ... \cdot W_{96})
@@ -467,42 +462,41 @@ $$
 y = \sigma(x \cdot W_{\text{combined}})
 $$
 
-This is just **one** non-linear transformation. It's slightly better than pure linear, but nowhere near as expressive as:
+So you end up getting just a single non-linear transformation. It's slightly better than pure linear, but nowhere near as expressive as 96 layers of matmul + activation functions.
 
-$$
-y = \sigma_{96}(\sigma_{95}(...\sigma_2(\sigma_1(x \cdot W_1) \cdot W_2)...) \cdot W_{96})
-$$
-
-Each $\sigma$ creates a new opportunity to reshape the feature space. With 96 activations, you get 96 chances to create increasingly abstract representations.
-
-**Analogy:** It's like sculpting clay:
-
-- One activation = one reshaping of the clay
-- 96 activations = 96 reshapings, each building on the previous refinement
-
-By the end, you've sculpted something incredibly intricate that one reshaping could never achieve.
+Each activation functions creates a new opportunity to reshape the feature space in order to find that boundary. With 96 activations, you get 96 chances to create increasingly abstract representations.
 
 # The Universal Approximation Theorem
 
-Here's the mathematical justification: the **Universal Approximation Theorem** states that a neural network with:
+If we go back to 1989, a mathematician named George Cybenko proved something amazing. He showed that a neural network with:
 
 - At least one hidden layer
 - A non-linear activation function
 - Enough neurons
 
-Can approximate **any continuous function** to arbitrary precision.
+Can approximate any **continuous function** to arbitrary precision. This means that neural networks with activations are theoretically powerful enough to learn any pattern in data, whether that's recognizing faces, translating languages, or predicting the next word in a sentence.
 
-This is huge! It means neural networks with activations are theoretically capable of learning any pattern in data, no matter how complex.
+**Why this matters for LLMs:**
 
-**The catch:** You need non-linearity. Without activation functions, the theorem doesn't hold. You're stuck with linear functions, which can only approximate... other linear functions.
-
-**In practice:** GPT-4 with 96 layers and GELU activations can approximate incredibly complex functions like:
+GPT-4 with 96 layers and GELU activations can approximate incredibly complex functions like:
 
 - "Given this context, what word comes next?"
 - "Given this question, what's a coherent answer?"
 - "Given this code, where's the bug?"
+- "Given this sentiment, is it positive or negative?"
 
-Each layer with its activation refines the approximation, building from simple patterns (layer 1: "this is a noun") to complex reasoning (layer 90: "given the conversation context, this answer would be most helpful").
+Each layer with its activation refines the approximation. Early layers learn simple patterns:
+
+- Layer 1-10: "This is a noun," "This is past tense," "These words are related"
+
+Later layers learn increasingly abstract concepts:
+
+- Layer 50: "This sentence contradicts the previous one"
+- Layer 90: "Given the conversation context and the user's likely intent, this answer would be most helpful"
+
+By stacking 96 transformations—each one a linear projection followed by a non-linear activation—the network builds a function so complex it can engage in human-like conversation. But mathematically, it's all grounded in Cybenko's 1989 proof: with enough depth and non-linearity, you can approximate anything.
+
+That's the theoretical foundation. The activations are what make it possible.
 
 # Wrapping Up
 
