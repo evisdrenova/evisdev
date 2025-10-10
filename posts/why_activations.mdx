@@ -468,7 +468,7 @@ Each activation functions creates a new opportunity to reshape the feature space
 
 # The Universal Approximation Theorem
 
-Hopefully by now you have a good understanding of activation functions and why they are so important in neural networks so let's do a little history lesson.
+Hopefully by now you have a good understanding of activation functions and why they are so important in neural networks so let's take a quick detour into history.
 
 In 1989, a mathematician named George Cybenko proved something amazing. He showed that a neural network with:
 
@@ -483,23 +483,13 @@ With enough depth and non-linearity, you can approximate anything.
 
 # Wrapping Up
 
-Activation functions are the difference between a calculator and intelligence.
-
-Matrix multiplication gives us efficient, learnable transformations. But it's **activations** that let those transformations build on each other, creating the hierarchical, non-linear feature extraction that makes modern AI possible.
-
-Without ReLU, GELU, or their cousins:
-
-- Your 96-layer network is really just 1 layer in disguise
-- You can't learn XOR, let alone language
-- ChatGPT would be an expensive linear regression
-
-The magic of neural networks isn't just the depth or the parameters—it's the interleaving of linear transformations (matmul) and non-linear activations that unlocks their power.
+Matrix multiplication gives us efficient, learnable transformations. But it's activations that let those transformations build on each other, creating the hierarchical, non-linear feature extraction that makes modern AI possible.
 
 Each matmul rotates and scales the feature space.
 Each activation reshapes it non-linearly.
 Do this 96 times, and you get something that can understand and generate human language.
 
-Pretty wild that $\max(0, x)$ is part of what makes ChatGPT possible, huh?
+Pretty wild that $\max(0, x)$ is part of what makes ChatGPT possible ...
 
 Until next time!
 
