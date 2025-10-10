@@ -8,9 +8,9 @@ import Note from "../components/Note";
 
 In my last post, [From Matmul to Meaning](/why_matmul), I explained how matrix multiplication is the fundamental operation that lets LLMs understand meaning. We saw how billions of matmuls transform word vectors through semantic space until they produce coherent responses.
 
-At the end of that post, I mentioned activation functions as a critical piece I didn't cover (mainly because the blog was already getting long) but without activation functions, matrix multiplication can't learn anything interesting.
+At the end of that post, I mentioned that I didn't cover activation functions (mainly because the blog was already getting long) but without activation functions, matrix multiplication can't learn anything interesting.
 
-Even a 96-layer LLM like GPT-4 would collapse into a single matrix multiplication. How is this possible? How can 96 layers of transformations collapse into one?
+Even a 96-layer LLM like GPT-4 would collapse into a single matrix multiplication. Wait, what? How can 96 layers of matmul transformations collapse into one?
 
 Let's start at the beginning and build our way to the intuition.
 
@@ -468,35 +468,18 @@ Each activation functions creates a new opportunity to reshape the feature space
 
 # The Universal Approximation Theorem
 
-If we go back to 1989, a mathematician named George Cybenko proved something amazing. He showed that a neural network with:
+Hopefully by now you have a good understanding of activation functions and why they are so important in neural networks so let's do a little history lesson.
 
-- At least one hidden layer
-- A non-linear activation function
+In 1989, a mathematician named George Cybenko proved something amazing. He showed that a neural network with:
+
+- At least one hidden layer where each neuron applies a non-linear activation function (we'll get into this so don't worry if you don't know what it means)
 - Enough neurons
 
-Can approximate any **continuous function** to arbitrary precision. This means that neural networks with activations are theoretically powerful enough to learn any pattern in data, whether that's recognizing faces, translating languages, or predicting the next word in a sentence.
+Can approximate any **continuous function** to arbitrary precision. This means that neural networks with activation functions are theoretically powerful enough to learn any pattern in data, whether that's recognizing faces, translating languages, or predicting the next word in a sentence.
 
-**Why this matters for LLMs:**
+The key that makes this work is the activation function. Without it, your neural net layers end up collapsing (as we saw). But with the activation functions, you can stack 96 layers of transformations, each one a linear projection (matmul) followed by a non-linear activation, and your neural net will build a function so complex that it can have a human-like conversation.
 
-GPT-4 with 96 layers and GELU activations can approximate incredibly complex functions like:
-
-- "Given this context, what word comes next?"
-- "Given this question, what's a coherent answer?"
-- "Given this code, where's the bug?"
-- "Given this sentiment, is it positive or negative?"
-
-Each layer with its activation refines the approximation. Early layers learn simple patterns:
-
-- Layer 1-10: "This is a noun," "This is past tense," "These words are related"
-
-Later layers learn increasingly abstract concepts:
-
-- Layer 50: "This sentence contradicts the previous one"
-- Layer 90: "Given the conversation context and the user's likely intent, this answer would be most helpful"
-
-By stacking 96 transformations—each one a linear projection followed by a non-linear activation—the network builds a function so complex it can engage in human-like conversation. But mathematically, it's all grounded in Cybenko's 1989 proof: with enough depth and non-linearity, you can approximate anything.
-
-That's the theoretical foundation. The activations are what make it possible.
+With enough depth and non-linearity, you can approximate anything.
 
 # Wrapping Up
 
