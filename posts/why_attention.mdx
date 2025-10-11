@@ -38,7 +38,7 @@ Now "it" refers to the street. Same word, completely different meaning based on 
 
 This is the fundamental challenge that attention solves: creating dynamic, context-dependent representations through matrix multiplication.
 
-## Attention: The Core Idea
+## The Core Idea
 
 At its core, attention asks a simple question:
 
@@ -50,39 +50,35 @@ When you read "The cat sat on the mat because it was soft," your brain automatic
 2. **Scores** which ones are relevant (mat is more relevant for "soft")
 3. **Combines** those relevant words to understand "it" means "mat"
 
-You brain does this because it's been trained over many years of reading and speaking a language. Likewise, an LLM must also be trained on a massive corpus of data in order to learn this context. As it's trained, it learns three weight matrices that give it the contextual mechanism to understand prompts as the user means it.
-
-Attention does exactly this using three learned weight matrices.
+You brain does this because it's been trained over many years of reading and speaking language. Likewise, an LLM must also be trained on a massive corpus of data in order to learn this context. As it's trained, it learns three weight matrices that give it the contextual mechanism to decipher language and it's context.
 
 ## The Three Projections: Query, Key, Value
 
-Every attention mechanism uses three weight matrices that project each word embedding into three different spaces:
+Attention solves the context problem by letting each word in the sentence or context look at every other word in the sentence or context and decide what to pay attention to and how much to pay attention to it.
 
-$$Q = X \cdot W_Q \quad \text{(Query: "What am I looking for?")}$$
-$$K = X \cdot W_K \quad \text{(Key: "What do I contain?")}$$
-$$V = X \cdot W_V \quad \text{(Value: "What do I contribute?")}$$
+For every word in the sentence, we create three different "views" of that word by multiplying its embedding ($X$) by three different learned weight matrices:
 
-Think of it like a database:
+![ve](/whyattention/em.png)
 
-- **Query**: Your search terms
-- **Key**: The index/tags on each entry
-- **Value**: The actual content you retrieve
+Here's the intuition:
 
-### Diagram 1: Three Projections
+- **Query (Q)**: Represents what this word is _searching for_ in other words. It encodes what kind of information this token wants to retrieve from others. For example, in the phrase “the cat sat on the mat”, the word “sat” might query for subjects (who sat?), so its query vector looks for noun-like patterns.
 
-```
-Input Embedding (X)
-       |
-       |---- matmul → W_Q → Query (Q)
-       |
-       |---- matmul → W_K → Key (K)
-       |
-       └---- matmul → W_V → Value (V)
-```
+- **Key (K)**: Represents what this word _offers_ to other words. The key is like a descriptor tag that advertises what kind of information a token carries. In the same example as above, “cat”’s key might encode “noun / animal / subject,” so when “sat”’s query compares itself to “cat”’s key (via a dot product), they match strongly.
 
-_Simple diagram: One box labeled "X" with three arrows pointing to three separate boxes labeled "Q", "K", "V"_
+- **Value (V)**: Represents the actual _information_ this word will contribute when selected. You can think of it as the payload or content that gets passed forward after the attention weights are applied.
 
----
+Another way to think about it is using a database analogy.
+
+- You type **Query** terms into a search bar ("machine learning papers")
+- The database checks these against **Key** indices/tags on each document
+- When there's a match, you retrieve the **Value**, the actual document content
+
+In attention, every word is simultaneously:
+
+- Searching for relevant information in every other word (via its Query)
+- Advertising what it contains to every other word (via its Key)
+- Ready to share its information to every other word (via its Value)
 
 ## Step-by-Step: How Attention Works
 
