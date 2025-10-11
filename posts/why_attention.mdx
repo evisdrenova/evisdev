@@ -1,326 +1,66 @@
 ---
-title: "The Intuition Behind Attention"
-date: "2025-10-06"
+title: "From Attention to Meaning"
+date: "2025-10-17"
 publish: false
 ---
 
 import Note from "../components/Note";
 
-# The Attention Mechanism: How Context Emerges
+This is the third installment in my "From ... to Meaning" series. We've covered how [matrix multiplication](/why_matmul) and [activation functions](/why_activations) matrix multiplication transforms vectors and how activation functions introduce nonlinearity. Now we'll explore **attention**, the mechanism that gives LLMs their ability to understand context and relationships between words.
 
-So far, we’ve looked at how a single vector (a single word) is transformed.
-But ChatGPT doesn’t just understand words — it understands **sentences**, **context**, and **relationships** between words. That’s where **attention** comes in.
+Attention is interesting because, in my opinion, it's the easiest mechanism to grasp conceptually but the hardest to grasp technically. But I think it's critical to understand it in order to truly grok how LLMs create meaningful responses.
+
+Like always, let's start at the beginning and build up to the intuition.
+
+## The Context Problem
+
+Everything we've discussed so far has a fundamental limitation: **each word has a fixed vector**.
+
+Consider the word "bank":
+
+- "I sat by the river **bank**" (shore)
+- "I deposited money at the **bank**" (financial institution)
+- "The plane started to **bank** left" (to tilt)
+
+How can one vector `[0.23, -0.45, 0.87, ...]` capture all three meanings? **It can't.**
+
+Here's another example:
+
+> "The animal didn't cross the street because **it** was too tired."
+
+What does "it" refer to? The animal.
+
+> "The animal didn't cross the street because **it** was too wide."
+
+Now "it" refers to the street. Same word, completely different meaning based on context.
+
+**This is the fundamental challenge that attention solves**: creating dynamic, context-dependent representations through matrix multiplication.
+
+---
+
+## Attention: The Core Idea
+
+Attention does exactly this using three learned weight matrices.
 
 At its core, attention asks a simple question:
 
 > “Given this word, which other words in the sentence should I pay attention to?”
 
-Let’s see how that’s done mathematically — and yes, again, it’s all just matrix multiplications.
-
----
-
-## Step 1: Projecting into Query, Key, and Value Spaces
-
-For each token in the input (say, the words “The cat sat”), the model has an embedding vector.
-Each of these embeddings is multiplied by **three** learned matrices:
-
-$$
-Q = X \cdot W_Q \
-K = X \cdot W_K \
-V = X \cdot W_V
-$$
-
-where:
-
-- **Q (Query):** represents what this word is looking for
-- **K (Key):** represents what this word contains
-- **V (Value):** represents the actual information to be passed along
-
-So each word embedding gets projected into three separate subspaces — the _asking_, _offering_, and _informing_ spaces.
-
----
-
-### Diagram: Attention as MatMul Flow
-
-```
- Input Embeddings (X)
-       │
-       ├── matmul → W_Q → Queries (Q)
-       ├── matmul → W_K → Keys (K)
-       └── matmul → W_V → Values (V)
-              ↓
-      Attention = softmax(Q × Kᵀ / √d)
-              ↓
-     Weighted sum → Attention × V
-              ↓
-   Contextualized Output Vectors
-```
-
-Each line above represents a matrix multiplication.
-
----
-
-## Step 2: Computing “Who Looks at Whom”
-
-Now that every token has its own Q, K, and V vectors, the model computes how strongly each token should attend to every other token using the **dot product** of Q and K:
-
-$$
-\text{attention scores} = Q \cdot K^T
-$$
-
-This is a matrix of pairwise similarities — every entry says “how much token _i_ cares about token _j_.”
-For example, in the sentence:
-
-> “The cat sat on the mat.”
-
-the token “cat” will have a high similarity score with “sat” and “mat”, but low with “the”.
-
-We then scale and normalize these scores:
-
-$$
-A = \text{softmax}\left(\frac{Q \cdot K^T}{\sqrt{d_k}}\right)
-$$
-
-The **softmax** ensures that all attention weights sum to 1, turning raw similarities into probabilities.
-
----
-
-## Step 3: Weighted Sum of Values
-
-Finally, each word’s **contextualized meaning** is computed as a weighted sum of the value vectors (V), using the attention scores (A):
-
-$$
-Z = A \cdot V
-$$
-
-That’s another matrix multiplication.
-
-Now, every word embedding becomes a new vector — one that reflects its context.
-
-For instance:
-
-- “bank” in “river bank” and “bank” in “central bank” start the same.
-- After attention, their meanings diverge based on nearby words.
-
----
-
-### Diagram: Visualizing Attention Flow
-
-```
-       ┌────────────────────────────┐
-       │   Q × Kᵀ  → Attention Map  │  ← (How much each word attends to others)
-       └────────────────────────────┘
-                    │
-                    ▼
-          Weighted Sum with V
-                    │
-                    ▼
-         Contextualized Representation
-```
-
-At every layer, this process repeats — each token updates its meaning based on everything it sees around it.
-
----
-
-# Why Matrix Multiplication Works (and Nothing Else Would)
-
-So why do we use matrix multiplication — and not some other operation?
-
-Because **matrix multiplication is the most expressive linear operation** that still allows:
-
-1. **Composability** – multiple layers can be stacked to approximate complex nonlinear relationships.
-2. **Differentiability** – gradients flow easily through matmuls during training.
-3. **Geometry** – matmuls preserve spatial relationships; they rotate and scale meaning vectors in continuous space.
-
-If we used something nonlinear or discrete (like lookup tables or symbolic rules), gradients wouldn’t propagate smoothly — and the model couldn’t learn through backpropagation.
-
-Every matmul encodes a local, differentiable geometric transformation that contributes to global understanding.
-
----
-
-# From MatMul to Coherence
-
-Now let’s zoom out.
-In one transformer block, the computation looks like this:
-
-```
-Input Embedding
-    ↓
-LayerNorm
-    ↓
-MatMul → W_Q, W_K, W_V
-    ↓
-Attention (Q × Kᵀ, softmax, × V)
-    ↓
-MatMul → W_O  (output projection)
-    ↓
-Residual Add
-    ↓
-Feed-Forward (two more matmuls + GELU)
-    ↓
-Residual Add
-```
-
-So even a single transformer block performs **six matrix multiplications**, each one bending the geometry of meaning slightly.
-
-Stack hundreds of these layers — and each time, the representation of the sentence gets more contextual, abstract, and coherent.
-
-By the time you reach the final layer, the model has rotated your prompt vector into a position that best predicts the next word.
-
----
-
-### Diagram: The Lifecycle of a Token Through the Model
-
-```
- Word Embedding → Linear Transformations → Attention → Feed-Forward → Next Token Prediction
-```
-
-Each arrow is powered by `matmul`.
-Each `matmul` moves the token embedding through a high-dimensional semantic landscape — from raw text → contextual meaning → coherent continuation.
-
----
-
-# Closing the Loop
-
-When you ask ChatGPT a question, you’re really projecting your words into a vast high-dimensional vector space.
-Each transformer layer — powered entirely by matrix multiplication — refines, contextualizes, and transforms these embeddings until the geometry of your input aligns with the geometry of likely next words.
-
-So when ChatGPT replies coherently, it’s because all those `matmuls` have learned how to **rotate meaning itself**.
-
----
-
-> “Every `matmul` is a thought — a rotation of meaning in a space we can’t see, but can feel.”
-
----
-
-Would you like me to generate matching diagrams (in your “hand-drawn math sketch” style) for:
-
-- the **Q/K/V attention flow**
-- the **Q×Kᵀ attention map + softmax + V weighted sum**
-- the **transformer block overview** (showing all the matmuls stacked)?
-
-They’ll visually tie this narrative together perfectly.
-
------CLAUDE--------
-
-# The Context Problem
-
-We've established that matrix multiplication can transform word vectors in meaningful ways. But there's a huge problem with what we've described so far.
-
-## The Static Word Problem
-
-In everything we've discussed, each word has a **fixed vector**:
-
-- "bank" → `[0.23, -0.45, 0.87, ...]`
-
-But wait... the word "bank" means completely different things in these sentences:
-
-1. "I sat by the river **bank**" (meaning: shore)
-2. "I deposited money at the **bank**" (meaning: financial institution)
-3. "The plane started to **bank** left" (meaning: to tilt)
-
-How can one fixed vector `[0.23, -0.45, 0.87, ...]` capture all three meanings?
-
-**It can't.**
-
-This is called the **context problem**, and it's the fundamental challenge that makes language understanding difficult.
-
-## Why Context Matters
-
-Let's look at another example:
-
-> "The animal didn't cross the street because **it** was too tired."
-
-What does "it" refer to? The animal, obviously - it was tired.
-
-> "The animal didn't cross the street because **it** was too wide."
-
-Now what does "it" refer to? The street - streets can't be tired!
-
-The word "it" is identical in both sentences, but its meaning completely depends on the surrounding context. A static vector can't handle this.
-
-## The Solution: Dynamic Representations
-
-What we need is a way to compute **different vectors for the same word based on context**.
-
-In the first sentence, "it" should have a vector close to "animal."
-In the second sentence, "it" should have a vector close to "street."
-
-**This is where attention comes in.**
-
-Attention is a mechanism that uses matrix multiplication to let words "look at" other words in the sentence and dynamically adjust their representations based on what they find.
-
-It's doing something like:
-
-- "Hey, I'm the word 'it'. Let me look at all the other words in this sentence."
-- "Hmm, 'animal' and 'tired' seem relevant. Let me pull some meaning from them."
-- "I'll create a new representation of myself that's a weighted combination of these relevant words."
-
-And the weights? **Learned through matrix multiplication.**
-
----
-
-# Attention: Contextual Matrix Multiplication
-
-Attention is the breakthrough that made modern LLMs possible. It's also, at its core, just a clever application of matrix multiplication.
-
-Let's build the intuition step by step.
-
-## The Core Idea
-
-Imagine you're reading this sentence:
-
-> "The cat sat on the mat because it was soft."
-
-When you process the word "it," your brain automatically:
+When you read "The cat sat on the mat because it was soft," your brain automatically:
 
 1. **Searches** through previous words (cat? mat?)
-2. **Scores** which ones are relevant ("mat" is more relevant than "cat" for "soft")
+2. **Scores** which ones are relevant (mat is more relevant for "soft")
 3. **Combines** those relevant words to understand "it" means "mat"
 
-Attention does exactly this, using three learned matrices.
+---
 
-## The Three Matrices: Query, Key, Value
+## The Three Projections: Query, Key, Value
 
-Every attention mechanism uses three weight matrices:
+Every attention mechanism uses three weight matrices that project each word embedding into three different spaces:
 
-- $W_Q$ (Query): "What am I looking for?"
-- $W_K$ (Key): "What do I contain?"
-- $W_V$ (Value): "What do I contribute?"
-
-Let's say we have a simple sentence: "cat sat mat"
-
-Each word starts with an embedding vector. For simplicity, let's say 4-dimensional:
-
-```
-cat = [1.0, 0.2, 0.5, 0.1]
-sat = [0.3, 1.0, 0.2, 0.4]
-mat = [0.8, 0.1, 0.9, 0.2]
-```
-
-### Step 1: Create Queries, Keys, and Values
-
-We multiply each word's embedding by three different weight matrices:
-
-$$
-Q_{\text{cat}} = \text{cat} \cdot W_Q
-$$
-
-$$
-K_{\text{cat}} = \text{cat} \cdot W_K
-$$
-
-$$
-V_{\text{cat}} = \text{cat} \cdot W_V
-$$
-
-(Same for "sat" and "mat")
-
-**Intuition:**
-
-- The **Query** is "what I'm looking for in other words"
-- The **Key** is "what I can offer to other words"
-- The **Value** is "what information I'll contribute if selected"
+$$Q = X \cdot W_Q \quad \text{(Query: "What am I looking for?")}$$
+$$K = X \cdot W_K \quad \text{(Key: "What do I contain?")}$$
+$$V = X \cdot W_V \quad \text{(Value: "What do I contribute?")}$$
 
 Think of it like a database:
 
@@ -328,80 +68,127 @@ Think of it like a database:
 - **Key**: The index/tags on each entry
 - **Value**: The actual content you retrieve
 
+### Diagram 1: Three Projections
+
+```
+Input Embedding (X)
+       |
+       |---- matmul → W_Q → Query (Q)
+       |
+       |---- matmul → W_K → Key (K)
+       |
+       └---- matmul → W_V → Value (V)
+```
+
+_Simple diagram: One box labeled "X" with three arrows pointing to three separate boxes labeled "Q", "K", "V"_
+
+---
+
+## Step-by-Step: How Attention Works
+
+Let's walk through a concrete example with the sentence: "cat sat mat"
+
+Each word starts with an embedding vector (simplified to 4D):
+
+```
+cat = [1.0, 0.2, 0.5, 0.1]
+sat = [0.3, 1.0, 0.2, 0.4]
+mat = [0.8, 0.1, 0.9, 0.2]
+```
+
+### Step 1: Create Q, K, V for Each Word
+
+We multiply each embedding by the three weight matrices:
+
+$$Q_{\text{cat}} = \text{cat} \cdot W_Q$$
+$$K_{\text{cat}} = \text{cat} \cdot W_K$$
+$$V_{\text{cat}} = \text{cat} \cdot W_V$$
+
+(Same for "sat" and "mat")
+
 ### Step 2: Calculate Attention Scores
 
-For each word, we want to know: **"How much should I pay attention to every other word?"**
+For each word, we compute: **"How much should I pay attention to every other word?"**
 
-Let's focus on the word "mat." Its query $Q_{\text{mat}}$ will be compared against all the keys:
+Let's focus on "mat". Its query $Q_{\text{mat}}$ is compared against all keys using dot products:
 
-$$
-\text{score}_{\text{mat},\text{cat}} = Q_{\text{mat}} \cdot K_{\text{cat}}^T
-$$
+$$\text{score}_{\text{mat},\text{cat}} = Q_{\text{mat}} \cdot K_{\text{cat}}^T$$
+$$\text{score}_{\text{mat},\text{sat}} = Q_{\text{mat}} \cdot K_{\text{sat}}^T$$
+$$\text{score}_{\text{mat},\text{mat}} = Q_{\text{mat}} \cdot K_{\text{mat}}^T$$
 
-$$
-\text{score}_{\text{mat},\text{sat}} = Q_{\text{mat}} \cdot K_{\text{sat}}^T
-$$
+High dot product = high similarity = high relevance.
 
-$$
-\text{score}_{\text{mat},\text{mat}} = Q_{\text{mat}} \cdot K_{\text{mat}}^T
-$$
+Then we apply **softmax** to turn scores into probabilities:
 
-This is just a **dot product** - another form of matrix multiplication! High dot product = high similarity = high relevance.
+$$\text{attention}_{\text{mat}} = \text{softmax}([\text{scores}])$$
 
-Then we apply **softmax** to turn these scores into probabilities that sum to 1:
-
-$$
-\text{attention}_{\text{mat}} = \text{softmax}([\text{score}_{\text{mat},\text{cat}}, \text{score}_{\text{mat},\text{sat}}, \text{score}_{\text{mat},\text{mat}}])
-$$
-
-Let's say we get:
-
-```
-attention_mat = [0.1, 0.2, 0.7]
-```
-
-This means:
+Result might be: `[0.1, 0.2, 0.7]` meaning:
 
 - 10% attention to "cat"
 - 20% attention to "sat"
 - 70% attention to "mat" (itself)
 
-### Step 3: Create Weighted Combination
+### Step 3: Weighted Sum of Values
 
-Now we take a weighted sum of the **values**:
+Now we create a new representation as a weighted combination:
 
-$$
-\text{output}_{\text{mat}} = 0.1 \cdot V_{\text{cat}} + 0.2 \cdot V_{\text{sat}} + 0.7 \cdot V_{\text{mat}}
-$$
+$$\text{output}_{\text{mat}} = 0.1 \cdot V_{\text{cat}} + 0.2 \cdot V_{\text{sat}} + 0.7 \cdot V_{\text{mat}}$$
 
-**This is exactly the weighted sum we learned about at the beginning!** We're taking a linear combination of the value vectors, weighted by how relevant each word is.
+**This is the same weighted sum concept from our matrix multiplication blog!** We're taking a linear combination of value vectors, weighted by relevance.
 
-## The Full Picture
+### Diagram 2: Attention Flow for One Word
 
-Here's what's happening for _every_ word in the sentence simultaneously:
+```
+Query (mat)
+    |
+    | dot product with all Keys
+    ↓
+[score_cat, score_sat, score_mat]
+    |
+    | softmax
+    ↓
+[0.1, 0.2, 0.7]  ← attention weights
+    |
+    | weighted sum of Values
+    ↓
+New representation of "mat"
+```
 
-![attention](/whymatmul/attention.png)
+_Simple diagram: Show "mat" at top, three boxes for scores, then softmax arrow, then weighted combination of three "V" boxes_
 
-Each word:
+---
 
-1. Projects itself into Query, Key, Value spaces (3 matmuls per word)
-2. Computes attention scores with all other words (matmul between all Queries and all Keys)
-3. Combines Values based on attention scores (final matmul)
+## The Full Attention Equation
 
-In matrix form, for all words at once:
+For all words simultaneously, attention is computed as:
 
-$$
-\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
-$$
+$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
 
-Where:
+Let's break down what's happening:
 
-- $Q$ is a matrix of all queries (one row per word)
-- $K$ is a matrix of all keys
-- $V$ is a matrix of all values
-- $d_k$ is a scaling factor (dimension of keys)
+1. **$QK^T$**: Matrix multiply all queries against all keys → attention score matrix  
+   (every entry is "how much token i cares about token j")
 
-**It's matrix multiplication all the way down.**
+2. **$\frac{1}{\sqrt{d_k}}$**: Scale by dimension to prevent extreme values
+
+3. **softmax**: Convert scores to probabilities (each row sums to 1)
+
+4. **multiply by V**: Weight the values by attention scores → final output
+
+### Diagram 3: Attention Matrix Visualization
+
+```
+     cat   sat   mat
+cat [0.5   0.3   0.2]    ← attention weights for "cat"
+sat [0.2   0.6   0.2]    ← attention weights for "sat"
+mat [0.1   0.2   0.7]    ← attention weights for "mat"
+
+Each row: how much this word attends to all others
+```
+
+_Simple diagram: 3x3 grid with darker shading on diagonal, showing attention matrix_
+
+---
 
 ## Why This Solves the Context Problem
 
@@ -412,10 +199,10 @@ Remember our "it" problem?
 When attention processes "it":
 
 1. Its **query** asks: "What noun am I referring to?"
-2. It compares against **keys** from "animal" and "street"
+2. Compares against **keys** from "animal" and "street"
 3. "animal" + "tired" have high similarity → high attention score
-4. It pulls in the **value** vector from "animal"
-5. Now "it" has a representation similar to "animal"!
+4. Pulls in the **value** vector from "animal"
+5. **Now "it" has a representation similar to "animal"!**
 
 For the other sentence:
 
@@ -425,240 +212,177 @@ Same process, but:
 
 - "street" + "wide" have high similarity → high attention score
 - "it" pulls in the **value** vector from "street"
-- Now "it" has a representation similar to "street"!
+- **Now "it" has a representation similar to "street"!**
 
-**The same word "it" gets different representations based on context, all through learned matrix multiplications.**
+**The same word gets different representations based on context, all through learned matrix multiplications.**
+
+### Diagram 4: Context-Dependent "it"
+
+```
+Sentence 1: "animal ... it ... tired"
+                ↓
+            it → [high attention to "animal"]
+                ↓
+            it ≈ animal vector
+
+Sentence 2: "street ... it ... wide"
+                ↓
+            it → [high attention to "street"]
+                ↓
+            it ≈ street vector
+```
+
+_Simple diagram: Two parallel flows showing "it" getting different representations_
 
 ---
 
-# From One Layer to ChatGPT
+## From One Layer to 96 Layers
 
-We've seen how a single attention layer uses matrix multiplication to create context-aware representations. But ChatGPT doesn't use just one layer - it uses **96 layers** stacked on top of each other (in GPT-4 scale models).
-
-What's happening in all those layers?
-
-## Hierarchical Feature Learning
-
-Each layer refines the representation in increasingly abstract ways:
+ChatGPT doesn't use just one attention layer — it uses **96 layers** stacked on top of each other. Each layer refines representations in increasingly abstract ways:
 
 **Layers 1-10: Syntax and Grammar**
 
 - Which words are nouns, verbs, adjectives?
-- What are the phrase boundaries?
-- Which words modify which other words?
-
-After these layers, the model "knows" that in "the quick brown fox," the words "quick" and "brown" both modify "fox."
+- Phrase boundaries and word relationships
 
 **Layers 11-30: Semantic Relationships**
 
-- Entity recognition (Barack Obama is a person, a president)
-- Relationship extraction (Paris is the capital of France)
-- Coreference (understanding that "he" refers to "Obama" in a paragraph)
-
-After these layers, the model understands what entities exist and how they relate.
+- Entity recognition (Barack Obama is a president)
+- Relationships (Paris is capital of France)
+- Coreference resolution
 
 **Layers 31-60: Reasoning and Inference**
 
-- Logical deduction (If A → B and B → C, then A → C)
+- Logical deduction (if A→B and B→C, then A→C)
 - Analogical reasoning (king:queen :: man:woman)
-- Contradiction detection (If sentence 1 says X and sentence 2 says not-X)
-
-After these layers, the model can make inferences beyond what's explicitly stated.
 
 **Layers 61-90: Task Understanding**
 
-- What kind of question is being asked?
+- What kind of question is this?
 - What format should the answer take?
-- What tone is appropriate?
-
-After these layers, the model knows whether you want a poem, code, or an explanation.
 
 **Layers 91-96: Output Generation**
 
-- Selecting the specific words to generate
-- Maintaining consistency and coherence
-- Applying safety filters
+- Selecting specific words to generate
+- Maintaining coherence
 
-These final layers produce the actual text.
-
-## The Cascade of Matmuls
-
-Let's trace what happens to a single word through all 96 layers. Suppose we're processing the word "bank" in this sentence:
-
-> "I deposited money at the bank on the river bank."
-
-**Layer 1:**
+### Diagram 5: Layer Hierarchy
 
 ```
-Input: bank₁ (first occurrence)
-After attention: [heavily weighted toward "deposited" and "money"]
-After feedforward: vector shifted toward "financial institution" meaning
+Input: "bank" (in financial context)
+
+Layer 1:  [raw embedding]
+Layer 20: [+ nearby word context]
+Layer 50: [+ sentence structure]
+Layer 80: [+ discourse meaning]
+Layer 96: [ready for prediction]
+
+Each layer adds more abstract understanding
 ```
 
-**Layer 20:**
-
-```
-Input: refined bank₁ vector
-After attention: [context includes "money", "deposited", overall sentence structure]
-After feedforward: strongly associated with "financial services" concept cluster
-```
-
-**Layer 50:**
-
-```
-Input: highly refined bank₁ vector
-After attention: [understood as subject of financial transaction]
-After feedforward: prepared for potential questions about banking
-```
-
-**Layer 96:**
-
-```
-Input: final bank₁ representation
-After attention: [fully contextualized]
-Output: ready to predict next word or answer questions about this specific bank
-```
-
-For the _second_ "bank":
-
-**Layer 1:**
-
-```
-Input: bank₂ (second occurrence)
-After attention: [heavily weighted toward "river"]
-After feedforward: vector shifted toward "shore/edge" meaning
-```
-
-And so on. **Same word, completely different transformation path through the network.**
-
-## The Math Behind the Depth
-
-Each layer applies this transformation:
-
-$$
-\text{output} = \text{LayerNorm}(x + \text{Attention}(x))
-$$
-
-$$
-\text{output} = \text{LayerNorm}(\text{output} + \text{FeedForward}(\text{output}))
-$$
-
-Where each component is matmuls:
-
-- Attention: 4 matmuls (Q, K, V projections + weighted combination)
-- FeedForward: 2 matmuls (up-projection and down-projection)
-
-**Total: 6 matrix multiplications per layer × 96 layers = 576 matmuls per forward pass.**
-
-For a 1000-word input, with each matmul operating on matrices of dimension 4096×4096:
-
-$$
-576 \text{ matmuls} \times 1000 \text{ tokens} \times (4096 \times 4096) \approx 9.7 \text{ trillion operations}
-$$
-
-**ChatGPT is doing trillions of weighted combinations to generate each response.**
-
-## Why So Many Layers?
-
-You might ask: why not just use 10 really good layers instead of 96?
-
-The answer is **compositionality**. Language is hierarchically structured:
-
-- Letters → words
-- Words → phrases
-- Phrases → sentences
-- Sentences → paragraphs
-- Paragraphs → arguments
-
-Each layer can only capture one level of abstraction. You need deep stacks to go from "what are these characters?" all the way up to "what is the philosophical implication of this argument?"
-
-Think of it like building a skyscraper:
-
-- You can't build floor 50 without floor 49
-- You can't understand advanced reasoning without first understanding basic grammar
-- Each layer builds on the representations from the layer below
+_Simple diagram: Vertical stack of boxes, each slightly wider, showing progressive refinement_
 
 ---
 
-# Why Matrix Multiplication Leads to Coherent Responses
+## A Complete Transformer Block
 
-We've now traced the full path from simple vector addition to ChatGPT. Let's tie it all together with a concrete example.
+Each layer performs multiple matrix multiplications:
+
+```
+Input Embedding
+    ↓
+LayerNorm
+    ↓
+[Attention Block]
+    Q = X · W_Q
+    K = X · W_K
+    V = X · W_V
+    Attention = softmax(QK^T/√d) · V
+    Output = Attention · W_O
+    ↓
+Residual Add (+ Input)
+    ↓
+LayerNorm
+    ↓
+[Feed-Forward Block]
+    Hidden = Output · W_1
+    Hidden = GELU(Hidden)
+    Final = Hidden · W_2
+    ↓
+Residual Add
+    ↓
+Next Layer
+```
+
+**Count the matmuls**: 4 in attention (Q, K, V, output) + 2 in feed-forward = **6 matmuls per layer**
+
+For 96 layers: **576 matrix multiplications per forward pass**
+
+### Diagram 6: One Transformer Block
+
+```
+     Input
+       |
+   [LayerNorm]
+       |
+   [Attention] ←-- 4 matmuls
+       |
+      (+) ←------- residual
+       |
+   [LayerNorm]
+       |
+[Feed-Forward] ←-- 2 matmuls
+       |
+      (+) ←------- residual
+       |
+     Output
+```
+
+_Simple diagram: Vertical flow with two residual connections shown as curved arrows_
+
+---
 
 ## Following a Thought Through ChatGPT
 
-Suppose you ask: **"Why is the sky blue?"**
+Let's trace what happens when you ask: **"Why is the sky blue?"**
 
 ### Token → Embedding (Matmul #1)
 
-Your question is split into tokens: `["Why", "is", "the", "sky", "blue", "?"]`
+Tokens: `["Why", "is", "the", "sky", "blue", "?"]`
 
-Each token is multiplied by an **embedding matrix** to get initial vectors:
-
-$$
-\text{Why}_0 = \text{TokenID}_{324} \cdot W_{\text{embed}}
-$$
-
-This first matmul maps a sparse one-hot vector (the token ID) into dense semantic space.
+Each token ID is multiplied by embedding matrix:
+$$\text{Why}_0 = \text{TokenID}_{324} \cdot W_{\text{embed}}$$
 
 ### Layer 1: Basic Syntax (Matmuls #2-7)
 
-The attention mechanism:
+After attention:
 
-```
-Q = Why₀ · W_Q
-K = [Why, is, the, sky, blue, ?] · W_K
-V = [Why, is, the, sky, blue, ?] · W_V
-
-Attention = softmax(QK^T) · V
-```
-
-After layer 1, the model knows:
-
-- "Why" is a question word
-- "is" is a linking verb
-- "sky" and "blue" are the key content words
+- "Why" recognized as question word
+- "is" identified as linking verb
+- "sky" and "blue" marked as key content words
 
 ### Layer 20: Semantic Understanding (Matmuls #114-119)
 
-After many layers of refinement:
+After many refinements:
 
-- "sky" is understood as atmosphere
-- "blue" is understood as a color
-- "Why" indicates a causal explanation is needed
-- The model activates concepts related to: light, wavelengths, scattering, Rayleigh scattering
+- "sky" understood as atmosphere
+- "blue" understood as color perception
+- "Why" indicates causal explanation needed
+- Activates concepts: light, wavelengths, scattering
 
 ### Layer 50: Knowledge Retrieval (Matmuls #294-299)
 
-The model's weights contain compressed knowledge from training:
-
-- Rayleigh scattering facts are encoded in specific weight patterns
-- The model "retrieves" this by the activation patterns flowing through matmuls
-- It's not looking up a database - the knowledge IS the weights
-
 Through matrix multiplications, the model finds:
+$$\text{sky} + \text{blue} + \text{why} \rightarrow \text{[high activation in "light scattering" region]}$$
 
-```
-sky + blue + why → [high activation in "light scattering" region of semantic space]
-```
-
-### Layer 80: Response Formulation (Matmuls #474-479)
-
-The model decides:
-
-- This needs a scientific explanation
-- Start with a clear thesis ("The sky is blue because...")
-- Include the mechanism (Rayleigh scattering)
-- Keep it accessible (no need for advanced physics equations)
+The knowledge isn't looked up — **it IS the weights themselves**.
 
 ### Layer 96: Word Selection (Matmuls #570-576)
 
-The final layer projects back to vocabulary:
+Final projection to vocabulary:
+$$\text{logits} = \text{hidden}_{96} \cdot W_{\text{output}}$$
 
-$$
-\text{logits} = \text{hidden}_{96} \cdot W_{\text{output}}
-$$
-
-This final matmul produces a probability distribution over all 50,000+ words in the vocabulary:
+Produces probability distribution:
 
 ```
 P("The") = 0.73
@@ -667,50 +391,84 @@ P("Blue") = 0.08
 ...
 ```
 
-The model picks "The" (highest probability), adds it to the context, and repeats the entire process for the next word.
+Picks "The", adds it to context, repeats for next word.
 
-## The Answer to Our Original Question
+### Diagram 7: Information Flow Through Layers
 
-So why does matrix multiplication lead to coherent responses?
+```
+"Why is the sky blue?"
+        ↓
+  [Embeddings]
+        ↓
+    [Layer 1]  ← syntax
+        ↓
+   [Layer 20]  ← semantics
+        ↓
+   [Layer 50]  ← reasoning
+        ↓
+   [Layer 96]  ← generation
+        ↓
+"The sky is blue because..."
+```
 
-**Because language is fundamentally about relationships and combinations:**
+_Simple diagram: Vertical flow with labels on right showing what each layer does_
 
-1. **Meaning emerges from relationships**: A word's meaning comes from its relationships to other words. Matrix multiplication excels at encoding and transforming relationships.
+---
 
-2. **Understanding requires combining information**: To answer "why is the sky blue?" requires combining knowledge about:
+## Why Matrix Multiplication Works
 
-   - Light (wavelengths)
-   - Atmosphere (composition)
-   - Physics (scattering)
-   - Question-answering (how to structure an explanation)
+Matrix multiplication is the foundation because it's the most expressive linear operation that allows:
 
-   Matrix multiplication lets the model take weighted combinations of all these pieces of knowledge.
+1. **Composability**: Multiple layers can be stacked to approximate complex nonlinear relationships
 
-3. **Context determines everything**: The same word means different things in different contexts. Attention uses matrix multiplication to dynamically reweight representations based on context.
+2. **Differentiability**: Gradients flow easily through matmuls during training, enabling backpropagation
 
-4. **Learning is finding the right weights**: During training, the model adjusts billions of weights to minimize errors. Matrix multiplication makes this optimization possible - it's differentiable, efficient, and expressive enough to learn complex patterns.
+3. **Geometric intuition**: Matmuls rotate and scale vectors in continuous space, preserving spatial relationships
 
-5. **Coherence comes from consistency**: By using the same operation (matmul) throughout, the model learns consistent representations. The relationship between "king" and "queen" is encoded the same way as the relationship between "man" and "woman", which is encoded the same way as the relationship between "question" and "answer."
+4. **Expressiveness**: Can represent any linear transformation, including weighted combinations
 
-## The Final Insight
+If we used discrete operations (lookup tables, symbolic rules), gradients wouldn't propagate — the model couldn't learn through backpropagation.
 
-Matrix multiplication works because **it's the mathematical operation that says "this depends on a weighted combination of those."**
+---
 
-And that's exactly what language is:
+## The Final Insight: Why Attention Creates Meaning
 
-- Every word depends on surrounding words
-- Every sentence depends on previous sentences
-- Every answer depends on the question and knowledge
-- Every generated token depends on all previous tokens
+Attention works because **it's the mathematical operation that says "this depends on a weighted combination of those."**
 
-ChatGPT generates coherent responses because through **trillions of matrix multiplications** during training:
+And that's exactly what language understanding requires:
 
-- On billions of examples
-- Across 96 layers of abstraction
+- **Meaning emerges from relationships**: A word's meaning comes from its relationships to other words. Matrix multiplication encodes these relationships.
+
+- **Context determines everything**: Same word, different contexts → attention dynamically reweights representations based on surrounding words.
+
+- **Understanding requires synthesis**: To answer "why is the sky blue?" requires combining knowledge about light, atmosphere, physics, and question-answering. Attention creates these combinations.
+
+- **Coherence comes from consistency**: By using the same operation (matmul) throughout, the model learns consistent representations across all linguistic levels.
+
+When you type "Why is the sky blue?", you trigger a cascade of **trillions of matrix multiplications**:
+
+- Through 96 layers of abstraction
 - With 175 billion learned weights
+- Producing weighted combinations optimized over billions of training examples
 
-It has learned which combinations of inputs reliably produce which outputs. When you type "Why is the sky blue?", you're triggering a cascade of weighted combinations that have been optimized to produce coherent explanations about atmospheric optics.
+Each attention operation asks: "Given this word, which other words matter?" And through learned Q, K, V matrices, it finds the answer — creating context-aware representations that capture the full richness of language.
 
-It's not magic. It's just matrix multiplication - done trillions of times, at massive scale, with carefully learned weights.
+**Attention is what makes LLMs feel "human"** — because it gives them the ability to understand that meaning doesn't live in individual words, but in the relationships between them.
 
-And that's why `matmul` leads to ChatGPT.
+---
+
+> "Every attention operation is a question: 'What should I focus on?' And the answer, learned from billions of examples, is what transforms static symbols into dynamic understanding."
+
+---
+
+## Summary: The Attention Mechanism
+
+1. **Project** each word into Q, K, V spaces (3 matmuls)
+2. **Compare** queries against keys to get attention scores (1 matmul: $QK^T$)
+3. **Normalize** scores with softmax (probabilities sum to 1)
+4. **Combine** values using attention weights (1 matmul: $\text{scores} \cdot V$)
+5. **Stack** this 96 times for hierarchical understanding
+
+At every layer, words update their meaning based on context. By the final layer, the model has created representations that encode not just what words are, but what they _mean_ in this specific context — ready to generate coherent, contextually-appropriate responses.
+
+**It's matrix multiplication all the way down.**
