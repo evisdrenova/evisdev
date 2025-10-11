@@ -6,7 +6,7 @@ publish: false
 
 import Note from "../components/Note";
 
-This is the third installment in my "From ... to Meaning" series. We've covered how [matrix multiplication](/why_matmul) and [activation functions](/why_activations) matrix multiplication transforms vectors and how activation functions introduce nonlinearity. Now we'll explore **attention**, the mechanism that gives LLMs their ability to understand context and relationships between words.
+This is the third installment in my "From ... to Meaning" series. So far, we've covered how [matrix multiplication](/why_matmul) transforms vectors and how and [activation functions](/why_activations) introduce nonlinearity. Now we'll explore **attention**, the mechanism that gives LLMs their ability to understand context and relationships between words.
 
 Attention is interesting because, in my opinion, it's the easiest mechanism to grasp conceptually but the hardest to grasp technically. But I think it's critical to understand it in order to truly grok how LLMs create meaningful responses.
 
@@ -14,15 +14,17 @@ Like always, let's start at the beginning and build up to the intuition.
 
 ## The Context Problem
 
-Everything we've discussed so far has a fundamental limitation: **each word has a fixed vector**.
+When we tokenize and embed a word, we create a single vector representation of that word. For example, the word "bank" might get transformed into `[0.23, -0.45, 0.87, ...]`. This is a fixed vector that will never change.
 
-Consider the word "bank":
+But here's the problem: the word "bank" means completely different things in different contexts:
 
-- "I sat by the river **bank**" (shore)
-- "I deposited money at the **bank**" (financial institution)
-- "The plane started to **bank** left" (to tilt)
+For example:
 
-How can one vector `[0.23, -0.45, 0.87, ...]` capture all three meanings? **It can't.**
+- "I sat by the river bank" (shore)
+- "I deposited money at the bank" (financial institution)
+- "The plane started to bank left" (to tilt)
+
+How can one fixed vector `[0.23, -0.45, 0.87, ...]` capture all three meanings? Simple, it can't.
 
 Here's another example:
 
@@ -34,13 +36,9 @@ What does "it" refer to? The animal.
 
 Now "it" refers to the street. Same word, completely different meaning based on context.
 
-**This is the fundamental challenge that attention solves**: creating dynamic, context-dependent representations through matrix multiplication.
-
----
+This is the fundamental challenge that attention solves: creating dynamic, context-dependent representations through matrix multiplication.
 
 ## Attention: The Core Idea
-
-Attention does exactly this using three learned weight matrices.
 
 At its core, attention asks a simple question:
 
@@ -52,7 +50,9 @@ When you read "The cat sat on the mat because it was soft," your brain automatic
 2. **Scores** which ones are relevant (mat is more relevant for "soft")
 3. **Combines** those relevant words to understand "it" means "mat"
 
----
+You brain does this because it's been trained over many years of reading and speaking a language. Likewise, an LLM must also be trained on a massive corpus of data in order to learn this context. As it's trained, it learns three weight matrices that give it the contextual mechanism to understand prompts as the user means it.
+
+Attention does exactly this using three learned weight matrices.
 
 ## The Three Projections: Query, Key, Value
 
