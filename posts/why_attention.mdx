@@ -1,14 +1,18 @@
 ---
 title: "From Attention to Meaning"
-date: "2025-10-17"
+date: "2025-10-13"
 publish: false
 ---
 
 import Note from "../components/Note";
 
-This is the third installment in my "From ... to Meaning" series. So far, we've covered how [matrix multiplication](/why_matmul) transforms vectors and how and [activation functions](/why_activations) introduce nonlinearity. Now we'll explore **attention**, the mechanism that gives LLMs their ability to understand context and relationships between words.
+This is the third installment in my "From ... to Meaning" series. So far, we've covered how [matrix multiplication](/why_matmul) transforms vectors and how [activation functions](/why_activations) introduce nonlinearity.
 
-Attention is interesting because, in my opinion, it's the easiest mechanism to grasp conceptually but the hardest to grasp technically. But I think it's critical to understand it in order to truly grok how LLMs create meaningful responses.
+This blog will be all about attention. Attention is interesting because in my opinion, it's a relatively straightforward mechanism to grasp technically (it's just matrix multiplication), but it's one of the hardest to grasp intuitively (at least for me). So hopefully this blog does a good job of helping you understand both.
+
+Attention is the mechanism that gives LLMs their ability to understand context and relationships between words and truly produce meaningful responses. I think it's really the heart of the LLM and arguably the most important part.
+
+Okay, let's get going!
 
 Like always, let's start at the beginning and build up to the intuition.
 
@@ -86,7 +90,7 @@ In attention, every word is simultaneously:
 
 Let's walk through a complete example with the sentence **"the cat sat on the mat"**. Here is the general sequence of steps:
 
-![ve](/whyattention/att_process.png)
+![cycle](/whyattention/cycles.png)
 
 Each word starts with an embedding vector (we'll use 4 dimensions to keep it simple):
 
@@ -252,143 +256,12 @@ Some [research on transformer interpretability](https://www.researchgate.net/pub
 
 This is still a work in progress but the general trend has been observed across many transformer models.
 
-## A Complete Transformer Block
-
-Each layer performs multiple matrix multiplications:
-
-```
-Input Embedding
-    ↓
-LayerNorm
-    ↓
-[Attention Block]
-    Q = X · W_Q
-    K = X · W_K
-    V = X · W_V
-    Attention = softmax(QK^T/√d) · V
-    Output = Attention · W_O
-    ↓
-Residual Add (+ Input)
-    ↓
-LayerNorm
-    ↓
-[Feed-Forward Block]
-    Hidden = Output · W_1
-    Hidden = GELU(Hidden)
-    Final = Hidden · W_2
-    ↓
-Residual Add
-    ↓
-Next Layer
-```
-
-**Count the matmuls**: 4 in attention (Q, K, V, output) + 2 in feed-forward = **6 matmuls per layer**
-
-For 96 layers: **576 matrix multiplications per forward pass**
-
-### Diagram 6: One Transformer Block
-
-```
-     Input
-       |
-   [LayerNorm]
-       |
-   [Attention] ←-- 4 matmuls
-       |
-      (+) ←------- residual
-       |
-   [LayerNorm]
-       |
-[Feed-Forward] ←-- 2 matmuls
-       |
-      (+) ←------- residual
-       |
-     Output
-```
-
-_Simple diagram: Vertical flow with two residual connections shown as curved arrows_
-
----
-
-## Following a Thought Through ChatGPT
-
-Let's trace what happens when you ask: **"Why is the sky blue?"**
-
-### Token → Embedding (Matmul #1)
-
-Tokens: `["Why", "is", "the", "sky", "blue", "?"]`
-
-Each token ID is multiplied by embedding matrix:
-$$\text{Why}_0 = \text{TokenID}_{324} \cdot W_{\text{embed}}$$
-
-### Layer 1: Basic Syntax (Matmuls #2-7)
-
-After attention:
-
-- "Why" recognized as question word
-- "is" identified as linking verb
-- "sky" and "blue" marked as key content words
-
-### Layer 20: Semantic Understanding (Matmuls #114-119)
-
-After many refinements:
-
-- "sky" understood as atmosphere
-- "blue" understood as color perception
-- "Why" indicates causal explanation needed
-- Activates concepts: light, wavelengths, scattering
-
-### Layer 50: Knowledge Retrieval (Matmuls #294-299)
-
-Through matrix multiplications, the model finds:
-$$\text{sky} + \text{blue} + \text{why} \rightarrow \text{[high activation in "light scattering" region]}$$
-
-The knowledge isn't looked up — **it IS the weights themselves**.
-
-### Layer 96: Word Selection (Matmuls #570-576)
-
-Final projection to vocabulary:
-$$\text{logits} = \text{hidden}_{96} \cdot W_{\text{output}}$$
-
-Produces probability distribution:
-
-```
-P("The") = 0.73
-P("Sky") = 0.15
-P("Blue") = 0.08
-...
-```
-
-Picks "The", adds it to context, repeats for next word.
-
-### Diagram 7: Information Flow Through Layers
-
-```
-"Why is the sky blue?"
-        ↓
-  [Embeddings]
-        ↓
-    [Layer 1]  ← syntax
-        ↓
-   [Layer 20]  ← semantics
-        ↓
-   [Layer 50]  ← reasoning
-        ↓
-   [Layer 96]  ← generation
-        ↓
-"The sky is blue because..."
-```
-
-_Simple diagram: Vertical flow with labels on right showing what each layer does_
-
 # Wrapping up
 
-When you type "Why is the sky blue?" into ChatGPT, you trigger a cascade of **trillions of matrix multiplications**:
+There we have it. Attention. It's the mechanism that transformed LLMs from pattern matchers into systems that genuinely understand context.
 
-- Through 96 layers of abstraction
-- With hundreds of billions of learned weights
-- Producing weighted combinations optimized over billions of training examples
+The word "it" learns to attend to "animal" or "street" depending on context. The word "bank" learns to attend to "river" or "money" depending on its surroundings. Every word dynamically constructs its meaning from every other word.
 
-Each attention operation asks: "Given this word, which other words matter?" And through learned Q, K, V matrices, it finds the answer, creating context-aware representations that capture the full scale of language.
+Attention doesn't just process words sequentially like older models did. It lets every word "see" every other word, compute what matters, and pull in exactly the information it needs. That's what makes LLMs feel human — they understand that meaning doesn't live in individual words, but in the relationships between them.
 
-And the cool thing is that it's just it's matrix multiplication all the way down.
+Evis
