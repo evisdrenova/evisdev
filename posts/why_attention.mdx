@@ -189,9 +189,9 @@ $$\text{output}_\text{mat} = 0.12 \cdot [0.38, 0.43, 0.32] + 0.14 \cdot [0.42, 0
 
 $$\text{output}_\text{mat} = [0.45, 0.44, 0.38]$$
 
-This is the new contextualized representation of "mat"! that incorporates information from the entire sentence, especially from "on" and itself, creating a representation that understands "mat" in the context of being something a cat sat on!
+This is the new contextualized representation of "mat" that incorporates information from the entire sentence, especially from "on" and itself, creating a representation that understands "mat" in the context of being something a cat sat on!
 
-Now, we just repeat this same process simultaneously for all words
+Next, we just repeat this same process simultaneously for all words
 
 - "the" (first) attends mostly to "cat" (the noun it modifies)
 - "cat" attends to "the" (its determiner) and "sat" (its action)
@@ -201,6 +201,18 @@ Now, we just repeat this same process simultaneously for all words
 - "mat" attends to "on" and itself (as we computed above)
 
 Each word gets a new representation that captures its meaning in the context of the sentence.
+
+<Note>
+
+If you've ever heard of a KV cache, this is where it comes into play. When generating text token-by-token (like ChatGPT does), the model has already computed the K and V vectors for all previous tokens. Rather than recomputing them from scratch for every new token, we can cache and reuse them.
+
+So if you've generated 100 tokens, and you're generating token 101, you don't need to recompute the Q, K, V vectors for tokens 1-100. You only compute Q, K, V for the new token, then compute attention scores between the new Q and all the cached K vectors, and finally combine the cached V vectors.
+
+This optimization makes generation dramatically faster. Instead of doing O(n²) computations for each new token (where n is sequence length), we only do O(n) computations (because we only have to generate attention scores for just the new token instead of every token with every other token). For a 1000-token conversation, this means ~1000x speedup per token generated!
+
+The problem is that KV caches consume a lot of memory (storing K and V for every token at every layer) which is why we have limits on context windows.
+
+</Note>
 
 ### Diagram 2: Attention Flow for One Word
 
