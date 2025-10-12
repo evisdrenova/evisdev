@@ -12,7 +12,7 @@ Attention is interesting because, in my opinion, it's the easiest mechanism to g
 
 Like always, let's start at the beginning and build up to the intuition.
 
-## The Context Problem
+# The Context Problem
 
 When we tokenize and embed a word, we create a single vector representation of that word. For example, the word "bank" might get transformed into `[0.23, -0.45, 0.87, ...]`. This is a fixed vector that will never change.
 
@@ -38,7 +38,7 @@ Now "it" refers to the street. Same word, completely different meaning based on 
 
 This is the fundamental challenge that attention solves: creating dynamic, context-dependent representations through matrix multiplication.
 
-## The Core Idea
+# The Core Idea
 
 At its core, attention asks a simple question:
 
@@ -52,15 +52,17 @@ When you read "The cat sat on the mat because it was soft," your brain automatic
 
 You brain does this because it's been trained over many years of reading and speaking language. Likewise, an LLM must also be trained on a massive corpus of data in order to learn this context. As it's trained, it learns three weight matrices that give it the contextual mechanism to decipher language and it's context.
 
-## The Three Projections: Query, Key, Value
+# Three Projections: Query, Key, Value
 
-Attention solves the context problem by letting each word in the sentence or context look at every other word in the sentence or context and decide what to pay attention to and how much to pay attention to it.
+Attention solves the context problem by letting each word in the sentence "look" at every other word in the sentence and decide what to pay attention to and how much to pay attention to it.
 
-For every word in the sentence, we create three different "views" of that word by multiplying its embedding ($X$) by three different learned weight matrices:
+For every word in the sentence, we create three different "views" of that word by multiplying its embedding ($X$) by three different learned weight matrices called the **Query**, **Key** and **Value** matrices.
+
+Using the word "bank" from the example above, we would multiply its embedding by each of the weight matrices like this:
 
 ![ve](/whyattention/em.png)
 
-Here's the intuition:
+But what do each of these weight matrices represent? Here's the intuition:
 
 - **Query (Q)**: Represents what this word is _searching for_ in other words. It encodes what kind of information this token wants to retrieve from others. For example, in the phrase “the cat sat on the mat”, the word “sat” might query for subjects (who sat?), so its query vector looks for noun-like patterns.
 
@@ -80,57 +82,125 @@ In attention, every word is simultaneously:
 - Advertising what it contains to every other word (via its Key)
 - Ready to share its information to every other word (via its Value)
 
-## Step-by-Step: How Attention Works
+# Step-by-Step: How Attention Works
 
-Let's walk through a concrete example with the sentence: "cat sat mat"
+Let's walk through a complete example with the sentence: **"the cat sat on the mat"**.
 
-Each word starts with an embedding vector (simplified to 4D):
+Each word starts with an embedding vector (we'll use 4 dimensions to keep it simple):
 
 ```
+the = [0.5, 0.8, 0.1, 0.3]
 cat = [1.0, 0.2, 0.5, 0.1]
 sat = [0.3, 1.0, 0.2, 0.4]
+on  = [0.6, 0.4, 0.7, 0.5]
+the = [0.5, 0.8, 0.1, 0.3]
 mat = [0.8, 0.1, 0.9, 0.2]
 ```
 
-### Step 1: Create Q, K, V for Each Word
+## Step 1: Create Q, K, V for Each Word
 
-We multiply each embedding by the three weight matrices:
+We multiply each embedding by three weight matrices. Let's assume our learned weight matrices are (4×3 to project to 3D for simplicity):
 
-$$Q_{\text{cat}} = \text{cat} \cdot W_Q$$
-$$K_{\text{cat}} = \text{cat} \cdot W_K$$
-$$V_{\text{cat}} = \text{cat} \cdot W_V$$
+$$
+W_Q = \begin{bmatrix} 0.2 & 0.1 & 0.3 \\ 0.4 & 0.2 & 0.1 \\ 0.1 & 0.5 & 0.2 \\ 0.3 & 0.1 & 0.4 \end{bmatrix}, \quad
+W_K = \begin{bmatrix} 0.3 & 0.2 & 0.1 \\ 0.1 & 0.4 & 0.3 \\ 0.2 & 0.1 & 0.5 \\ 0.4 & 0.3 & 0.2 \end{bmatrix}, \quad
+W_V = \begin{bmatrix} 0.1 & 0.3 & 0.2 \\ 0.2 & 0.1 & 0.4 \\ 0.5 & 0.2 & 0.1 \\ 0.3 & 0.4 & 0.3 \end{bmatrix}
+$$
 
-(Same for "sat" and "mat")
+If you remember from the "From Matmul to Meaning" blog, multiplying a vector with a matrix returns a vector. Let's do "cat" as an example:
+$$Q_\text{cat} = [1.0, 0.2, 0.5, 0.1] \cdot W_Q = [0.36, 0.28, 0.39]$$
+$$K_\text{cat} = [1.0, 0.2, 0.5, 0.1] \cdot W_K = [0.46, 0.33, 0.36]$$
+$$V_\text{cat} = [1.0, 0.2, 0.5, 0.1] \cdot W_V = [0.42, 0.45, 0.41]$$
 
-### Step 2: Calculate Attention Scores
+After computing Q, K, V for all words, we have:
 
-For each word, we compute: **"How much should I pay attention to every other word?"**
+```
+Queries (Q):               Keys (K):                Values (V):
+Q_the = [0.30, 0.35, 0.23]  K_the = [0.34, 0.41, 0.28]  V_the = [0.38, 0.43, 0.32]
+Q_cat = [0.36, 0.28, 0.39]  K_cat = [0.46, 0.33, 0.36]  V_cat = [0.42, 0.45, 0.41]
+Q_sat = [0.26, 0.44, 0.29]  K_sat = [0.29, 0.52, 0.38]  V_sat = [0.35, 0.38, 0.48]
+Q_on  = [0.33, 0.40, 0.35]  K_on  = [0.41, 0.45, 0.42]  V_on  = [0.48, 0.41, 0.39]
+Q_the = [0.30, 0.35, 0.23]  K_the = [0.34, 0.41, 0.28]  V_the = [0.38, 0.43, 0.32]
+Q_mat = [0.31, 0.38, 0.44]  K_mat = [0.37, 0.34, 0.51]  V_mat = [0.51, 0.49, 0.37]
+```
 
-Let's focus on "mat". Its query $Q_{\text{mat}}$ is compared against all keys using dot products:
+## Step 2: Calculate Attention Scores
 
-$$\text{score}_{\text{mat},\text{cat}} = Q_{\text{mat}} \cdot K_{\text{cat}}^T$$
-$$\text{score}_{\text{mat},\text{sat}} = Q_{\text{mat}} \cdot K_{\text{sat}}^T$$
-$$\text{score}_{\text{mat},\text{mat}} = Q_{\text{mat}} \cdot K_{\text{mat}}^T$$
+Now that we have all of our Q,K,V for every word, we will calculate our attention scores. Attentions scores are calculated by taking the dot product betwee the Q and K vectors of each word.
 
-High dot product = high similarity = high relevance.
+Why do we take the dot product between Q and K vectors? Remember that the Q vector represents what kind of information this token is searching for, and the K vector represents what information this word offers. So we have a search query and potential matches — we just need to see how well they align. That's where the dot product comes into play.
 
-Then we apply **softmax** to turn scores into probabilities:
+The dot product measures similarity between vectors: when two vectors point in similar directions (representing similar semantic content), their dot product is large. When they point in different directions, the dot product is small. A high dot product = high similarity = high relevance = this word should pay more attention here.
 
-$$\text{attention}_{\text{mat}} = \text{softmax}([\text{scores}])$$
+Let's focus on the word "mat" (last word). Its query $Q_\text{mat} = [0.31, 0.38, 0.44]$ is compared against all keys using dot products:
 
-Result might be: `[0.1, 0.2, 0.7]` meaning:
+$$\text{score}_\text{mat,the} = Q_\text{mat} \cdot K_\text{the}^T = 0.31 \times 0.34 + 0.38 \times 0.41 + 0.44 \times 0.28 = 0.38$$
+$$\text{score}_\text{mat,cat} = Q_\text{mat} \cdot K_\text{cat}^T = 0.31 \times 0.46 + 0.38 \times 0.33 + 0.44 \times 0.36 = 0.43$$
+$$\text{score}_\text{mat,sat} = Q_\text{mat} \cdot K_\text{sat}^T = 0.31 \times 0.29 + 0.38 \times 0.52 + 0.44 \times 0.38 = 0.45$$
+$$\text{score}_\text{mat,on} = Q_\text{mat} \cdot K_\text{on}^T = 0.31 \times 0.41 + 0.38 \times 0.45 + 0.44 \times 0.42 = 0.49$$
+$$\text{score}_\text{mat,the} = Q_\text{mat} \cdot K_\text{the}^T = 0.31 \times 0.34 + 0.38 \times 0.41 + 0.44 \times 0.28 = 0.38$$
+$$\text{score}_\text{mat,mat} = Q_\text{mat} \cdot K_\text{mat}^T = 0.31 \times 0.37 + 0.38 \times 0.34 + 0.44 \times 0.51 = 0.57$$
 
-- 10% attention to "cat"
-- 20% attention to "sat"
-- 70% attention to "mat" (itself)
+**Raw scores**: `[0.38, 0.43, 0.45, 0.49, 0.38, 0.57]`
 
-### Step 3: Weighted Sum of Values
+Notice that "mat" has the highest attention to itself (0.57) and to nearby contextual words like "on" (0.49). High dot product = high similarity = high relevance.
 
-Now we create a new representation as a weighted combination:
+Also, notice that $Q_\text{mat}$ and $K_\text{mat}^T$ are different despite starting from the same base embedding. This is because each weight matrix (Q,K,V) is different so when you multiply the same embedding by different matrices you get a different output vector.
 
-$$\text{output}_{\text{mat}} = 0.1 \cdot V_{\text{cat}} + 0.2 \cdot V_{\text{sat}} + 0.7 \cdot V_{\text{mat}}$$
+Next we apply **softmax** to turn these scores into probabilities that sum to 1:
 
-**This is the same weighted sum concept from our matrix multiplication blog!** We're taking a linear combination of value vectors, weighted by relevance.
+$$\text{attention}_\text{mat} = \text{softmax}([0.38, 0.43, 0.45, 0.49, 0.38, 0.57])$$
+
+**After softmax**: `[0.12, 0.14, 0.15, 0.16, 0.12, 0.18]`
+
+Why do we turn these into probabilities using softmax? Why not just use the raw attention scores? This is a good question.
+
+Softmax does two critical things:
+
+1. **Normalization**: It forces all the attention weights to sum to 1.0 (100%). This means we're creating a proper weighted average, we can't "over-attend" by having weights that sum to more than 100%, and we ensure every word contributes proportionally.
+
+2. **Amplifies differences**: Softmax is exponential, which means it amplifies differences between scores. If one word has a score of 0.57 and another has 0.38, softmax makes this difference even more pronounced in the final weights (0.18 vs 0.12). This helps the model make clearer decisions about what to attend to.
+
+Without softmax, using raw scores would cause problems:
+
+- The scores could sum to any arbitrary number making it unclear how much to attend to each word proportionally
+- Small differences in relevance wouldn't be emphasized enough
+- Training would be less stable because the scale of attention weights would vary wildly across different examples
+
+Back to our example, this means "mat" will:
+
+- Pay 12% attention to "the" (first)
+- Pay 14% attention to "cat"
+- Pay 15% attention to "sat"
+- Pay 16% attention to "on"
+- Pay 12% attention to "the" (second)
+- Pay 18% attention to itself
+
+These weights sum to approximately 1.0 (100%) giving us nice, proportional weights to work with.
+
+## Step 3: Weighted Sum of Values
+
+Now we create a new contextualized representation of "mat" as a weighted combination of all value vectors multipled by the probabilities that we calculated above:
+
+$$\text{output}_\text{mat} = 0.12 \cdot V_\text{the} + 0.14 \cdot V_\text{cat} + 0.15 \cdot V_\text{sat} + 0.16 \cdot V_\text{on} + 0.12 \cdot V_\text{the} + 0.18 \cdot V_\text{mat}$$
+
+Substituting our value vectors:
+$$\text{output}_\text{mat} = 0.12 \cdot [0.38, 0.43, 0.32] + 0.14 \cdot [0.42, 0.45, 0.41] + \ldots$$
+
+$$\text{output}_\text{mat} = [0.45, 0.44, 0.38]$$
+
+This is the new contextualized representation of "mat"! that incorporates information from the entire sentence, especially from "on" and itself, creating a representation that understands "mat" in the context of being something a cat sat on!
+
+Now, we just repeat this same process simultaneously for all words
+
+- "the" (first) attends mostly to "cat" (the noun it modifies)
+- "cat" attends to "the" (its determiner) and "sat" (its action)
+- "sat" attends to "cat" (the subject) and "mat" (the object via "on")
+- "on" attends to "sat" (the verb) and "mat" (the object it relates)
+- "the" (second) attends to "mat" (the noun it modifies)
+- "mat" attends to "on" and itself (as we computed above)
+
+Each word gets a new representation that captures its meaning in the context of the sentence.
 
 ### Diagram 2: Attention Flow for One Word
 
@@ -139,18 +209,18 @@ Query (mat)
     |
     | dot product with all Keys
     ↓
-[score_cat, score_sat, score_mat]
+[score_the, score_cat, score_sat, score_on, score_the, score_mat]
     |
     | softmax
     ↓
-[0.1, 0.2, 0.7]  ← attention weights
+[0.12, 0.14, 0.15, 0.16, 0.12, 0.18]  ← attention weights
     |
     | weighted sum of Values
     ↓
 New representation of "mat"
 ```
 
-_Simple diagram: Show "mat" at top, three boxes for scores, then softmax arrow, then weighted combination of three "V" boxes_
+_Simple diagram: Show "mat" at top, six boxes for scores, then softmax arrow, then weighted combination of six "V" boxes_
 
 ---
 
@@ -409,62 +479,14 @@ Picks "The", adds it to context, repeats for next word.
 
 _Simple diagram: Vertical flow with labels on right showing what each layer does_
 
----
+# Wrapping up
 
-## Why Matrix Multiplication Works
-
-Matrix multiplication is the foundation because it's the most expressive linear operation that allows:
-
-1. **Composability**: Multiple layers can be stacked to approximate complex nonlinear relationships
-
-2. **Differentiability**: Gradients flow easily through matmuls during training, enabling backpropagation
-
-3. **Geometric intuition**: Matmuls rotate and scale vectors in continuous space, preserving spatial relationships
-
-4. **Expressiveness**: Can represent any linear transformation, including weighted combinations
-
-If we used discrete operations (lookup tables, symbolic rules), gradients wouldn't propagate — the model couldn't learn through backpropagation.
-
----
-
-## The Final Insight: Why Attention Creates Meaning
-
-Attention works because **it's the mathematical operation that says "this depends on a weighted combination of those."**
-
-And that's exactly what language understanding requires:
-
-- **Meaning emerges from relationships**: A word's meaning comes from its relationships to other words. Matrix multiplication encodes these relationships.
-
-- **Context determines everything**: Same word, different contexts → attention dynamically reweights representations based on surrounding words.
-
-- **Understanding requires synthesis**: To answer "why is the sky blue?" requires combining knowledge about light, atmosphere, physics, and question-answering. Attention creates these combinations.
-
-- **Coherence comes from consistency**: By using the same operation (matmul) throughout, the model learns consistent representations across all linguistic levels.
-
-When you type "Why is the sky blue?", you trigger a cascade of **trillions of matrix multiplications**:
+When you type "Why is the sky blue?" into ChatGPT, you trigger a cascade of **trillions of matrix multiplications**:
 
 - Through 96 layers of abstraction
-- With 175 billion learned weights
+- With hundreds of billions of learned weights
 - Producing weighted combinations optimized over billions of training examples
 
-Each attention operation asks: "Given this word, which other words matter?" And through learned Q, K, V matrices, it finds the answer — creating context-aware representations that capture the full richness of language.
+Each attention operation asks: "Given this word, which other words matter?" And through learned Q, K, V matrices, it finds the answer, creating context-aware representations that capture the full scale of language.
 
-**Attention is what makes LLMs feel "human"** — because it gives them the ability to understand that meaning doesn't live in individual words, but in the relationships between them.
-
----
-
-> "Every attention operation is a question: 'What should I focus on?' And the answer, learned from billions of examples, is what transforms static symbols into dynamic understanding."
-
----
-
-## Summary: The Attention Mechanism
-
-1. **Project** each word into Q, K, V spaces (3 matmuls)
-2. **Compare** queries against keys to get attention scores (1 matmul: $QK^T$)
-3. **Normalize** scores with softmax (probabilities sum to 1)
-4. **Combine** values using attention weights (1 matmul: $\text{scores} \cdot V$)
-5. **Stack** this 96 times for hierarchical understanding
-
-At every layer, words update their meaning based on context. By the final layer, the model has created representations that encode not just what words are, but what they _mean_ in this specific context — ready to generate coherent, contextually-appropriate responses.
-
-**It's matrix multiplication all the way down.**
+And the cool thing is that it's just it's matrix multiplication all the way down.
