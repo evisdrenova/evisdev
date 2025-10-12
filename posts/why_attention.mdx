@@ -84,7 +84,9 @@ In attention, every word is simultaneously:
 
 # Step-by-Step: How Attention Works
 
-Let's walk through a complete example with the sentence: **"the cat sat on the mat"**.
+Let's walk through a complete example with the sentence **"the cat sat on the mat"**. Here is the general sequence of steps:
+
+![ve](/whyattention/att_process.png)
 
 Each word starts with an embedding vector (we'll use 4 dimensions to keep it simple):
 
@@ -214,63 +216,9 @@ The problem is that KV caches consume a lot of memory (storing K and V for every
 
 </Note>
 
-### Diagram 2: Attention Flow for One Word
+# Why This Solves the Context Problem
 
-```
-Query (mat)
-    |
-    | dot product with all Keys
-    ↓
-[score_the, score_cat, score_sat, score_on, score_the, score_mat]
-    |
-    | softmax
-    ↓
-[0.12, 0.14, 0.15, 0.16, 0.12, 0.18]  ← attention weights
-    |
-    | weighted sum of Values
-    ↓
-New representation of "mat"
-```
-
-_Simple diagram: Show "mat" at top, six boxes for scores, then softmax arrow, then weighted combination of six "V" boxes_
-
----
-
-## The Full Attention Equation
-
-For all words simultaneously, attention is computed as:
-
-$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
-
-Let's break down what's happening:
-
-1. **$QK^T$**: Matrix multiply all queries against all keys → attention score matrix  
-   (every entry is "how much token i cares about token j")
-
-2. **$\frac{1}{\sqrt{d_k}}$**: Scale by dimension to prevent extreme values
-
-3. **softmax**: Convert scores to probabilities (each row sums to 1)
-
-4. **multiply by V**: Weight the values by attention scores → final output
-
-### Diagram 3: Attention Matrix Visualization
-
-```
-     cat   sat   mat
-cat [0.5   0.3   0.2]    ← attention weights for "cat"
-sat [0.2   0.6   0.2]    ← attention weights for "sat"
-mat [0.1   0.2   0.7]    ← attention weights for "mat"
-
-Each row: how much this word attends to all others
-```
-
-_Simple diagram: 3x3 grid with darker shading on diagonal, showing attention matrix_
-
----
-
-## Why This Solves the Context Problem
-
-Remember our "it" problem?
+Remember our "it" problem from one of the earlier sections?
 
 > "The animal didn't cross the street because **it** was too tired."
 
@@ -278,9 +226,9 @@ When attention processes "it":
 
 1. Its **query** asks: "What noun am I referring to?"
 2. Compares against **keys** from "animal" and "street"
-3. "animal" + "tired" have high similarity → high attention score
+3. "animal" + "tired" have high similarity = high attention score
 4. Pulls in the **value** vector from "animal"
-5. **Now "it" has a representation similar to "animal"!**
+5. Now "it" has a representation similar to "animal"
 
 For the other sentence:
 
@@ -290,77 +238,19 @@ Same process, but:
 
 - "street" + "wide" have high similarity → high attention score
 - "it" pulls in the **value** vector from "street"
-- **Now "it" has a representation similar to "street"!**
+- Now "it" has a representation similar to "street"!
 
-**The same word gets different representations based on context, all through learned matrix multiplications.**
+The same word gets different representations based on context, all through learned matrix multiplications.
 
-### Diagram 4: Context-Dependent "it"
+# From One Layer to 96 Layers
 
-```
-Sentence 1: "animal ... it ... tired"
-                ↓
-            it → [high attention to "animal"]
-                ↓
-            it ≈ animal vector
+ChatGPT doesn't use just one attention layer, it uses **96 layers** stacked on top of each other. Each layer refines representations in increasingly abstract ways.
 
-Sentence 2: "street ... it ... wide"
-                ↓
-            it → [high attention to "street"]
-                ↓
-            it ≈ street vector
-```
+Some [research on transformer interpretability](https://www.researchgate.net/publication/335781360_What_Does_BERT_Learn_about_the_Structure_of_Language) suggests that earlier layers learn syntax, middle layers learn reasoning and the later layers learn generation. The boundaries are fuzzy and layers don't neatly separate into distinct functions:
 
-_Simple diagram: Two parallel flows showing "it" getting different representations_
+![ve](/whyattention/layer.png)
 
----
-
-## From One Layer to 96 Layers
-
-ChatGPT doesn't use just one attention layer — it uses **96 layers** stacked on top of each other. Each layer refines representations in increasingly abstract ways:
-
-**Layers 1-10: Syntax and Grammar**
-
-- Which words are nouns, verbs, adjectives?
-- Phrase boundaries and word relationships
-
-**Layers 11-30: Semantic Relationships**
-
-- Entity recognition (Barack Obama is a president)
-- Relationships (Paris is capital of France)
-- Coreference resolution
-
-**Layers 31-60: Reasoning and Inference**
-
-- Logical deduction (if A→B and B→C, then A→C)
-- Analogical reasoning (king:queen :: man:woman)
-
-**Layers 61-90: Task Understanding**
-
-- What kind of question is this?
-- What format should the answer take?
-
-**Layers 91-96: Output Generation**
-
-- Selecting specific words to generate
-- Maintaining coherence
-
-### Diagram 5: Layer Hierarchy
-
-```
-Input: "bank" (in financial context)
-
-Layer 1:  [raw embedding]
-Layer 20: [+ nearby word context]
-Layer 50: [+ sentence structure]
-Layer 80: [+ discourse meaning]
-Layer 96: [ready for prediction]
-
-Each layer adds more abstract understanding
-```
-
-_Simple diagram: Vertical stack of boxes, each slightly wider, showing progressive refinement_
-
----
+This is still a work in progress but the general trend has been observed across many transformer models.
 
 ## A Complete Transformer Block
 
