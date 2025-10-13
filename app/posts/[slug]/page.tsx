@@ -14,6 +14,7 @@ import TableOfContents from "@/components/ToC";
 import Footer from "@/components/Footer";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import EmailSignup from "@/components/EmailSignUp";
 
 type Params = { slug: string };
 type PostPageProps = { params: Promise<Params> };
@@ -78,6 +79,7 @@ export default async function PostPage({ params }: PostPageProps) {
               <h1 className="text-4xl mt-20 font-bold text-gray-900 dark:text-gray-100 text-center">
                 {post.title}
               </h1>
+              <EmailSignup />
               <div className="flex items-center justify-center gap-4 text-sm text-gray-700">
                 <time dateTime={post.date}>
                   {new Date(post.date).toLocaleDateString("en-US", {
