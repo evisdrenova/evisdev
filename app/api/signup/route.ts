@@ -1,5 +1,5 @@
 
-import { EmailTemplate } from '@/components/EmailTemplates/SIgnup';
+import KoalaWelcomeEmail from '@/components/EmailTemplates/WelcomeEmail';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -10,7 +10,7 @@ export async function POST() {
             from: 'Acme <onboarding@resend.dev>',
             to: ['evisdrenova@gmail.com'],
             subject: 'Thank you for signing up',
-            react: EmailTemplate({ firstName: 'Evis' }),
+            react: KoalaWelcomeEmail({ userFirstname: 'Evis' }),
         });
 
         if (error) {
