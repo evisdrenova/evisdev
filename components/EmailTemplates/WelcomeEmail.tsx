@@ -9,25 +9,21 @@ import {
 } from "@react-email/components";
 
 interface WelcomeEmailProps {
-  username?: string;
-  company?: string;
+  firstName?: string;
 }
 
-const WelcomeEmail = ({
-  username = "Nicole",
-  company = "Helix",
-}: WelcomeEmailProps) => {
-  const previewText = `Welcome to ${company}, ${username}!`;
+const WelcomeEmail = ({ firstName = "Nicole" }: WelcomeEmailProps) => {
+  const previewText = `Thanks for subscribing to my blog ${firstName}!`;
 
   return (
     <Html>
       <Head />
       <Preview>{previewText}</Preview>
       <Tailwind>
-        <Body className="bg-black m-auto font-sans">
+        <Body className="bg-white m-auto font-sans">
           <Container className="mb-10 mx-auto p-5 max-w-[465px]">
             <Text className="text-start text-sm text-white">
-              Hey {username}, <br />
+              Hey {firstName}, <br />
             </Text>
             <Text className="text-start text-sm text-white leading-relaxed">
               Thanks for subscribing to my blog. I try and publish new blog

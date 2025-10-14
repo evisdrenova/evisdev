@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { ChevronRight } from "lucide-react";
-import { Resend } from "resend";
 
 export default function EmailSignup() {
   const [email, setEmail] = useState("");
@@ -40,7 +39,7 @@ export default function EmailSignup() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 w-full">
       <div>Subscribe to get future posts before anyone else.</div>
       <div className="flex flex-row items-center gap-2 relative">
         <Input
@@ -56,7 +55,7 @@ export default function EmailSignup() {
       </div>
 
       {isValid === false && <p className="text-red-500 text-sm">{message}</p>}
-      {isValid === true && <p className="text-green-600 text-sm">{message}</p>}
+      {isValid === true && <p className="text-green-700 text-sm">{message}</p>}
     </form>
   );
 }

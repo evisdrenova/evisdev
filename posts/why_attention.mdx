@@ -4,8 +4,6 @@ date: "2025-10-13"
 publish: true
 ---
 
-import Note from "../components/Note";
-
 This is the third installment in my "From ... to Meaning" series. So far, we've covered how [matrix multiplication](/why_matmul) transforms vectors and how [activation functions](/why_activations) introduce nonlinearity.
 
 This blog will be all about attention. Attention is interesting because in my opinion, it's a relatively straightforward mechanism to grasp technically (it's just matrix multiplication), but it's one of the hardest to grasp intuitively (at least for me). So hopefully this blog does a good job of helping you understand both.
@@ -15,6 +13,10 @@ Attention is the mechanism that gives LLMs their ability to understand context a
 Okay, let's get going!
 
 Like always, let's start at the beginning and build up to the intuition.
+
+<div className="my-10 border-y border-gray-300 py-10">
+  <EmailSignup />
+</div>
 
 # The Context Problem
 

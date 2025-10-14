@@ -79,7 +79,6 @@ export default async function PostPage({ params }: PostPageProps) {
               <h1 className="text-4xl mt-20 font-bold text-gray-900 dark:text-gray-100 text-center">
                 {post.title}
               </h1>
-              <EmailSignup />
               <div className="flex items-center justify-center gap-4 text-sm text-gray-700">
                 <time dateTime={post.date}>
                   {new Date(post.date).toLocaleDateString("en-US", {
@@ -94,7 +93,11 @@ export default async function PostPage({ params }: PostPageProps) {
             <article className="prose prose-gray dark:text-gray-100">
               {content}
             </article>
+            <div className="flex w-full max-w-2xl px-4 lg:px-8 items-center justify-center bg-red mt-40">
+              <EmailSignup />
+            </div>
           </main>
+
           <div className="hidden lg:block w-1/5" />
         </div>
       </div>

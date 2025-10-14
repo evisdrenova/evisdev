@@ -1,12 +1,9 @@
 import type { MDXComponents } from "mdx/types";
 import Image from "next/image";
-import Note from "@/components/Note"; // Add this import
-/**
- * A plain object – **no hooks inside** – that lists all
- * component overrides you want MDX to use.
- */
+import Note from "@/components/Note";
+import EmailSignup from "@/components/EmailSignUp";
+
 export const mdxComponents: MDXComponents = {
-  // examples — extend to taste
   img: (props) => (
     <Image
       {...props}
@@ -28,5 +25,6 @@ export const mdxComponents: MDXComponents = {
   ul: (props) => <ul {...props} className="list-disc ml-6 mb-4 space-y-2" />,
   ol: (props) => <ol {...props} className="list-decimal ml-6 mb-4 space-y-2" />,
   li: (props) => <li {...props} className="mb-2 leading-relaxed" />,
+  EmailSignup,
   Note,
 };
