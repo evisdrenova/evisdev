@@ -15,6 +15,7 @@ import Footer from "@/components/Footer";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import EmailSignup from "@/components/EmailSignUp";
+import { remarkInjectCta } from "@/lib/rehype-inject-cta";
 
 type Params = { slug: string };
 type PostPageProps = { params: Promise<Params> };
@@ -48,7 +49,7 @@ export default async function PostPage({ params }: PostPageProps) {
     options: {
       parseFrontmatter: false,
       mdxOptions: {
-        remarkPlugins: [remarkGfm, remarkBreaks, remarkMath],
+        remarkPlugins: [remarkGfm, remarkBreaks, remarkMath, remarkInjectCta],
         rehypePlugins: [
           rehypeSlug,
           [rehypeAutolinkHeadings],
@@ -93,7 +94,7 @@ export default async function PostPage({ params }: PostPageProps) {
             <article className="prose prose-gray dark:text-gray-100">
               {content}
             </article>
-            <div className="flex w-full max-w-2xl px-4 lg:px-8 items-center justify-center bg-red mt-40">
+            <div className="flex w-full max-w-2xl px-4 lg:px-8 items-center justify-center mt-40">
               <EmailSignup />
             </div>
           </main>

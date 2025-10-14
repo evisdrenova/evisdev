@@ -39,7 +39,10 @@ export default function EmailSignup() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2 w-full">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-2 w-full border-gray-300 border-y py-10 my-10"
+    >
       <div className="font-semibold">
         Subscribe to get future posts before anyone else.
       </div>

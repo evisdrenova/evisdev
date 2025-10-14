@@ -8,13 +8,15 @@ import {
   Text,
 } from "@react-email/components";
 import Footer from "../Footer";
+import Link from "next/link";
 
 interface WelcomeEmailProps {
   firstName?: string;
+  blogDescription?: string;
 }
 
-const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
-  const previewText = `Thanks for subscribing to my blog, ${firstName}!`;
+const WelcomeEmail = ({ firstName, blogDescription }: WelcomeEmailProps) => {
+  const previewText = `New Blog!`;
 
   return (
     <Html>
@@ -27,9 +29,8 @@ const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
               Hey {firstName}, <br />
             </Text>
             <Text className="text-start text-sm text-white leading-relaxed">
-              Thanks for subscribing to my blog. I try and publish new blog
-              posts every week, if there is something that you want me to write
-              about, just mention me on X at @evisdrenova.
+              I just published a new blog about {blogDescription}. Check it out
+              <Link href="">here!</Link>
             </Text>
             <Text className="text-start text-sm text-white">
               Thanks,
