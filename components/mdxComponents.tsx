@@ -11,6 +11,7 @@ export const mdxComponents: MDXComponents = {
       width={800}
       height={600}
       priority
+      alt="alt"
     />
   ),
   a: (props) => (

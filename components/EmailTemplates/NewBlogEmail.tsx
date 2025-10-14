@@ -30,7 +30,6 @@ const WelcomeEmail = ({ firstName, blogDescription }: WelcomeEmailProps) => {
             </Text>
             <Text className="text-start text-sm text-white leading-relaxed">
               I just published a new blog about {blogDescription}. Check it out
-              <Link href="">here!</Link>
             </Text>
             <Text className="text-start text-sm text-white">
               Thanks,
