@@ -15,6 +15,13 @@ export async function POST(request: Request) {
             );
         }
 
+        resend.contacts.create({
+            email: email,
+            unsubscribed: false,
+            audienceId: '381adab9-66ec-42a3-851e-2d706c644d60',
+        });
+
+
         const { data, error } = await resend.emails.send({
             from: "Evis <news@evis.dev>",
             to: [email],

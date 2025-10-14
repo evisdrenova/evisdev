@@ -7,7 +7,6 @@ import {
   Tailwind,
   Text,
 } from "@react-email/components";
-import Footer from "../Footer";
 
 interface WelcomeEmailProps {
   firstName?: string;
@@ -23,9 +22,7 @@ const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
       <Tailwind>
         <Body className="bg-white m-auto font-sans">
           <Container className="mb-10 mx-auto p-5 max-w-[465px]">
-            <Text className="text-start text-sm ">
-              Hey {firstName}, <br />
-            </Text>
+            <Text className="text-start text-sm ">Hey there!</Text>
             <Text className="text-start text-sm leading-relaxed">
               Thanks for subscribing to my blog. I try and publish new blog
               posts every week, so stay tuned for upcoming ones! You can also
