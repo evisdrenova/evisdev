@@ -40,7 +40,9 @@ export default function EmailSignup() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2 w-full">
-      <div>Subscribe to get future posts before anyone else.</div>
+      <div className="font-semibold">
+        Subscribe to get future posts before anyone else.
+      </div>
       <div className="flex flex-row items-center gap-2 relative">
         <Input
           placeholder="johndoe@gmail.com"
