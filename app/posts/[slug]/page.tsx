@@ -1,3 +1,4 @@
+// app/posts/[slug]/page.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -16,6 +17,8 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import EmailSignup from "@/components/EmailSignUp";
 import { remarkInjectCta } from "@/lib/rehype-inject-cta";
+import fs from "fs";
+import path from "path";
 
 type Params = { slug: string };
 type PostPageProps = { params: Promise<Params> };
@@ -24,16 +27,115 @@ export async function generateStaticParams() {
   return getPostSlugs().map((slug) => ({ slug }));
 }
 
+function extractFirstSentence(content: string): string {
+  const plainText = content
+    .replace(/^#+\s+.*$/gm, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*_`~]/g, "")
+    .replace(/^>\s+/gm, "")
+    .replace(/^-\s+/gm, "")
+    .replace(/\n+/g, " ")
+    .trim();
+
+  const match = plainText.match(/^[^.!?]+[.!?]/);
+  const firstSentence = match ? match[0] : plainText.slice(0, 160);
+
+  if (firstSentence.length > 160) {
+    return firstSentence.slice(0, 157) + "...";
+  }
+
+  return firstSentence;
+}
+
+function getOGImagePath(slug: string): string | null {
+  const formats = [".png", ".jpg", ".jpeg", ".webp"];
+  const ogImagesDir = path.join(process.cwd(), "public", "og-images");
+
+  for (const format of formats) {
+    const imagePath = path.join(ogImagesDir, `${slug}${format}`);
+    if (fs.existsSync(imagePath)) {
+      return `/og-images/${slug}${format}`;
+    }
+  }
+
+  const defaultImagePath = path.join(ogImagesDir, "default.png");
+  if (fs.existsSync(defaultImagePath)) {
+    return "/og-images/default.png";
+  }
+
+  return null;
+}
+
 export async function generateMetadata({
   params,
 }: PostPageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = getPostBySlug(slug);
-  if (!post) return { title: "Post Not Found" };
-  return {
+
+  if (!post) {
+    return {
+      title: "Post Not Found",
+      description: "The requested blog post could not be found.",
+    };
+  }
+
+  const description = post.subtitle || extractFirstSentence(post.content);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://evis.dev";
+  const postUrl = `${siteUrl}/posts/${slug}`;
+
+  const ogImagePath = getOGImagePath(slug);
+
+  const metadata: Metadata = {
     title: `${post.title} - Evis`,
-    description: post.subtitle,
+    description: description,
+
+    openGraph: {
+      title: post.title,
+      description: description,
+      type: "article",
+      publishedTime: post.date,
+      authors: ["Evis Drenova"],
+      url: postUrl,
+      siteName: "Evis Drenova",
+    },
+
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: description,
+      creator: "@evisdrenova",
+    },
+
+    alternates: {
+      canonical: postUrl,
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+      },
+    },
   };
+
+  if (ogImagePath) {
+    const ogImageUrl = `${siteUrl}${ogImagePath}`;
+
+    metadata.openGraph!.images = [
+      {
+        url: ogImageUrl,
+        width: 1200,
+        height: 630,
+        alt: post.title,
+      },
+    ];
+
+    metadata.twitter!.images = [ogImageUrl];
+  }
+
+  return metadata;
 }
 
 export default async function PostPage({ params }: PostPageProps) {

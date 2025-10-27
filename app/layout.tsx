@@ -39,16 +39,6 @@ export const metadata: Metadata = {
   category: "technology",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 const iowan = localFont({
   src: [
     {
