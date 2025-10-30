@@ -1,0 +1,1016 @@
+---
+title: "How do optimizers really work?"
+date: "2025-10-29"
+publish: false
+---
+
+If you're working in machine learning or AI or have even read about neural networks then you might have heard the term "Gradient Descent". Most people talk about gradient descent in regards to how neural networks "learn". But what does that really mean? What is gradient descent. What does it mean to learn? How does that work?
+
+I wanted to write a technical yet (hopefully) intuitibve blog explaining how neural networks learn.
+
+We're goign to start at beginning and build to the intuition.
+
+Let's go!
+
+# Losses
+
+Think about the last time that you learned something new. Maybe it was a new skill like how to cook a certain recipe. The first time that you did it, you probably didn't do it perfectly. Then you did it again and got even closer. One more time and you perfected it.
+
+As humans, we learn by seeing, hearing, thinking and doing. We evaluate what went wrong the first time and then think about what we need to change to do it better next time.
+
+Neural networks are actually the same way. We train them over a number of epochs (times) until it learns what we want it to learn. Each time it runs, we check to see how it did, compare that to the result that we want and then it adjusts and runs again.
+
+The next time it runs, it checks to see if it did better or worse and the adjusts again and runs again. Like humans, it keeps iterating, checking it's progress against the ideal end state, makes updates and then tries again until it's happy with the outcome.
+
+This process illustrates two key concepts in neural networks:
+
+1. Loss functions - these measure how "wrong" our model is compared to the ideal outcome. The goal is to make these losses as small as possible.
+2. Optimizers - this is the process by which the neural net updates it weights and tries again and checks if it did better or worse than last time.
+
+We'll cover optimizers in detail in this blog.
+
+## The Optimization Problem
+
+At its core, training a neural network is an optimization problem. We have a loss function L(θ) that measures how wrong our model is, and we want to find parameters θ that minimize this loss.
+
+**The intuition**: Imagine you're blindfolded on a hilly landscape and need to find the lowest point. You can only feel the slope beneath your feet. How do you get down?
+
+This is exactly what neural network optimization does—it feels the gradient (slope) and takes steps downhill.
+
+---
+
+## The Foundation: Gradient Descent
+
+### The Mathematics
+
+The simplest approach is gradient descent:
+
+```
+θ_(t+1) = θ_t - α · ∇L(θ_t)
+```
+
+Where:
+
+- θ_t are the parameters at time step t
+- α is the learning rate (step size)
+- ∇L(θ_t) is the gradient of the loss with respect to parameters
+
+### The Intuition
+
+If you're standing on a hill, the gradient tells you which direction is steepest. You take a step in the opposite direction (downhill). The learning rate determines how big that step is.
+
+### The Problem
+
+Standard gradient descent has issues:
+
+1. **Computationally expensive**: Computing gradients over the entire dataset is slow
+2. **Fixed learning rate**: Same step size everywhere, even when terrain varies
+3. **No memory**: Each step forgets previous steps, leading to oscillation
+
+This is where things get interesting.
+
+---
+
+## Stochastic Gradient Descent (SGD)
+
+### The Mathematics
+
+Instead of computing gradients over the entire dataset, compute them on mini-batches:
+
+```
+θ_(t+1) = θ_t - α · ∇L(θ_t; x^(i:i+n))
+```
+
+Where x^(i:i+n) is a mini-batch of data.
+
+### The Intuition
+
+Instead of carefully measuring the slope of the entire mountain before each step, you take quick measurements of small patches and move based on those. It's noisy, but much faster.
+
+**The trade-off**: You introduce noise (each mini-batch gives a slightly different gradient), but you can take many more steps in the same time, which usually wins.
+
+### The Code
+
+```python
+for epoch in range(num_epochs):
+    for batch in dataloader:
+        # Compute gradient on this batch
+        loss = compute_loss(model(batch.x), batch.y)
+        gradients = loss.backward()
+
+        # Update parameters
+        for param in model.parameters():
+            param -= learning_rate * param.grad
+```
+
+---
+
+## Adding Momentum: Remembering the Past
+
+### The Problem SGD Solves Poorly
+
+Picture a ball rolling through a valley with steep walls but a gentle slope toward the minimum. SGD will bounce wildly between the walls (high gradient) while making slow progress forward (low gradient).
+
+### The Mathematics
+
+Momentum adds a velocity term:
+
+```
+v_t = γ · v_(t-1) + α · ∇L(θ_t)
+θ_(t+1) = θ_t - v_t
+```
+
+Where γ (typically 0.9) is the momentum coefficient.
+
+Expanded, this becomes:
+
+```
+v_t = γ · v_(t-1) + α · g_t
+    = α · g_t + γ · α · g_(t-1) + γ² · α · g_(t-2) + ...
+```
+
+### The Intuition
+
+Your parameter update now has **inertia**. If gradients consistently point in the same direction, you build up speed. If they oscillate, the momentum dampens the oscillations.
+
+**Physical analogy**: A ball rolling downhill doesn't immediately change direction with every tiny bump—its momentum carries it through noise.
+
+**The effect**:
+
+- Consistent gradients → accelerated progress
+- Oscillating gradients → dampened zigzagging
+- You can escape shallow local minima by "rolling through" them
+
+### Why It Works
+
+The exponential moving average means recent gradients matter most, but you maintain a "memory" of where you've been. The γ parameter controls how much memory:
+
+- γ = 0: No momentum (regular SGD)
+- γ = 0.9: 90% of previous velocity, 10% new gradient
+- γ close to 1: Long memory, slow adaptation
+
+---
+
+## Adaptive Learning Rates: Different Speeds for Different Parameters
+
+### The Core Insight
+
+Not all parameters should update at the same rate. Consider:
+
+- **Sparse features**: A word that appears rarely should get larger updates when it does appear
+- **Different scales**: Some parameters might have gradients 1000x larger than others
+- **Different curvatures**: Some directions of the loss landscape are steeper than others
+
+### AdaGrad: The First Adaptive Method
+
+**Mathematics**:
+
+```
+G_t = G_(t-1) + g_t²  (accumulate squared gradients)
+θ_(t+1) = θ_t - α · g_t / (√G_t + ε)
+```
+
+**The intuition**: Divide by the accumulated magnitude of past gradients. Parameters with large historical gradients get smaller learning rates; parameters with small historical gradients get larger learning rates.
+
+**The problem**: G_t only grows, so learning rates monotonically decrease. Eventually, learning stops.
+
+### RMSProp: Fixing AdaGrad
+
+**Mathematics**:
+
+```
+v_t = β · v_(t-1) + (1 - β) · g_t²
+θ_(t+1) = θ_t - α · g_t / (√v_t + ε)
+```
+
+**The intuition**: Instead of accumulating all squared gradients, maintain an exponentially decaying average. Recent gradient magnitudes matter more. This prevents the learning rate from vanishing.
+
+**The key difference**: AdaGrad has infinite memory; RMSProp has a sliding window of memory controlled by β.
+
+---
+
+## Adam: Putting It All Together
+
+### The Philosophy
+
+Adam (Adaptive Moment Estimation) combines the best ideas:
+
+1. **Momentum**: Build velocity in consistent directions
+2. **Adaptive learning rates**: Scale updates per parameter
+3. **Bias correction**: Handle initialization properly
+
+### The Mathematics
+
+Adam maintains two moving averages:
+
+**First moment (mean of gradients)**:
+
+```
+m_t = β₁ · m_(t-1) + (1 - β₁) · g_t
+```
+
+**Second moment (uncentered variance of gradients)**:
+
+```
+v_t = β₂ · v_(t-1) + (1 - β₂) · g_t²
+```
+
+**Bias correction** (critical for early training):
+
+```
+m̂_t = m_t / (1 - β₁^t)
+v̂_t = v_t / (1 - β₂^t)
+```
+
+**Parameter update**:
+
+```
+θ_(t+1) = θ_t - α · m̂_t / (√v̂_t + ε)
+```
+
+### Breaking Down the Update Rule
+
+Let's parse that final update equation:
+
+```
+θ_(t+1) = θ_t - α · m̂_t / (√v̂_t + ε)
+           ^      ^    ^        ^      ^
+           |      |    |        |      |
+         current  |  direction  |   stability
+         params   |  (momentum) | (adaptive LR)
+                  |             |
+              global LR    magnitude
+```
+
+**The numerator (m̂_t)**: Where to go (direction + momentum)
+**The denominator (√v̂_t)**: How much to scale the step (adaptive per parameter)
+**The ratio**: Normalized update that's scaled by past gradient variance
+
+### The Intuition: Three Perspectives
+
+**Perspective 1: Adaptive Step Sizes**
+
+- Parameters with large, consistent gradients → small steps (√v̂_t is large)
+- Parameters with small, noisy gradients → larger steps (√v̂_t is small)
+- This prevents overshooting in steep directions and speeds up learning in flat directions
+
+**Perspective 2: Signal-to-Noise Ratio**
+Think of m̂_t as the "signal" (consistent direction) and √v̂_t as the "noise" (variability). Adam effectively computes:
+
+```
+update ∝ signal / noise
+```
+
+High signal-to-noise → confident, large updates
+Low signal-to-noise → cautious, small updates
+
+**Perspective 3: Second-Order Approximation**
+The division by √v̂_t approximates multiplying by the inverse Hessian (second derivatives), similar to Newton's method, but computed efficiently through gradient statistics rather than expensive second-derivative calculations.
+
+### Why Bias Correction Matters
+
+Without bias correction, here's what happens early in training:
+
+```
+Iteration 1:
+m_1 = 0.9 · 0 + 0.1 · g_1 = 0.1 · g_1
+v_1 = 0.999 · 0 + 0.001 · g_1² = 0.001 · g_1²
+```
+
+The estimates are biased toward zero! With correction:
+
+```
+m̂_1 = 0.1 · g_1 / (1 - 0.9¹) = 0.1 · g_1 / 0.1 = g_1
+v̂_1 = 0.001 · g_1² / (1 - 0.999¹) = 0.001 · g_1² / 0.001 = g_1²
+```
+
+The correction factors (1 - β₁^t) and (1 - β₂^t) start near 1 and approach 0 as t increases, so the correction matters most early and gradually disappears.
+
+### Hyperparameters
+
+The default values work remarkably well:
+
+- **α = 0.001**: Global learning rate
+- **β₁ = 0.9**: Decay rate for first moment (momentum memory)
+- **β₂ = 0.999**: Decay rate for second moment (variance memory)
+- **ε = 1e-8**: Numerical stability constant
+
+**Why these values?**
+
+- β₁ = 0.9: ~10 step memory for direction (1/(1-0.9) ≈ 10)
+- β₂ = 0.999: ~1000 step memory for variance (1/(1-0.999) ≈ 1000)
+- Longer memory for variance makes sense: estimating variance requires more samples than estimating mean
+
+### The Complete Algorithm
+
+```python
+def adam_optimizer(parameters, gradients, state, hyperparams):
+    """
+    Adam optimizer implementation
+
+    Args:
+        parameters: Current model parameters θ_t
+        gradients: Current gradients ∇L(θ_t)
+        state: Dictionary containing m, v, and t
+        hyperparams: Dictionary with α, β₁, β₂, ε
+
+    Returns:
+        updated_parameters: θ_(t+1)
+        updated_state: New m, v, t
+    """
+    α = hyperparams['alpha']        # Learning rate (0.001)
+    β₁ = hyperparams['beta1']       # First moment decay (0.9)
+    β₂ = hyperparams['beta2']       # Second moment decay (0.999)
+    ε = hyperparams['epsilon']      # Stability constant (1e-8)
+
+    # Initialize state if first iteration
+    if state is None:
+        state = {
+            'm': [torch.zeros_like(p) for p in parameters],
+            'v': [torch.zeros_like(p) for p in parameters],
+            't': 0
+        }
+
+    # Increment time step
+    state['t'] += 1
+    t = state['t']
+
+    updated_params = []
+
+    for i, (param, grad) in enumerate(zip(parameters, gradients)):
+        # Update biased first moment estimate
+        state['m'][i] = β₁ * state['m'][i] + (1 - β₁) * grad
+
+        # Update biased second moment estimate
+        state['v'][i] = β₂ * state['v'][i] + (1 - β₂) * (grad ** 2)
+
+        # Compute bias-corrected first moment
+        m_hat = state['m'][i] / (1 - β₁ ** t)
+
+        # Compute bias-corrected second moment
+        v_hat = state['v'][i] / (1 - β₂ ** t)
+
+        # Update parameters
+        param_new = param - α * m_hat / (torch.sqrt(v_hat) + ε)
+        updated_params.append(param_new)
+
+    return updated_params, state
+```
+
+### Practical Usage
+
+```python
+import torch.optim as optim
+
+# Initialize optimizer
+optimizer = optim.Adam(
+    model.parameters(),
+    lr=0.001,           # α
+    betas=(0.9, 0.999), # (β₁, β₂)
+    eps=1e-8,
+    weight_decay=0      # L2 regularization (separate from optimization)
+)
+
+# Training loop
+for epoch in range(num_epochs):
+    for batch in dataloader:
+        optimizer.zero_grad()
+
+        # Forward pass
+        outputs = model(batch.inputs)
+        loss = criterion(outputs, batch.targets)
+
+        # Backward pass
+        loss.backward()
+
+        # Adam update step (all the math happens here)
+        optimizer.step()
+```
+
+---
+
+## Memory and Computational Cost
+
+### Storage Requirements
+
+For a model with N parameters:
+
+| Optimizer      | Memory Overhead | Reason                               |
+| -------------- | --------------- | ------------------------------------ |
+| SGD            | 0               | No additional state                  |
+| SGD + Momentum | N               | Velocity vector                      |
+| AdaGrad        | N               | Accumulated squared gradients        |
+| RMSProp        | N               | Moving average of squared gradients  |
+| Adam           | 2N              | First moment (m) + second moment (v) |
+
+**The trade-off**: Adam uses 2x the memory of momentum SGD, but this is usually negligible compared to storing activations during backpropagation.
+
+For a model with 100M parameters:
+
+- Parameters: 400 MB (float32)
+- Adam state: 800 MB additional
+- Activations (batch of 32): Often 5-10 GB
+
+Memory is rarely the bottleneck for Adam.
+
+### Computational Cost Per Step
+
+All modern optimizers have O(N) computational cost per step. The differences are minimal:
+
+- **SGD**: 1 multiplication, 1 addition per parameter
+- **Adam**: ~10 operations per parameter (2 EMA updates, 2 divisions, 1 square root, etc.)
+
+In practice, this overhead is negligible (<1% of total training time) because:
+
+1. The forward and backward passes dominate compute
+2. Modern hardware handles element-wise operations efficiently
+3. The optimizer runs on CPU while GPU does forward/backward
+
+---
+
+## Adam Variants and Improvements
+
+### AdamW: Decoupled Weight Decay
+
+**The problem**: In standard Adam, L2 regularization interacts poorly with adaptive learning rates.
+
+**Standard weight decay** (L2 regularization):
+
+```
+L'(θ) = L(θ) + λ/2 · ||θ||²
+∇L'(θ) = ∇L(θ) + λ · θ
+```
+
+This adds λ·θ to the gradient, which then gets adapted by Adam's adaptive learning rates. This means the regularization strength is scaled differently for different parameters!
+
+**AdamW solution**: Decouple weight decay from gradient-based optimization:
+
+```
+θ_(t+1) = θ_t - α · m̂_t / (√v̂_t + ε) - α · λ · θ_t
+                                         ^^^^^^^^^^^
+                                      weight decay applied
+                                      after adaptation
+```
+
+**The intuition**: Apply regularization directly to parameters, not through gradients. This makes regularization strength consistent across parameters.
+
+**When to use**: AdamW often generalizes better than Adam, especially for transformers and language models. It's becoming the default.
+
+### AMSGrad: Fixing Non-Convergence
+
+**The problem**: In some pathological cases, Adam can fail to converge because v_t can decrease, causing the learning rate to increase when it shouldn't.
+
+**Solution**: Use the maximum of all past v_t values:
+
+```
+v̂_t = max(v̂_(t-1), v_t)
+```
+
+**The intuition**: Never let the adaptive learning rate increase—only decrease or stay the same. This guarantees convergence in convex settings.
+
+**In practice**: Rarely makes a difference for neural networks. Most practitioners stick with standard Adam.
+
+### NAdam: Nesterov Momentum
+
+**The idea**: Combine Adam with Nesterov accelerated gradient (look-ahead momentum).
+
+Standard momentum: Look at where you are, then jump
+Nesterov momentum: Jump first, then look
+
+**The math** gets complicated, but the intuition is that Nesterov can converge faster by being slightly more "optimistic" about the direction.
+
+### RAdam: Rectified Adam
+
+**The problem**: Early in training, the adaptive learning rate can be too large because variance estimates are unreliable.
+
+**Solution**: Use a rectification term that gradually ramps up the adaptive learning rate based on the variance estimate's reliability.
+
+**When to use**: When training is unstable in the first few epochs.
+
+---
+
+## When Adam Fails: The Generalization Gap
+
+### The Surprising Weakness
+
+Despite its popularity, Adam has a well-documented issue: it sometimes generalizes worse than SGD, particularly on vision tasks.
+
+**Empirical observation**:
+
+- Adam: Lower training loss, faster convergence, sometimes worse test accuracy
+- SGD: Higher training loss, slower convergence, sometimes better test accuracy
+
+### Why This Happens: Three Hypotheses
+
+**Hypothesis 1: Adaptive Learning Rates Find Sharp Minima**
+
+The adaptive learning rates allow Adam to find minima with high curvature (sharp valleys). These generalize poorly because slight perturbations push you out of the minimum.
+
+SGD's constant learning rate acts as a regularizer, preventing convergence to sharp minima. It naturally finds flatter minima that generalize better.
+
+**Hypothesis 2: Effective Learning Rate Decay**
+
+In SGD with momentum, as you approach a minimum, gradients get smaller, naturally reducing the effective step size. In Adam, the adaptive term can prevent this natural annealing.
+
+**Hypothesis 3: Different Solutions for Different Loss Landscapes**
+
+Vision models often have highly non-convex loss surfaces with many good local minima. The optimizer's dynamics determine which basin of attraction you end up in. Adam and SGD simply converge to different solutions.
+
+### Practical Guidance
+
+**Use Adam when**:
+
+- You want fast experimentation
+- Working on NLP tasks (transformers love Adam/AdamW)
+- Training from scratch on large datasets
+- You don't have time for extensive hyperparameter tuning
+
+**Use SGD (+ momentum) when**:
+
+- You need absolute best generalization
+- Training computer vision models (especially CNNs)
+- Fine-tuning pre-trained models
+- You can afford to tune learning rates and schedules
+
+**The hybrid approach**:
+
+1. Use Adam for initial exploration and architecture search
+2. Switch to SGD for final training once you've found a good architecture
+3. Or use Adam with learning rate warmup and decay schedules
+
+---
+
+## Understanding Optimization Landscapes
+
+### Visualizing the Journey
+
+Consider training a simple 2-parameter model. The loss landscape might look like this:
+
+```
+        High Loss
+           ↑
+           │     ╱╲
+           │    ╱  ╲    ╱╲
+           │   ╱    ╲  ╱  ╲
+           │  ╱  A   ╲╱ B  ╲
+           │ ╱              ╲___
+           │╱___________________╲→ Parameter 1
+           │
+        Parameter 2
+```
+
+- Point A: Sharp minimum (Adam might find this)
+- Point B: Flat minimum (SGD more likely to find this)
+
+**Why flat is better**: If you train on dataset D and test on dataset D', a flat minimum means your performance doesn't degrade much even if the test distribution shifts slightly.
+
+### The Batch Size Connection
+
+Interestingly, batch size interacts with optimizer choice:
+
+- **Small batches**: Noisy gradients → need adaptive learning rates → Adam wins
+- **Large batches**: Accurate gradients → simple optimization → SGD works well
+
+This is why distributed training (large batches) often uses SGD, while single-GPU training (smaller batches) often uses Adam.
+
+### Learning Rate Schedules
+
+Both Adam and SGD benefit from learning rate schedules:
+
+**Cosine annealing**:
+
+```
+α_t = α_min + (α_max - α_min) · (1 + cos(πt/T)) / 2
+```
+
+**Warmup**: Start with a small learning rate and gradually increase it
+
+```python
+if step < warmup_steps:
+    lr = base_lr * (step / warmup_steps)
+else:
+    lr = base_lr
+```
+
+**Why warmup helps Adam**: Early in training, the second moment estimate is unstable. Warmup gives it time to stabilize before taking aggressive steps.
+
+---
+
+## Implementing Adam from Scratch
+
+Let's build a complete, production-quality Adam optimizer:
+
+```python
+import numpy as np
+from typing import List, Dict, Optional, Callable
+
+class AdamOptimizer:
+    """
+    Adam optimizer with support for weight decay, gradient clipping,
+    and learning rate schedules.
+    """
+
+    def __init__(
+        self,
+        learning_rate: float = 1e-3,
+        beta1: float = 0.9,
+        beta2: float = 0.999,
+        epsilon: float = 1e-8,
+        weight_decay: float = 0.0,
+        amsgrad: bool = False,
+        lr_schedule: Optional[Callable] = None,
+        gradient_clip: Optional[float] = None
+    ):
+        """
+        Args:
+            learning_rate: Step size (α)
+            beta1: Exponential decay rate for first moment (β₁)
+            beta2: Exponential decay rate for second moment (β₂)
+            epsilon: Small constant for numerical stability
+            weight_decay: Weight decay coefficient (for AdamW-style)
+            amsgrad: Whether to use AMSGrad variant
+            lr_schedule: Function that takes step and returns lr multiplier
+            gradient_clip: Maximum gradient norm (if set)
+        """
+        self.base_lr = learning_rate
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.epsilon = epsilon
+        self.weight_decay = weight_decay
+        self.amsgrad = amsgrad
+        self.lr_schedule = lr_schedule
+        self.gradient_clip = gradient_clip
+
+        # State
+        self.step_count = 0
+        self.state = {}
+
+    def _init_state(self, param_id: int, param_shape: tuple):
+        """Initialize optimizer state for a parameter."""
+        self.state[param_id] = {
+            'm': np.zeros(param_shape),  # First moment
+            'v': np.zeros(param_shape),  # Second moment
+            'v_max': np.zeros(param_shape) if self.amsgrad else None
+        }
+
+    def step(self, parameters: List[np.ndarray], gradients: List[np.ndarray]):
+        """
+        Perform one optimization step.
+
+        Args:
+            parameters: List of parameter arrays
+            gradients: List of gradient arrays (same shapes as parameters)
+
+        Returns:
+            Updated parameters
+        """
+        self.step_count += 1
+
+        # Get current learning rate (with schedule if provided)
+        if self.lr_schedule:
+            lr = self.base_lr * self.lr_schedule(self.step_count)
+        else:
+            lr = self.base_lr
+
+        # Gradient clipping (if enabled)
+        if self.gradient_clip:
+            gradients = self._clip_gradients(gradients)
+
+        # Update each parameter
+        for i, (param, grad) in enumerate(zip(parameters, gradients)):
+            # Initialize state if needed
+            if i not in self.state:
+                self._init_state(i, param.shape)
+
+            state = self.state[i]
+
+            # Update biased first moment estimate
+            state['m'] = self.beta1 * state['m'] + (1 - self.beta1) * grad
+
+            # Update biased second moment estimate
+            state['v'] = self.beta2 * state['v'] + (1 - self.beta2) * (grad ** 2)
+
+            # Bias correction
+            m_hat = state['m'] / (1 - self.beta1 ** self.step_count)
+            v_hat = state['v'] / (1 - self.beta2 ** self.step_count)
+
+            # AMSGrad: use max of all v_hat so far
+            if self.amsgrad:
+                state['v_max'] = np.maximum(state['v_max'], v_hat)
+                v_hat_use = state['v_max']
+            else:
+                v_hat_use = v_hat
+
+            # Parameter update
+            param -= lr * m_hat / (np.sqrt(v_hat_use) + self.epsilon)
+
+            # Weight decay (AdamW-style: applied after adaptive update)
+            if self.weight_decay > 0:
+                param -= lr * self.weight_decay * param
+
+        return parameters
+
+    def _clip_gradients(self, gradients: List[np.ndarray]) -> List[np.ndarray]:
+        """Clip gradients by global norm."""
+        # Compute global norm
+        total_norm = np.sqrt(sum(np.sum(g ** 2) for g in gradients))
+
+        # Clip if needed
+        if total_norm > self.gradient_clip:
+            clip_coef = self.gradient_clip / (total_norm + 1e-6)
+            gradients = [g * clip_coef for g in gradients]
+
+        return gradients
+
+    def zero_grad(self):
+        """Reset gradients (not needed in this implementation)."""
+        pass
+
+    def state_dict(self) -> Dict:
+        """Get optimizer state for checkpointing."""
+        return {
+            'step_count': self.step_count,
+            'state': self.state,
+            'hyperparams': {
+                'learning_rate': self.base_lr,
+                'beta1': self.beta1,
+                'beta2': self.beta2,
+                'epsilon': self.epsilon,
+                'weight_decay': self.weight_decay,
+                'amsgrad': self.amsgrad,
+            }
+        }
+
+    def load_state_dict(self, state_dict: Dict):
+        """Load optimizer state from checkpoint."""
+        self.step_count = state_dict['step_count']
+        self.state = state_dict['state']
+        # Optionally restore hyperparams
+        for key, value in state_dict['hyperparams'].items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+
+# Example usage with a simple neural network
+def example_training_loop():
+    """Example showing how to use the Adam optimizer."""
+
+    # Dummy parameters (e.g., weights and biases)
+    W1 = np.random.randn(100, 50)
+    b1 = np.random.randn(50)
+    W2 = np.random.randn(50, 10)
+    b2 = np.random.randn(10)
+
+    parameters = [W1, b1, W2, b2]
+
+    # Create optimizer with cosine annealing schedule
+    def cosine_schedule(step, total_steps=1000, min_lr=0.1):
+        return min_lr + (1 - min_lr) * (1 + np.cos(np.pi * step / total_steps)) / 2
+
+    optimizer = AdamOptimizer(
+        learning_rate=1e-3,
+        weight_decay=0.01,  # AdamW-style weight decay
+        lr_schedule=cosine_schedule,
+        gradient_clip=1.0
+    )
+
+    # Training loop
+    for iteration in range(1000):
+        # Forward pass (dummy)
+        loss = compute_loss(parameters)  # Not implemented
+
+        # Backward pass (dummy)
+        gradients = compute_gradients(parameters, loss)  # Not implemented
+
+        # Optimizer step
+        parameters = optimizer.step(parameters, gradients)
+
+        if iteration % 100 == 0:
+            print(f"Iteration {iteration}, Loss: {loss:.4f}, LR: {optimizer.base_lr * cosine_schedule(iteration):.6f}")
+
+    # Save checkpoint
+    checkpoint = {
+        'parameters': parameters,
+        'optimizer': optimizer.state_dict()
+    }
+```
+
+### Key Implementation Details
+
+1. **State management**: Each parameter gets its own m and v vectors
+2. **Bias correction**: Applied every step using t (step count)
+3. **Weight decay**: Applied after the adaptive update (AdamW-style)
+4. **Gradient clipping**: Optional global norm clipping before optimization
+5. **Learning rate schedules**: Multiply base LR by schedule factor
+6. **AMSGrad**: Optionally use max of all historical v values
+
+---
+
+## Debugging Optimization: What to Look For
+
+### Signs Adam Is Working Well
+
+1. **Loss decreases smoothly**: Not too erratic, consistent progress
+2. **Learning rate isn't too high**: No sudden spikes or divergence
+3. **Gradient norms are reasonable**: Not exploding (>10) or vanishing (<1e-6)
+4. **Training and validation track together**: No immediate overfitting
+
+### Common Problems and Fixes
+
+**Problem: Loss explodes / becomes NaN**
+
+- **Cause**: Learning rate too high, gradients exploding
+- **Fix**: Reduce learning rate by 10x, add gradient clipping
+- **Check**: Print gradient norms (`torch.nn.utils.clip_grad_norm_`)
+
+**Problem: Loss plateaus early**
+
+- **Cause**: Learning rate too low, stuck in local minimum, or data issue
+- **Fix**: Increase learning rate, check data preprocessing
+- **Check**: Visualize gradients—are they vanishing?
+
+**Problem: Training loss decreases but validation doesn't**
+
+- **Cause**: Overfitting
+- **Fix**: Add regularization (dropout, weight decay), get more data
+- **Note**: This isn't really an optimizer problem
+
+**Problem: Slow convergence compared to papers**
+
+- **Cause**: Different hyperparameters, batch size, or initialization
+- **Fix**: Try learning rate warmup, adjust batch size, check initialization
+
+### Monitoring During Training
+
+```python
+def log_optimization_stats(model, optimizer, iteration):
+    """Log useful statistics for debugging."""
+
+    # Gradient norms
+    total_norm = 0.0
+    for p in model.parameters():
+        if p.grad is not None:
+            param_norm = p.grad.data.norm(2)
+            total_norm += param_norm.item() ** 2
+    total_norm = total_norm ** 0.5
+
+    # Parameter norms
+    param_norm = sum(p.data.norm(2).item() ** 2 for p in model.parameters()) ** 0.5
+
+    # Effective learning rate (for Adam, averaged across parameters)
+    if hasattr(optimizer, 'param_groups'):
+        lr = optimizer.param_groups[0]['lr']
+    else:
+        lr = optimizer.base_lr
+
+    print(f"Iter {iteration} | LR: {lr:.6f} | "
+          f"Grad norm: {total_norm:.4f} | Param norm: {param_norm:.4f}")
+```
+
+---
+
+## The Big Picture: Optimization as Search
+
+### What We're Really Doing
+
+Neural network training is searching through an enormous parameter space for configurations that generalize well. The optimization algorithm determines:
+
+1. **What trajectory we take** through parameter space
+2. **How fast we move** along that trajectory
+3. **Where we end up** (which local minimum)
+
+Different optimizers take different paths and find different solutions.
+
+### The Fundamental Trade-offs
+
+There's no free lunch in optimization:
+
+- **Speed vs. Stability**: Aggressive updates converge fast but might overshoot
+- **Adaptation vs. Consistency**: Adaptive learning rates help in varied terrain but can find sharp minima
+- **Memory vs. Simplicity**: Maintaining state helps but uses memory
+- **Generalization vs. Training loss**: The best training loss doesn't always generalize best
+
+### The Future of Optimization
+
+Current research directions:
+
+1. **Second-order methods**: Using curvature information more effectively (K-FAC, Shampoo)
+2. **Learned optimizers**: Meta-learning optimization algorithms themselves
+3. **Distribution-aware**: Optimizers that consider the data distribution
+4. **Federated learning**: Optimization across distributed, heterogeneous data
+5. **Neural architecture search**: Optimizing both architecture and weights simultaneously
+
+---
+
+## Practical Recommendations
+
+### Your Optimization Checklist
+
+**For most projects**:
+
+```python
+optimizer = torch.optim.AdamW(
+    model.parameters(),
+    lr=1e-3,
+    betas=(0.9, 0.999),
+    weight_decay=0.01
+)
+
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    optimizer,
+    T_max=num_epochs
+)
+```
+
+**For vision models** (if you have time to tune):
+
+```python
+optimizer = torch.optim.SGD(
+    model.parameters(),
+    lr=0.1,
+    momentum=0.9,
+    weight_decay=1e-4
+)
+
+scheduler = torch.optim.lr_scheduler.MultiStepLR(
+    optimizer,
+    milestones=[30, 60, 80],
+    gamma=0.1
+)
+```
+
+**For transformers**:
+
+```python
+optimizer = torch.optim.AdamW(
+    model.parameters(),
+    lr=1e-4,
+    betas=(0.9, 0.98),  # Note: slightly different β₂
+    weight_decay=0.01
+)
+
+# With warmup
+def lr_lambda(step):
+    if step < warmup_steps:
+        return step / warmup_steps
+    return 0.5 * (1 + np.cos(np.pi * (step - warmup_steps) / (total_steps - warmup_steps)))
+
+scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+```
+
+### Hyperparameter Tuning Priority
+
+If you're tuning, optimize in this order:
+
+1. **Learning rate** (most important)
+2. **Batch size** (affects both optimization and generalization)
+3. **Weight decay**
+4. **Learning rate schedule**
+5. **β₁, β₂** (rarely need to change from defaults)
+
+---
+
+## Conclusion
+
+Adam works because it combines three powerful ideas:
+
+1. **Momentum**: Remember where you've been
+2. **Adaptive learning rates**: Different speeds for different parameters
+3. **Bias correction**: Handle initialization properly
+
+The math might look intimidating, but the intuition is straightforward: take smart steps by remembering the past and adapting to the terrain.
+
+Is Adam perfect? No. It sometimes finds solutions that don't generalize as well as SGD. But its speed, stability, and ease of use make it the default choice for most deep learning applications.
+
+**The bottom line**: Start with Adam (or AdamW). If you need the absolute best performance and have time to tune, consider SGD with momentum. But for 95% of applications, Adam will serve you well.
+
+Now go train some models!
+
+---
+
+## Further Reading
+
+**Original Papers**:
+
+- Kingma & Ba (2015): "Adam: A Method for Stochastic Optimization"
+- Loshchilov & Hutter (2019): "Decoupled Weight Decay Regularization" (AdamW)
+- Reddi et al. (2018): "On the Convergence of Adam and Beyond" (AMSGrad)
+
+**Empirical Comparisons**:
+
+- Wilson et al. (2017): "The Marginal Value of Adaptive Gradient Methods"
+- Schmidt et al. (2021): "Descending through a Crowded Valley"
+
+**Practical Guides**:
+
+- Ruder (2016): "An Overview of Gradient Descent Optimization Algorithms"
+- cs231n course notes on optimization
+
+**Advanced Topics**:
+
+- Martens & Grosse (2015): K-FAC (Kronecker-factored approximate curvature)
+- Anil et al. (2020): "Scalable Second Order Optimization for Deep Learning"
+
+---
+
+_Thanks for reading! If you found this helpful, consider implementing Adam from scratch as an exercise—there's no better way to truly understand an algorithm than to build it yourself._
