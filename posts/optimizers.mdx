@@ -1,7 +1,7 @@
 ---
 title: "The intuition behind how neural networks learn"
 date: "2025-10-29"
-publish: true
+publish: false
 ---
 
 What does it mean for a neural network to "learn"?
@@ -41,44 +41,72 @@ But, first, how do we measure the loss?
 
 # How Wrong Are We?
 
-The loss function is our reality check—it tells us exactly how far our model's predictions are from the truth. But "how wrong" can mean different things depending on what we're trying to do.
+The loss function tells us exactly how far our model's predictions are from the truth. But how do we know what the truth is?
 
-### Common Loss Functions
+## Training with Answers
 
-**For Classification Problems**
+In supervised learning, we train models using labeled data—examples where we already know the correct answer. Think of it like practicing with an answer key.
 
-When we're sorting things into categories (like spam vs. not spam), we typically use **cross-entropy loss**. Think of it like a confidence penalty: if your model says "I'm 95% sure this is spam" and it actually is spam, the loss is very small. But if it says "I'm 95% sure this is NOT spam" and it turns out to be spam? The loss shoots up dramatically.
+**For a spam classifier:** We have thousands of emails that humans have already labeled as "spam" or "not spam." The model makes predictions, and we compare them against these known labels. When the model is wrong, we increase our loss, indicating that the model needs to update it's weights next time (via the otpimizer) and try to reduce the loss.
 
-Mathematically, for binary classification (two categories), it looks like this:
+**For LLMs:** The process is actually pretty simple. Take the sentence: "ChatGPT can make mistakes."
+
+We train the model by:
+
+1. Feeding in "ChatGPT" → asking it to predict "can"
+2. Feeding in "ChatGPT can" → asking it to predict "make"
+3. Feeding in "ChatGPT can make" → asking it to predict "mistakes"
+
+(This is what we mean by "next-token prediction", it's literally predicting the next token in the sentence)
+
+The next token in the training text _is_ the ground truth. We know what should come next because it's right there in the data - it's the next token.
+
+This is called self-supervised learning because the model generates its own training labels from the structure of the data itself, no humans needed to manually label millions of examples.
+
+## Loss Functions in LLMs
+
+Many LLMs use **cross-entropy loss**, which is perfect for the next-token prediction task. At each position, the model outputs a probability distribution over its entire vocabulary (often 50,000+ possible tokens), and cross-entropy measures how confident it was about the correct next token.
+
+Think of it like a confidence penalty: if your model says "I'm 95% sure the next word is 'make'" and it actually is "make", the loss is very small. But if it says "I'm 95% sure the next word is 'banana'" when it should be "make"? The loss shoots up dramatically.
+
+Mathematically, for each token prediction:
 
 ```
-L = -[y log(ŷ) + (1-y) log(1-ŷ)]
+L = -log(p_correct)
 ```
 
-Where `y` is the actual label (0 or 1) and `ŷ` is our model's predicted probability.
+Where `p_correct` is the probability the model assigned to the actual next token.
 
-**For Regression Problems**
+**Why This Works for Language**
 
-When we're predicting continuous values (like house prices or temperatures), we often use **mean squared error (MSE)**. This one's intuitive: take the difference between your prediction and the actual value, square it (so negative errors don't cancel out positive ones), and average across all examples:
+Let's say the model sees "The cat sat on the" and needs to predict the next word. It outputs:
+
+- "mat": 60% probability
+- "floor": 25% probability
+- "banana": 5% probability
+- (other words): 10% probability
+
+If "mat" is correct: `L = -log(0.60) ≈ 0.51` (pretty good!)
+
+If "banana" was somehow correct: `L = -log(0.05) ≈ 3.0` (ouch!)
+
+The logarithm ensures that being confident and wrong is severely penalized, while being confident and right is rewarded. This pushes the model to not just guess correctly, but to be appropriately confident in its predictions.
+
+**Aggregating Across the Sequence**
+
+For a full sentence, we average the loss across all token predictions:
 
 ```
-L = (1/n) Σ(y - ŷ)²
+L = -(1/n) Σ log(p_correct_i)
 ```
 
-If you predicted a house would cost $300,000 but it actually sold for $350,000, that $50,000 error gets squared to 2.5 billion, making it a pretty significant contribution to your loss.
-
-### Why Squaring Matters
-
-Notice how MSE squares the errors? This isn't arbitrary. Squaring does two important things:
-
-- **Penalizes large errors more heavily**: Being off by 10 is worse than being off by 5 twice
-- **Makes the math work beautifully**: Squared errors have nice mathematical properties that make optimization smoother
+Where `n` is the number of tokens and we sum over each prediction in the sequence.
 
 ### The Loss Landscape
 
 Here's where it gets interesting. Imagine your loss function as a landscape—a hilly terrain where the height at any point represents how wrong your model is with those particular weights. Training a neural network is like trying to find the lowest valley in this landscape.
 
-For simple models, this landscape might be a smooth bowl—there's one obvious lowest point. But for deep neural networks with millions of parameters? The landscape is extraordinarily complex, with countless hills, valleys, and saddle points in millions of dimensions.
+For simple models, this landscape might be a smooth bowl—there's one obvious lowest point. But for LLMs with billions of parameters? The landscape is extraordinarily complex, with countless hills, valleys, and saddle points in billions of dimensions.
 
 ![loss-landscape](/optimizers/landscape.png)
 
