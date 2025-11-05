@@ -103,19 +103,22 @@ This makes intuitive sense. We're asking the model to predict 5 different tokens
 
 So now that we can measure how right or wrong our predictions are, how do we improve our model to get more accurate and precise over time?
 
-### The Loss Landscape
+<Note>
 
-Here's where it gets interesting. Imagine your loss function as a landscape—a hilly terrain where the height at any point represents how wrong your model is with those particular weights. Training a neural network is like trying to find the lowest valley in this landscape.
+You might have noticed that I used the words "accuracy" and "precise" a few times. In machine learning, they actually have different meanings.
 
-For simple models, this landscape might be a smooth bowl—there's one obvious lowest point. But for LLMs with billions of parameters? The landscape is extraordinarily complex, with countless hills, valleys, and saddle points in billions of dimensions.
+- **Accuracy** is the overall correctness of all predictions (what fraction of all predictions were correct).
+- **Precision** measures, of all the cases where the model predicted positive, how many were actually positive.
 
-![loss-landscape](/optimizers/landscape.png)
+There is actually a third measure that I didn't mention called **recall**.
 
-Our job is to navigate this landscape efficiently, finding the lowest point (or at least a very low one) without having to check every possible location. That's where optimizers come in.
+- **Recall** measures, of all the actual positive cases, how many did the model correctly identify.
 
-So now that we can measure how wrong we are at any given point, the natural question becomes: how do we use this information to get better?
+These might all sound the same but they are nuanced and have important differences. You can read more on accuracy vs. precision vs. recall [here.](https://developers.google.com/machine-learning/crash-course/classification/accuracy-precision-recall)
 
-## The Foundation: Gradient Descent
+</Note>
+
+# The Foundation: Gradient Descent
 
 **The Mathematics**
 
@@ -850,3 +853,17 @@ Now go train some models!
 ---
 
 _Thanks for reading! If you found this helpful, consider implementing Adam from scratch as an exercise—there's no better way to truly understand an algorithm than to build it yourself._
+
+---
+
+# The Loss Landscape
+
+Here's where it gets interesting. Imagine your loss function as a landscape—a hilly terrain where the height at any point represents how wrong your model is with those particular weights. Training a neural network is like trying to find the lowest valley in this landscape.
+
+For simple models, this landscape might be a smooth bowl—there's one obvious lowest point. But for LLMs with billions of parameters? The landscape is extraordinarily complex, with countless hills, valleys, and saddle points in billions of dimensions.
+
+![loss-landscape](/optimizers/landscape.png)
+
+Our job is to navigate this landscape efficiently, finding the lowest point (or at least a very low one) without having to check every possible location. That's where optimizers come in.
+
+So now that we can measure how wrong we are at any given point, the natural question becomes: how do we use this information to get better?
