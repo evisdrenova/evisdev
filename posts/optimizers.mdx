@@ -6,21 +6,21 @@ publish: false
 
 What does it mean for a neural network to "learn"?
 
-When you train GPT or Claude or any neural network, what's _actually happening_ inside the model as it's learning? How does a bunch of matrix multiplications somehow figure out how to write code or classify images or predict the next word?
+What's actually happening\_ inside ChatGPT or Claude as it's learning? How does a bunch of matrix multiplications somehow figure out how to write code or classify images or predict the next word?
 
 I wanted to write a technical yet intuitive guide that answers these questions from first principles. We'll walk through how loss functions, gradient descent, and optimizers work together to update model weights, the actual mechanics of learning.
 
-We'll cover the math, but more importantly, we'll build the intuition for _why_ it all works.
+We'll cover the math, but more importantly, we'll build the intuition of _why_ it all works.
 
 Let's jump in.
 
 # The Optimization Problem
 
-Think about the last time that you learned something new. Maybe it was a new skill or recipe or instrument. Your first attempt? Probably not perfect. But each time you try again, you get a little closer. You think about what you need to do, make adjustments, tweak the timing and eventually you nail it.
+Think about the last time that you learned something new. Maybe it was a new skill or recipe. Your first attempt? Probably not perfect. But each time you try again, you get a little closer. You think about what you need to do, make adjustments, tweak the timing and eventually you nail it.
 
-Neural networks actually learn in a similar way. We can train a neural network to learn something, say how to classify an email as spam, and over a number of repititions (we call them epochs), they gradually improve until we're happy with the results.
+Neural networks learn in a similar way. We can train a neural network to learn how to classify an email as spam or predict the next token, and over a number of repititions (we call them epochs), they gradually improve until we're happy with the results.
 
-Here's the process:
+Here's the general process:
 
 1. The network makes a prediction
 2. We measure how far off it was from the correct answer, if we're happy then we stop training, otherwise, we continue
@@ -31,9 +31,9 @@ This process relies on two fundamental concepts:
 
 1. Measuring how far off we are from where we want to be. We call this measure a **loss function**. The goal is to make this distance as small as possible so we are as close to our ideal state as possible. In the email spam example above, this would mean being able to perfectly classify every spam email as spam and never missing one. In reality, we're never perfect but we try to get as close as we can.
 
-2. Updating our model weights to reduce the loss function next time we try again. This is done by an algorithm called an **optimizer**. Optimizers decide _how_ to adjust weights in order to reduce the loss. This means determinining which direction to move, how big a step to take, and when to speed up or slow down.
+2. Updating our model weights to reduce the loss function next time we try again. This is done by an algorithm called an **optimizer**. Optimizers decide _how_ to adjust weights in order to reduce the loss.
 
-At its core, training a neural network is an optimization problem. We have a loss function, let's call it: $L(θ)$ that measures how wrong our model is, and we want to find parameters (weights) $θ$ that minimize this loss.
+At its core, training a neural network is an optimization problem. We have a loss function, let's call it: $L(θ)$ that measures how wrong our model is, and we want to find parameters (weights) $θ$ that minimize this loss which ultimately produces a more accurate (and ideally precise) model.
 
 ![pro](/optimizers/process.png)
 
@@ -47,9 +47,11 @@ The loss function tells us exactly how far our model's predictions are from the 
 
 In supervised learning, we train models using labeled data—examples where we already know the correct answer. Think of it like practicing with an answer key.
 
-**For a spam classifier:** We have thousands of emails that humans have already labeled as "spam" or "not spam." The model makes predictions, and we compare them against these known labels. When the model is wrong, we increase our loss, indicating that the model needs to update it's weights next time (via the otpimizer) and try to reduce the loss.
+Let's look at two examples:
 
-**For LLMs:** The process is actually pretty simple. Take the sentence: "ChatGPT can make mistakes."
+**For a spam classifier:** We have thousands of emails that humans have already labeled as "spam" or "not spam." The model makes predictions, and we compare them against these known labels. When the model is wrong, we increase our loss, indicating that the model needs to update it's weights next time (via the optimizer) and try to reduce the loss on the next epoch.
+
+**For LLMs:** The process is actually pretty simple. We train the model on data from the internet, books and other text sources, feeding in batches of tokens (words or parts of words) that represent sentences. Then we test the model by asking it to predict the next token. For example, take the sentence: "ChatGPT can make mistakes."
 
 We train the model by:
 
@@ -57,15 +59,19 @@ We train the model by:
 2. Feeding in "ChatGPT can" → asking it to predict "make"
 3. Feeding in "ChatGPT can make" → asking it to predict "mistakes"
 
-(This is what we mean by "next-token prediction", it's literally predicting the next token in the sentence)
+This is what we mean by "next-token prediction", it's literally predicting the next token in the sentence.
 
 The next token in the training text _is_ the ground truth. We know what should come next because it's right there in the data - it's the next token.
 
 This is called self-supervised learning because the model generates its own training labels from the structure of the data itself, no humans needed to manually label millions of examples.
 
-## Loss Functions in LLMs
+## Loss Functions
 
-Many LLMs use **cross-entropy loss**, which is perfect for the next-token prediction task. At each position, the model outputs a probability distribution over its entire vocabulary (often 50,000+ possible tokens), and cross-entropy measures how confident it was about the correct next token.
+As we're training our models, we're keeping a running count of the times the model was right and wrong. This running count is our loss function.
+
+Many LLMs use **cross-entropy loss**, which is perfect for the next-token prediction task. For each token the model is trying to predict, the model outputs a probability distribution over its entire vocabulary (often 50,000+ possible tokens), and cross-entropy measures how confident it was about the correct next token.
+
+![pro](/optimizers/next.png)
 
 Think of it like a confidence penalty: if your model says "I'm 95% sure the next word is 'make'" and it actually is "make", the loss is very small. But if it says "I'm 95% sure the next word is 'banana'" when it should be "make"? The loss shoots up dramatically.
 
