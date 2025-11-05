@@ -67,36 +67,27 @@ This is called self-supervised learning because the model generates its own trai
 
 ## Loss Functions
 
-As we're training our models, we're keeping a running count of the times the model was right and wrong. This running count is our loss function.
+As we're training our models, we're measuring how right or wrong our model was on every prediction and then averaging that together to measure our loss. The loss function is the algorithm that we use to measure how right or wrong our model was on every prediction.
 
 Many LLMs use **cross-entropy loss**, which is perfect for the next-token prediction task. For each token the model is trying to predict, the model outputs a probability distribution over its entire vocabulary (often 50,000+ possible tokens), and cross-entropy measures how confident it was about the correct next token.
 
 ![pro](/optimizers/next.png)
 
-Think of it like a confidence penalty: if your model says "I'm 95% sure the next word is 'make'" and it actually is "make", the loss is very small. But if it says "I'm 95% sure the next word is 'banana'" when it should be "make"? The loss shoots up dramatically.
+Think of it like a confidence penalty: if your model says "I'm 95% sure the next word is 'mistakes'" and it actually is "mistakes", the loss is very small. But if it says "I'm 95% sure the next word is 'bread'" when it should be "mistakes"? The loss shoots up dramatically.
 
 Mathematically, for each token prediction:
 
-```
-L = -log(p_correct)
-```
+$$L = -\log(p_{\text{correct}})$$
 
-Where `p_correct` is the probability the model assigned to the actual next token.
+Where `p_correct` is the probability the model assigned to the actual next token. So in our example, the `.70` or `.41` or `.37`.
 
-**Why This Works for Language**
+If "mistakes" is correct: `L = -log(0.70) ≈ 0.357`
 
-Let's say the model sees "The cat sat on the" and needs to predict the next word. It outputs:
+If "soup" was somehow correct: `L = -log(0.37) ≈ 0.994`
 
-- "mat": 60% probability
-- "floor": 25% probability
-- "banana": 5% probability
-- (other words): 10% probability
+If we had another word that had a probability of `0.12` then the negative log loss would be `2.120`. You can see that the loss starts to really scale if the word that is chosen has a very low probability.
 
-If "mat" is correct: `L = -log(0.60) ≈ 0.51` (pretty good!)
-
-If "banana" was somehow correct: `L = -log(0.05) ≈ 3.0` (ouch!)
-
-The logarithm ensures that being confident and wrong is severely penalized, while being confident and right is rewarded. This pushes the model to not just guess correctly, but to be appropriately confident in its predictions.
+The logarithm ensures that being confident and wrong is penalized, while being confident and right is rewarded. This pushes the model to not just guess correctly, but to be confident in its predictions.
 
 **Aggregating Across the Sequence**
 
@@ -107,6 +98,10 @@ L = -(1/n) Σ log(p_correct_i)
 ```
 
 Where `n` is the number of tokens and we sum over each prediction in the sequence.
+
+This makes intuitive sense. We're asking the model to predict 5 different tokens. For each token, we see how right or wrong it was (our loss) and then we average that to get a final loss number. If the number is high then our model was often wrong. If it's low, then our model was often right. All relative to our training data, of course.
+
+So now that we can measure how right or wrong our predictions are, how do we improve our model to get more accurate and precise over time?
 
 ### The Loss Landscape
 
