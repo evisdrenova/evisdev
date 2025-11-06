@@ -93,30 +93,29 @@ The logarithm ensures that being confident and wrong is penalized, while being c
 
 For a full sentence, we average the loss across all token predictions:
 
-```
-L = -(1/n) Σ log(p_correct_i)
-```
+$$L = -\frac{1}{n} \sum_{i=1}^{n} \log(p_{\text{correct}_i})$$
 
 Where `n` is the number of tokens and we sum over each prediction in the sequence.
 
-This makes intuitive sense. We're asking the model to predict 5 different tokens. For each token, we see how right or wrong it was (our loss) and then we average that to get a final loss number. If the number is high then our model was often wrong. If it's low, then our model was often right. All relative to our training data, of course.
+This should make intuitive sense. We're asking the model to predict 5 different tokens. For each token, we see how right or wrong it was (our loss) and then we average that to get a final loss number. If the number is high then our model was often wrong. If it's low, then our model was often right.
 
-So now that we can measure how right or wrong our predictions are, how do we improve our model to get more accurate and precise over time?
+So now that we can measure how right or wrong our predictions are, how do we improve our model to get better over time?
 
-<Note>
+# Hill Climbing
 
-You might have noticed that I used the words "accuracy" and "precise" a few times. In machine learning, they actually have different meanings.
+One way to think about loss functions and improving the accuracy of your model is to imagine your loss function as a landscape - a hilly terrain where the height at any point represents how wrong (or right) your model is with those particular weights. The lower the point is in the landscape, the lower our loss is and the better our model is.
 
-- **Accuracy** is the overall correctness of all predictions (what fraction of all predictions were correct).
-- **Precision** measures, of all the cases where the model predicted positive, how many were actually positive.
+For simple models, this landscape might be a smooth bowl, there's one obvious lowest point.
 
-There is actually a third measure that I didn't mention called **recall**.
+![loss-landscape](/optimizers/bowl.png)
 
-- **Recall** measures, of all the actual positive cases, how many did the model correctly identify.
+But for LLMs with billions of parameters the landscape is extraordinarily complex, with countless hills, valleys, and saddle points in billions of dimensions.
 
-These might all sound the same but they are nuanced and have important differences. You can read more on accuracy vs. precision vs. recall [here.](https://developers.google.com/machine-learning/crash-course/classification/accuracy-precision-recall)
+![loss-landscape](/optimizers/land.png)
 
-</Note>
+When we initialize our model with random weights, we might be "dropped" anywhere in this landscape. Every step we take changes the landscape across the millions or billions of parameters that we have. So we need to find a way to climb the hills and valleys in order to get to the lowest point in the landscape. In reality, we don't always reach the global minimum. We might find a local minimum and that might be good enough.
+
+So, how do we navigate this loss landscape? And how do we do it efficiently if ever step we move means updating millions or billions of parameters?
 
 # The Foundation: Gradient Descent
 
@@ -855,15 +854,3 @@ Now go train some models!
 _Thanks for reading! If you found this helpful, consider implementing Adam from scratch as an exercise—there's no better way to truly understand an algorithm than to build it yourself._
 
 ---
-
-# The Loss Landscape
-
-Here's where it gets interesting. Imagine your loss function as a landscape—a hilly terrain where the height at any point represents how wrong your model is with those particular weights. Training a neural network is like trying to find the lowest valley in this landscape.
-
-For simple models, this landscape might be a smooth bowl—there's one obvious lowest point. But for LLMs with billions of parameters? The landscape is extraordinarily complex, with countless hills, valleys, and saddle points in billions of dimensions.
-
-![loss-landscape](/optimizers/landscape.png)
-
-Our job is to navigate this landscape efficiently, finding the lowest point (or at least a very low one) without having to check every possible location. That's where optimizers come in.
-
-So now that we can measure how wrong we are at any given point, the natural question becomes: how do we use this information to get better?
