@@ -103,7 +103,7 @@ So now that we can measure how right or wrong our predictions are, how do we imp
 
 # Hill Climbing
 
-One way to think about loss functions and improving the accuracy of your model is to imagine your loss function as a landscape - a hilly terrain where the height at any point represents how wrong (or right) your model is with those particular weights. The lower the point is in the landscape, the lower our loss is and the better our model is.
+One way to think about loss functions and improving the accuracy of your model is to imagine your loss function as a landscape - a hilly terrain where the height at any point represents how wrong (or right) your model is with those particular weights. The lower the point is in the landscape, the lower the loss and the better the model.
 
 For simple models, this landscape might be a smooth bowl, there's one obvious lowest point.
 
@@ -111,21 +111,41 @@ For simple models, this landscape might be a smooth bowl, there's one obvious lo
 
 But for LLMs with billions of parameters the landscape is extraordinarily complex, with countless hills, valleys, and saddle points in billions of dimensions.
 
-![loss-landscape](/optimizers/land.png)
+![loss-landscape](/optimizers/hills.png)
 
-When we initialize our model with random weights, we might be "dropped" anywhere in this landscape. Every step we take changes the landscape across the millions or billions of parameters that we have. So we need to find a way to climb the hills and valleys in order to get to the lowest point in the landscape. In reality, we don't always reach the global minimum. We might find a local minimum and that might be good enough.
+When we first initialize our model, we do it with random weights. (We have to start somewhere.) As we start to train our model we might be "dropped" anywhere in this landscape. Every step we take changes the landscape across the millions or billions of parameters that we have. So we need to find a way to climb the hills and valleys in order to get to the lowest point in the landscape. In reality, we don't always reach the global minimum. We might find a local minimum and that might be good enough.
 
-So, how do we navigate this loss landscape? And how do we do it efficiently if ever step we move means updating millions or billions of parameters?
+So, how do we navigate this hilly loss landscape? And how do we do it efficiently if every step we take means updating millions or billions of parameters?
 
 # The Foundation: Gradient Descent
 
-**The Mathematics**
+Imagine you're blindfolded on the hilly landscape we mentioned above and you can only feel the slope beneath your feet, how do you find the lowest point?
 
-The simplest approach is gradient descent:
+![loss-landscape](/optimizers/hill.png)
 
-```
-θ_(t+1) = θ_t - α · ∇L(θ_t)
-```
+Well if you can feel the slope under your feet, then you can just follow it downward until you get to the bottom. You won't know if that's the lowest point of all of the hills in the entire landscape, but it's surely lower than where you started.
+
+This slope is called the **gradient**. It tells you which direction slopes downward most steeply.
+
+![loss-landscape](/optimizers/grad.png)
+
+The gradient is the tangent line at any given point on a curve. And the size of the step that you take down the curve, following the gradient, is called the **learning rate**.
+
+A seemingly intuitive question might be: why don't we just take the biggest step that we can so we can reach the bottom as fast as we can?
+
+The answer is pretty simple: if you take steps that are too large, you might overshoot the valley entirely and end up on the opposite hill! Imagine taking a giant leap while blindfolded - you could fly right past the lowest point and land somewhere even higher. Worse yet, you might start bouncing back and forth across the valley, never actually settling at the bottom.
+
+This is why choosing the right learning rate (step size) is crucial. Too small, and you'll take forever to reach the bottom (or get stuck in a shallow dip). Too large, and you'll overshoot.
+
+Finding the right learning rate for is one of the key challenges in training neural networks. Thankfully, there's been a lot of research in this area and, generally speaking, learning rates around `1e-4` are standard for pretraining LLMs.
+
+Okay, now that we've developed the conceptual intuition, let's work through the math step-by-step.
+
+**The Math**
+
+Mathematically, we define gradient descent as:
+
+$$\theta_{t+1} = \theta_t - \alpha \nabla L(\theta_t)$$
 
 Where:
 
@@ -133,13 +153,23 @@ Where:
 - `α` is the learning rate (step size)
 - `∇L(θ_t)` is the gradient of the loss with respect to parameters
 
-**The Intuition**
+Let's break down what this equation is actually saying:
 
-Imagine you're blindfolded on a hilly landscape, trying to find the lowest point. You can only feel the slope beneath your feet. The gradient tells you which direction slopes downward most steeply. You take a step in that direction. The learning rate (`α`) determines how big that step is.
+**`θ_t`** - This is where you currently are on the landscape (your current parameter values for your model)
 
-**The Problem**
+**`∇L(θ_t)`** - This is the direction of steepest _ascent_ at your current position. It points uphill. Think of it as a vector that says "if you go this way, the loss increases most rapidly."
 
-Standard gradient descent has three critical issues:
+**`- ∇L(θ_t)`** - By putting a negative sign in front, we flip the direction to point _downhill_ instead. Now we're pointing toward where the loss decreases most rapidly.
+
+**`α`** - This controls how big of a step we take in that downhill direction. A larger α means bigger steps, smaller α means smaller, more cautious steps.
+
+**`θ_t - α∇L(θ_t)`** - This is your new position. We take where you were (`θ_t`) and move in the downhill direction (`-∇L`) by a distance controlled by the learning rate (`α`).
+
+**`θ_{t+1}`** - This is simply the name for your new position after taking that step.
+
+So the whole equation says: **"Your next position equals your current position, minus a step in the steepest downhill direction."** We repeat this process over and over, taking small steps downhill until we reach a valley (a minimum in the loss).
+
+Generally speaking this works well but practically, it has some problems.
 
 1. **Computationally expensive**: Computing gradients over the entire dataset is slow. If you have a million training examples, you need to process all of them before taking a single step.
 
@@ -147,23 +177,15 @@ Standard gradient descent has three critical issues:
 
 3. **No memory**: Each step completely forgets previous steps, leading to oscillation. If the loss surface is shaped like a narrow valley, you'll bounce back and forth between the walls while making slow progress forward.
 
-This is where things get interesting.
-
----
+The good thing is that we can address of each of these problems by making some slight changes to the gradient descent formula.
 
 ## Stochastic Gradient Descent (SGD)
 
-**The Mathematics**
+Let's tackle the first problem: computing gradients over the entire dataset is slow.
 
-Instead of computing gradients over the entire dataset, compute them on mini-batches:
+Well what if we didn't do the entire dataset? What if we just did parts of it, how does that impact the quality of our model?
 
-```
-θ_(t+1) = θ_t - α · ∇L(θ_t; x^(i:i+n))
-```
-
-Where `x^(i:i+n)` is a mini-batch of data.
-
-**The Intuition**
+It turns out, it doesn't impact the model all that much but matkes it significantly faster to run. Let's see how this works.
 
 Instead of carefully measuring the slope of the entire mountain before each step, you take quick measurements of small patches and move based on those. It's noisy, but much faster.
 
@@ -179,6 +201,16 @@ You introduce noise (each mini-batch gives a slightly different gradient), but y
 The noise usually helps! It acts as a form of regularization and helps escape sharp local minima.
 
 ---
+
+**The Mathematics**
+
+Instead of computing gradients over the entire dataset, compute them on mini-batches:
+
+```
+θ_(t+1) = θ_t - α · ∇L(θ_t; x^(i:i+n))
+```
+
+Where `x^(i:i+n)` is a mini-batch of data.
 
 ## Adding Momentum: Remembering the Past
 
