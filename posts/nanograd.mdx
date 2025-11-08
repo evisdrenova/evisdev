@@ -1,0 +1,49 @@
+---
+title: "Building an autograd system in Rust"
+date: "2025-11-07"
+publish: false
+---
+
+I've been spending a lot of time training neural nets lately and fortunately or unfortunately, depending on which camp you fall on, python makes it very easy to train models.
+
+Want to train a model? Just run `model.train()`.
+
+Want to calculate your loss? Just run `loss = criterion(pred, target)`
+
+Want to run gradient descent? Just run `loss.backward()`
+
+Call `optimizer.step()` and boom - your model learns.
+
+And yet… every time I write code like this, I can't help but feel like a sense of dissatisfaction. As if I don't actually appreciate how easy Pytorch makes this insanely complicated process. I know there’s an enormous amount of machinery happening under the hood from computational graphs, chained gradients, parameter updates and more, and yet it's all wrapped up in nice little function calls.
+
+So let's peel back the abstraction and implement it from scratch in order to really gain an appreciation of the complexity that pytorch saves us from.
+
+This blog walks through building a very basic autograd system in rust called `nanograd`. The goal isn’t performance or completeness, it’s mainly intuition. I wanted a clearer mental model of how gradients flow, how computation graphs form, and how optimizers update parameters.
+
+If you’ve ever wondered what really happens beneath loss.backward(), this is a great place to start.
+
+Let’s dive in.
+
+# What is autograd?
+
+If you're not familiar with autograd then let's take a minute to walk through it. If you are familiar with it and how it works in Pytorch, then you can probably skip this section.
+
+In the Pytorch world, autograd is Pytorch's automatic differentiation engine. What does that mean?
+
+When we train neural nets, there are two main steps:
+
+![loss-landscape](/optimizers/back.png)
+
+1. **Forward pass (propagation)**: The neural net is fed input data and it makes predictions using its current weights. In the image above, the forward pass moves "through" the model from left (input) to right (output). At the end, we compute a loss that measures how wrong our predictions were.
+
+2. **Backward pass (propagation)**: The neural net adjusts its parameters based on the loss. It does this by traversing backwards through the network (opposite of the forward pass) and calculating the gradient of the loss with respect to each parameter using the chain rule. These gradients tell us how to update each parameter to reduce the loss.
+
+## Why "Automatic Differentiation"?
+
+The **"automatic"** part means PyTorch computes these gradients for you automatically. You don't need to manually derive and code up the derivatives for each operation in your network.
+
+The **"differentiation"** part refers to computing derivatives (gradients). Specifically, autograd calculates ∂Loss/∂(every parameter) - the gradient of the loss with respect to each of the millions (or billions) of parameters in your model.
+
+Without autograd, you'd need to manually compute and code the derivative for every operation in your network using calculus. With autograd, you just call `loss.backward()` and PyTorch figures it all out using the chain rule.
+
+# Defining an autograd system in rust
