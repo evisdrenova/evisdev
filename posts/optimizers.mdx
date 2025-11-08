@@ -123,10 +123,6 @@ Since we intialize our model with random weights, we might be dropped anywhere o
 
 So, how do we navigate this hilly loss landscape? And how do we do it efficiently if every step we take means updating millions or billions of parameters?
 
-The key is to go backwards. 
-
-
-
 # The Foundation: Gradient Descent
 
 Imagine you're blindfolded on the hilly landscape we mentioned above and you can only feel the slope beneath your feet, how do you find the lowest point?
@@ -179,43 +175,19 @@ Let's break down what this equation is actually saying:
 
 So the whole equation says: **"Your next position equals your current position, minus a step in the steepest downhill direction."** We repeat this process over and over, taking small steps downhill until we reach a valley (a minimum in the loss).
 
-## Forward Pass vs Backward Pass
-
 This process of computing gradients and updating our parameters happens in what's called the **backward pass** (also known as **backpropagation**).
 
 ![loss-landscape](/optimizers/back.png)
 
-Here's how the two passes work together:
+Here's how it works:
 
-**Forward Pass (left to right):**
-
-- Take your training examples
-- Push them through the model layer by layer
-- Get predictions at the end
-- Compute the loss (how wrong you were)
-
-**Backward Pass (right to left):**
-
-- Start with the loss
-- Work backwards through the model using the chain rule
-- Calculate ∂Loss/∂(each parameter) - the gradient for every parameter
+- Start with the loss (we calculated this above)
+- Work backwards through the model, calculating the gradient for every parameter in the model
 - Update all parameters using those gradients
 
 Why is it called "backward"? Because we're literally moving in the opposite direction through the network. The forward pass goes input → hidden layers → output. The backward pass goes output → hidden layers → input, computing how much each parameter contributed to the loss.
 
-**The complete training loop:**
-
-1. Forward pass: Make predictions, compute loss
-2. Backward pass: Compute gradients, update parameters
-3. Repeat with next batch of data
-   Specifically, we:
-
-4. Process all training examples. If we have 1 trillion tokens in our pre-training data set, then we process 1 trillion tokens through the model.
-5. Compute the loss on the 1 trillion tokens that we processed.
-6. Update all of the parameters in the model.
-7. Take one step down the hill.
-
-If you're thinking, "wow that's a lot to process for just one step", then you're exactly right. It is. And it's not the only problem.
+If you're thinking, "wow that's a lot to process for just one step", then you're exactly right. It is. And it's not the only problem. There are three big ones:
 
 1. **Computationally expensive**: Computing gradients over the entire dataset is slow. If you have a billion training examples, you need to process all of them before taking a single step.
 
@@ -229,31 +201,21 @@ The good thing is that we can address of each of these problems by making some s
 
 Let's tackle the first problem: computing gradients over the entire dataset is slow.
 
-When we train a model on a forward pass, we process all of the training examples in our data. That forward pass updates al
+In normal gradient descent, if we have 1 billion examples in our training data, we will process 1 billion examples and then have to calculate gradients for those parameters.
 
-Well what if we didn't do the entire dataset? What if we just did parts of it, how does that impact the quality of our model?
+Well what if we didn't do the entire dataset at once? What if we batched the dataset into smaller batches and then ran those through the model? We'd still run the same total amount of training data just batched up in small groups.
 
-It turns out, it doesn't really impact the model all that much and makes it significantly faster to run. Let's see how this works.
-
-Instead of processing all of the 1 trillion tokens in our pre-training data set, what if we just did a small batch?
-
-Instead of carefully measuring the slope of the entire mountain before each step, you take quick measurements of small patches and move based on those. It's noisy, but much faster.
-
-Remember our blindfolded hiker trying to reach the valley? In basic gradient descent, before taking each step, they carefully feel the slope of the _entire mountain_ beneath them—every rock, every crevice—to determine the exact direction downward.
-
-But what if you're on a massive mountain? Feeling every square inch before each step would take forever. You'd be so slow that by the time you finish measuring, the sun would set!
-
-Here's a clever insight: what if instead of measuring the entire mountain, you just measured the slope of the ground right around where you're standing? Sure, it won't be as precise as measuring everything, but it'll be **much, much faster**. And if the patch you're measuring is reasonably representative of the overall terrain, you'll still head in roughly the right direction.
+As it turns out, this batching doesn't really impact the model all that much, in fact, it actually makes it more resilient in some ways.
 
 This is the core idea behind **Stochastic Gradient Descent (SGD)**.
 
 ![sgd-comparison](/optimizers/sgd.png)
 
-Think of it like polling in an election. You don't need to survey every single voter in the country to understand who's winning—a representative sample of 1,000 people gives you a pretty good estimate. Similarly, a small **mini-batch** of training examples gives you a noisy but useful estimate of the true gradient.
+Think of it like polling in an election. You don't need to survey every single voter in the country to understand who's winning, a representative sample of 1,000 people gives you a pretty good estimate. Similarly, a small **mini-batch** of training examples gives you a noisy but useful estimate of the true gradient.
 
 **The Trade-off**
 
-Yes, each individual measurement is noisier—like how your foot might land on a random rock that doesn't represent the overall slope. But here's the magic: you can take _many more steps_ in the same amount of time.
+Yes, each individual measurement is noisier but you can take _many more steps_ in the same amount of time.
 
 Imagine you have a million training examples:
 
@@ -264,15 +226,11 @@ Even though each step is less precise, taking 31,000 noisy steps gets you to the
 
 **A Surprising Benefit**
 
-The noise actually _helps_! Here's why:
+The noise actually helps! Here's why:
 
-Imagine you're walking down the mountain and you stumble into a small pothole. With perfect gradient descent, you might get stuck there thinking "I'm at the bottom!" But with noisy SGD, the randomness from sampling different mini-batches can jostle you out of that pothole and help you continue toward the true valley.
+With noisy SGD, the randomness from sampling different mini-batches can actually help you avoid local minima and help you find the true minimum. This noise acts as a form of **regularization** and helps the model generalize better to new data.
 
-This noise acts as a form of **regularization** and helps the model generalize better to new data.
-
----
-
-**The Mathematics**
+**The Math**
 
 Mathematically, instead of computing gradients over the entire dataset D, we compute them on randomly sampled mini-batches:
 
