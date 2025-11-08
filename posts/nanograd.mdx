@@ -48,7 +48,11 @@ Without autograd, you'd need to manually compute and code the derivative for eve
 
 # Autograd main comoponents
 
-We can break down an autograd system into 3 main components:
+We can break down an autograd system into 3 main components.
+
+## 1. Computational Graph
+
+![comp](/nanograd/comp.png)
 
 1. **Computational graph**: the computational graph is a directed acyclic graph (DAG) that stores the operations of the autograd process.
 
@@ -72,6 +76,8 @@ During the backward pass:
 
 ## 2. Tensor Wrapper
 
+![tens](/nanograd/tens.png)
+
 The tensor wrapper is the core data structure that makes automatic differentiation possible. It wraps the raw numerical data (the actual tensor values) with metadata needed for gradient computation.
 
 **Key responsibilities:**
@@ -82,24 +88,11 @@ The tensor wrapper is the core data structure that makes automatic differentiati
 - **Link to computation history**: A reference to the operation (`grad_fn`) that created this tensor (if any)
 - **Maintain connections**: References to parent tensors (inputs to the operation that created this tensor)
 
-**Example flow:**
-
-```python
-# Leaf tensor (input or parameter)
-x = Tensor([1.0, 2.0, 3.0], requires_grad=True)
-# x.grad_fn = None (it's a leaf)
-# x.grad = None (not computed yet)
-
-# Intermediate tensor (result of operation)
-y = x * 2
-# y.grad_fn = MulBackward (stores how to compute derivative of multiplication)
-# y.parents = [x] (links back to input)
-# y.requires_grad = True (inherited from x)
-```
-
 The tensor wrapper is what allows PyTorch to say "this tensor came from multiplying x by 2, so I know how to compute gradients for it."
 
 ## 3. Gradient Functions (Backward Functions)
+
+![tens](/nanograd/gradfuncs.png)
 
 Gradient functions define **how to compute derivatives** for each operation. Every operation in your neural network (add, multiply, matrix multiply, ReLU, etc.) needs a corresponding gradient function.
 
@@ -145,13 +138,5 @@ Notice how multiplication needs to save the input values (x and y) during the fo
 - `PowBackward`: Gradient for power operations
 
 Each operation in your computational graph has one of these gradient functions attached, forming the blueprint for the backward pass.
-
-## 2. Tensor Wrapper
-
-[To be written - covers how tensors track their computational history]
-
-## 3. Gradient Functions
-
-[To be written - covers how each operation stores its derivative computation]
 
 # Defining an autograd system in rust
