@@ -124,3 +124,131 @@ Notice how multiplication needs to save the input values (x and y) during the fo
 Each operation in the computational graph has one of these gradient functions attached which forms the blueprint for the backward pass.
 
 # Defining an autograd system in Rust
+
+Now that we have a good foundation of how autograd works and it's main components, let's starting spec'ing out what we're going to build in rust.
+
+Here is my plan:
+
+1. Create the core type that will wrap the number and track it's computational history. This maps to the first and second components of the autograd system.
+2. Implement a basic forward pass with addition, multiplication and power operations.
+3. Implement the backward pass to compute gradients.
+4. Add more operations (maybe)
+5. Build an actual neural network using our nanograd building blocks
+6. Training loop to put it all together and make sure it works.
+
+I think this seems like a reasonable start. I'm also going to use Pytorch as a reference implementation to check out work along the way and make sure we're getting the same output so we know we're on the right track.
+
+# Project set up
+
+First things first, let's set up our project. I'm going to create a rust project using cargo:
+
+`cargo init nanograd  && cd nanograd`
+
+And then in another folder, the pytorch equivalent to check our work:
+
+`uv init nanograd-py && cd nanograd-py`
+`source .venv/bin/activate`
+`uv add torch`
+
+I could just group them into the same project with different sub directories, but I don't want to commit the python project. It's really just meant as a tool, the code has no functional use.
+
+Okay, cool, we have our projects set up.
+
+Let's get started with the first step: creating the core type that will wrap our tensors number and track it's computational history.
+
+# Creating the core type
+
+What does this need to store? Here's what I'm thinking:
+
+- data (actual tensor)
+- gradient (computed during backprop)
+- backward_fn (function that knows how to compute gradients)
+- references to parent values that created this value
+
+Let's start with a couple of structs:
+
+```rust
+// create a new file called tensor.rs
+
+use std::sync::{Arc, Mutex};
+
+struct TensorData {
+    data: f64,
+    grad: f64,
+}
+
+pub struct Tensor {
+    inner: Arc<Mutex<TensorData>>,
+}
+```
+
+We first define a struct called `TensorData` which will hold our data, the gradients and more fields that we'll add later. Then we wrap that in another struct called `Tensor` with a mutex. Why? Because we'll be updating the gradients during backprop so we need to make sure it's thread safe in case we decide to parallelize it.
+
+Next we implement 3 functions:
+
+- `new`: create a new Tensor
+- `data`: return the data from the TensorData
+- `grad`: returns the current gradient
+
+```rust
+impl Tensor {
+    pub fn new(data: f64) -> Self {
+        Tensor {
+            inner: Arc::new(Mutex::new(TensorData { data, grad: 0.0 })),
+        }
+    }
+
+    pub fn data(&self) -> f64 {
+        self.inner.lock().unwrap().data
+    }
+
+    pub fn grad(&self) -> f64 {
+        self.inner.lock().unwrap().grad
+    }
+}
+```
+
+Notice how we `lock().unwrap()` the TensorData struct so that we can safely access it in a multi-threaded manner.
+
+Alright, we finally have some code down. It's simple but it's a start. Let's run it as well as our pytorch check and compare the output.
+
+```rust
+//in main.rs
+use nanograd::tensor::Tensor;
+
+fn main() {
+    let t = Tensor::new(5.0);
+    println!("data: {}", t.data());
+    println!("grad: {}", t.grad());
+}
+```
+
+This outputs:
+
+```bash
+[11/8/25 11:26:15] ~/code/projects/nanograd (main ✔) cargo run
+   Compiling nanograd v0.1.0 (/Users/evisdrenova/code/projects/nanograd)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.29s
+     Running `target/debug/nanograd`
+data: 5
+grad: 0
+```
+
+We're just simply instantiating a new `Tensor` struct and return the data and grad fields. Let's check pytorch:
+
+```python
+import torch
+
+t = torch.tensor(5.0, requires_grad=True)
+print(f"data: {t.item()}")
+print(f"grad: {t.grad}")
+```
+
+```bash
+(nanograd-py) [11/8/25 11:31:41] ~/code/projects/nanograd-py (main ✗) uv run main.py
+data: 5.0
+grad: None
+```
+
+They match up pretty well! One thing to note: pytorch uses "None" because it can distinguish between gradients that haven't been run yet and gradients that are equal to zero. For our purposes they're essentially the same thing.
+
