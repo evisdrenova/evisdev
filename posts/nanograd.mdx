@@ -55,14 +55,14 @@ We can break down an autograd system into 3 main components.
 - **Nodes**: Represent tensors (both inputs and intermediate results)
 - **Edges**: Represent operations that transform one tensor into another
 - **Leaves**: Input tensors and parameters (where gradients will accumulate)
-- **Root**: The final loss value (where backward pass starts)
+- **Root**: The final loss value
 
 ![comp](/nanograd/comp.png)
 
 During the forward pass, autograd does two things simultaneously:
 
 - Runs the requested operation to compute the resulting tensor
-- Records the operation's gradient function in the DAG (stores how to compute derivatives for this operation)
+- Records the operation's gradient function in the DAG
 
 During the backward pass:
 
@@ -76,65 +76,51 @@ By tracing this graph from root to leaves, you can automatically compute the gra
 
 ![tens](/nanograd/tens.png)
 
-The tensor wrapper is the core data structure that makes automatic differentiation possible. It wraps the raw numerical data (the actual tensor values) with metadata needed for gradient computation.
+The tensor wrapper is the core data structure that makes automatic differentiation possible. It wraps the raw tensor value with metadata needed for gradient computation.
 
-**Key responsibilities:**
-
-- **Store the data**: The actual numerical values (could be a scalar, vector, matrix, or higher-dimensional array)
+- **Store the data**: The actual tensor
 - **Track gradient requirements**: A flag (`requires_grad`) indicating whether this tensor needs gradients computed for it
 - **Store accumulated gradients**: A `.grad` field that accumulates gradients during the backward pass
-- **Link to computation history**: A reference to the operation (`grad_fn`) that created this tensor (if any)
-- **Maintain connections**: References to parent tensors (inputs to the operation that created this tensor)
+- **Link to computation history**: A reference to the operation (`grad_fn`) that created this tensor
+- **Maintain connections**: References to parent tensors
 
 The tensor wrapper is what allows PyTorch to say "this tensor came from multiplying x by 2, so I know how to compute gradients for it."
 
-## 3. Gradient Functions (Backward Functions)
+## 3. Gradient Functions
 
-![tens](/nanograd/gradfuncs.png)
+![tens](/nanograd/grad.png)
 
-Gradient functions define **how to compute derivatives** for each operation. Every operation in your neural network (add, multiply, matrix multiply, ReLU, etc.) needs a corresponding gradient function.
-
-**Key responsibilities:**
+Gradient functions define how to compute derivatives for each operation. Every operation in your neural network (add, multiply, matrix multiply, ReLU, etc.) needs a corresponding gradient function.
 
 - **Store operation-specific context**: Information needed to compute gradients (e.g., the input values, shapes, etc.)
 - **Implement the derivative**: The mathematical formula for how this operation's output gradient relates to its input gradients
 - **Apply the chain rule**: Take the gradient flowing backwards and compute gradients for each input
 
-**Structure:**
 Each gradient function typically needs:
 
 1. **Forward context**: Data saved during the forward pass (needed for backward computation)
 2. **Backward method**: Given the gradient of the loss with respect to the output, compute the gradient with respect to each input
 
-**Example - Addition:**
+Let's look at the multiplication gradient function as an example:
 
-```
-Forward: z = x + y
-Backward:
-  ∂Loss/∂x = ∂Loss/∂z × ∂z/∂x = ∂Loss/∂z × 1 = ∂Loss/∂z
-  ∂Loss/∂y = ∂Loss/∂z × ∂z/∂y = ∂Loss/∂z × 1 = ∂Loss/∂z
-```
+$$
+\textbf{Forward: } z = x \cdot y \text{ (save } x \text{ and } y \text{ for later)}
+$$
 
-**Example - Multiplication:**
+$$
+\textbf{Backward:}
+$$
 
-```
-Forward: z = x * y (save x and y for later)
-Backward:
-  ∂Loss/∂x = ∂Loss/∂z × ∂z/∂x = ∂Loss/∂z × y
-  ∂Loss/∂y = ∂Loss/∂z × ∂z/∂y = ∂Loss/∂z × x
-```
+$$
+\frac{\partial \text{Loss}}{\partial x} = \frac{\partial \text{Loss}}{\partial z} \times \frac{\partial z}{\partial x} = \frac{\partial \text{Loss}}{\partial z} \times y
+$$
+
+$$
+\frac{\partial \text{Loss}}{\partial y} = \frac{\partial \text{Loss}}{\partial z} \times \frac{\partial z}{\partial y} = \frac{\partial \text{Loss}}{\partial z} \times x
+$$
 
 Notice how multiplication needs to save the input values (x and y) during the forward pass to compute gradients during the backward pass. This is why gradient functions need to store context.
 
-**Common gradient functions you'll need:**
+Each operation in the computational graph has one of these gradient functions attached which forms the blueprint for the backward pass.
 
-- `AddBackward`: Gradient for addition
-- `MulBackward`: Gradient for element-wise multiplication
-- `MatMulBackward`: Gradient for matrix multiplication
-- `ReluBackward`: Gradient for ReLU activation
-- `SumBackward`: Gradient for sum reduction
-- `PowBackward`: Gradient for power operations
-
-Each operation in your computational graph has one of these gradient functions attached, forming the blueprint for the backward pass.
-
-# Defining an autograd system in rust
+# Defining an autograd system in Rust
