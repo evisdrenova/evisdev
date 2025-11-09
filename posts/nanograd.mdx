@@ -1,6 +1,6 @@
 ---
 title: "Building an autograd system in Rust"
-date: "2025-11-07"
+date: "2025-11-08"
 publish: false
 ---
 
@@ -38,8 +38,6 @@ When we train neural nets, there are two main steps:
 
 2. **Backward pass (propagation)**: The neural net adjusts its parameters based on the loss. It does this by traversing backwards through the network (opposite of the forward pass) and calculating the gradient of the loss with respect to each parameter using the chain rule. These gradients tell us how to update each parameter to reduce the loss.
 
-## Why "Automatic Differentiation"?
-
 The **"automatic"** part means PyTorch computes these gradients for you automatically. You don't need to manually derive and code up the derivatives for each operation in your network.
 
 The **"differentiation"** part refers to computing derivatives (gradients). Specifically, autograd calculates ∂Loss/∂(every parameter) - the gradient of the loss with respect to each of the millions (or billions) of parameters in your model.
@@ -52,8 +50,6 @@ We can break down an autograd system into 3 main components.
 
 ## 1. Computational Graph
 
-![comp](/nanograd/comp.png)
-
 1. **Computational graph**: the computational graph is a directed acyclic graph (DAG) that stores the operations of the autograd process.
 
 - **Nodes**: Represent tensors (both inputs and intermediate results)
@@ -61,7 +57,7 @@ We can break down an autograd system into 3 main components.
 - **Leaves**: Input tensors and parameters (where gradients will accumulate)
 - **Root**: The final loss value (where backward pass starts)
 
-By tracing this graph from root to leaves, you can automatically compute the gradients using the chain rule.
+![comp](/nanograd/comp.png)
 
 During the forward pass, autograd does two things simultaneously:
 
@@ -73,6 +69,8 @@ During the backward pass:
 - Computes the gradients from each operation's gradient function (`.grad_fn`)
 - Accumulates them in each tensor's `.grad` attribute
 - Uses the chain rule to propagate gradients all the way back to the leaf tensors
+
+By tracing this graph from root to leaves, you can automatically compute the gradients using the chain rule.
 
 ## 2. Tensor Wrapper
 
