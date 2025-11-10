@@ -461,3 +461,79 @@ impl Clone for Tensor {
 ```
 
 Nothing too fancy here, just cloning our `TensorData`.
+
+But wait! We can make this a little cleaner with a slight refactor. We're already creating a new tensor in the `from_op()` function, so what if we just use that as our return tensor? Then we can get rid of of the `output` tensor we are creating in the `add()` function.
+
+Here are the updates:
+
+```rust
+// old
+type BackwardFn = Box<dyn Fn() + Send>;
+
+// new takes gradient as param
+type BackwardFn = Box<dyn Fn(f64) + Send>;
+```
+
+No change needed to the `from_op()` function and here is the updated `add()` function:
+
+```rust
+    pub fn add(&self, other: &Tensor) -> Tensor {
+        // compute forward pass data operation
+        let data = self.data() + other.data();
+
+        // create clones of the data that we can hand off to our backward_fn
+        let self_clone = self.clone();
+        let other_clone = other.clone();
+
+        // define the backward func and box it on the heap to run later
+        let backward_fn = Box::new(move |grad_output: f64| {
+            // use += to accumulate bc we might run this multiple times
+            self_clone.inner.lock().unwrap().grad += grad_output;
+            other_clone.inner.lock().unwrap().grad += grad_output;
+        });
+
+        let prev = vec![self.clone(), other.clone()];
+
+        Tensor::from_op(data, prev, backward_fn)
+    }
+```
+
+We removed the `output` tensor we created and just passed in the gradient to the `BackwardFn`. We also now pass in a reference to `self` in the `add()` function signature so we can borrow it.
+
+Much cleaner. Let's test it and compare it with pytorch.
+
+```rust
+use nanograd::tensor::Tensor;
+
+fn main() {
+    let a = Tensor::new(2.0);
+    let b = Tensor::new(3.0);
+    let c = a.add(&b);
+    let d = a.data() + b.data(); // same thing as above, just showing another option
+    println!("data: {}", c.data());
+    println!("data: {}", d);
+}
+```
+
+```bash
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.30s
+     Running `target/debug/nanograd`
+data: 5
+data: 5
+```
+
+```pytorch
+import torch
+
+a = torch.tensor(2.0, requires_grad=True)
+b = torch.tensor(3.0, requires_grad=True)
+c = a + b
+print(f"c: {c.item()}")
+```
+
+```bash
+(nanograd-py) [11/8/25 11:31:47] ~/code/projects/nanograd-py (main ✗) uv run main.py
+c: 5.0
+```
+
+Nice! Things are looking good. We can now add our tensors and do a very simple forward pass. Time to build on it.
