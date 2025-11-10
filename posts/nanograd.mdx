@@ -330,6 +330,10 @@ Let's move on to the second step: Implement a basic forward pass with addition a
 
 We're going to add on the addition operation first. Just like we learned `c = a + b` in elementary school, we just add the data fields together like `c.data = a.data + b.data` for the forward pass.
 
+The tricky part is that the backward pass, which we will implement a little later, needs to modify the `a.grad` and `b.grad` when it updates the gradients. So it needs to capture references to `a` and `b`.
+
+But first, we have to take a quick detour to talk about how the gradients get calculated. Even though this doesn't happen until the backward pass, we have to define it here since we have to pass those gradients to the backward pass.
+
 The backward pass uses the [chain rule](https://en.wikipedia.org/wiki/Chain_rule) to calculate the gradient of `a` and `b` like:
 
 - `∂Loss/∂a = ∂Loss/∂c × 1`
@@ -393,3 +397,67 @@ We can repeat the same process for `b`:
 ∂c/∂b = 1  (if you increase b by 1, c increases by 1)
 ∂Loss/∂b = ∂Loss/∂c × ∂c/∂b = 10 × 1 = 10
 ```
+
+Okay, now that we're good on the chain rule, let's define our `add` function.
+
+```rust
+impl Tensor {
+
+// previous functions
+
+    pub fn add(self, other: &Tensor) -> Tensor {
+        // compute forward pass data operation
+        let data = self.data() + other.data();
+
+        // create clones of the data that we can hand off to our backward_fn
+        let self_clone = self.clone();
+        let other_clone = other.clone();
+
+        // create the output tensor first and we'll fill in the backward_fn next
+        let output = Tensor::from_op(data, vec![self.clone(), other.clone()], Box::new(|| {}));
+
+        // clone output for backward function
+        let output_clone = output.clone();
+
+        // define the backward func and box it on the heap to run later
+        let backward_fn = Box::new(move || {
+            // gradient from output (c)
+            let output_grad = output_clone.grad();
+
+            // use += to accumulate bc we might run this multiple times
+            self_clone.inner.lock().unwrap().grad += output_grad;
+            other_clone.inner.lock().unwrap().grad += output_grad;
+        });
+
+        // update the backward func
+        output.inner.lock().unwrap().backward_fn = Some(backward_fn);
+
+        output
+    }
+
+}
+```
+
+Let's walk through this step by step.
+
+First, we add our tensors by adding the `data` fields of the two input tensors. Then we create clones of those tensors so that we can hand off ownership to the backward pass inside of the move closure (this is rust after all!).
+
+Then we create a stubbed output tensor. Why? Well in our backward pass, we need access to the output's gradient (think of it like `c` from the chain rule example), so that we can add it to the our two input tensors (`a` and `b` from our chain rule example).
+
+Also, notice that we use `+=` the `output_grad`. A tensor might be used severasl times in which case we need to accumulate all of the gradients.
+
+Then, we then add our `backward_fn` to our output tensor and then return it.
+
+Lastly, we're using `.clone()` a lot and we haven't defined that trait, so let's define it:
+
+```rust
+impl Clone for Tensor {
+    fn clone(&self) -> Tensor {
+        Tensor {
+            inner: Arc::clone(&self.inner),
+        }
+    }
+}
+```
+
+Nothing too fancy here, just cloning our `TensorData`.
