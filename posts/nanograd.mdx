@@ -130,7 +130,7 @@ Now that we have a good foundation of how autograd works and it's main component
 Here is my plan:
 
 1. Create the core type that will wrap the number and track it's computational history. This maps to the first and second components of the autograd system.
-2. Implement a basic forward pass with addition, multiplication and power operations.
+2. Implement a basic forward pass with addition and multiplication operations.
 3. Implement the backward pass to compute gradients.
 4. Add more operations (maybe)
 5. Build an actual neural network using our nanograd building blocks
@@ -305,7 +305,7 @@ Since this is a new Tensor, we can intiialize our `prev` field with a new vector
 
 If you we refer back to our computational graph diagram from above, leaf tensors are created with `new()` and don't have any backward functions because they're inputs. Computed tensors, the ones created by operations like add, multiply, etc., get their backward function set by that operation when its created.
 
-So we actually need to add another constructor that will set the backward function. Luckily, it's pretty easy.
+So we actually need to add another constructor that will set the backward function when we create a new tensor as part of an operation. Luckily, it's pretty easy.
 
 ```rust
     fn from_op(data: f64, prev: Vec<Tensor>, backward_fn: BackwardFn) -> Self {
@@ -321,3 +321,75 @@ So we actually need to add another constructor that will set the backward functi
 ```
 
 We just update the `Tensor` struct with the backward function that we pass in.
+
+And with that we're done with the first step! We created the core data type to store our tensor data, gradients, parent history and backward function. We also added the ability to create leaf tensors and tensors from operations and a few getters; and made all of it thread safe.
+
+Let's move on to the second step: Implement a basic forward pass with addition and multiplication operations.
+
+# Creating a Forward Pass operation
+
+We're going to add on the addition operation first. Just like we learned `c = a + b` in elementary school, we just add the data fields together like `c.data = a.data + b.data` for the forward pass.
+
+The backward pass uses the [chain rule](https://en.wikipedia.org/wiki/Chain_rule) to calculate the gradient of `a` and `b` like:
+
+- `∂Loss/∂a = ∂Loss/∂c × 1`
+- `∂Loss/∂b = ∂Loss/∂c × 1`
+
+It's critical that we understand how the chain rule works and the intuition behind it. The chain rule tells us how to compute gradients when a function is composed i.e. when a function is made up of multiple sub-functions. In our example below, the Loss is a composed function because, first, you have to add `a` + `b` (function 1) and then square it (function 2) to get the loss.
+
+Let's say that we have:
+
+```
+a = 2.0
+b = 3.0
+c = a + b = 5.0
+Loss = c² = 25.0
+```
+
+We want to know: "If I change `a` by some amount, how much does the `Loss` change?"
+
+That's what `∂Loss/∂a` means, the gradient of Loss with respect to a.
+
+The Chain Rule says:
+
+`∂Loss/∂a = ∂Loss/∂c × ∂c/∂a`
+
+Said differently: "How `Loss` changes w.r.t. `a` = (How `Loss` changes w.r.t. `c`) × (How `c` changes w.r.t. `a`)".
+
+You can see the "backward" path here from Loss -> c -> a. Just the reverse path of our composed function.
+
+Breaking it down, we can calculate the first term, `∂Loss/∂c`:
+
+- `Loss = c²`
+- `∂Loss/∂c = 2c = 2 × 5 = 10` (we take the derivative of the loss to make it `2c`)
+
+This is the gradient flowing backward from the loss. In our computational graph, this is flowing from the root to the leaf nodes.
+
+The second term: `∂c/∂a`, is calculated by:
+
+- `c = a + b`
+- `∂c/∂a = 1` (if you increase `a` by 1, `c` increases by 1)
+
+This is specific to the addition operation. In other operations, this will change.
+
+Combining them:
+
+```∂Loss/∂a = ∂Loss/∂c × ∂c/∂a
+         = 10 × 1
+         = 10
+```
+
+Graphically:
+
+![tens](/nanograd/graph.png)
+
+You can imagine a slider on `a` which as you move it from right to left, updates the curve and the slope of the tangent line (our gradient).
+
+If we update `a` to 5, then our loss goes from `25` to `64`. And our loss gradient with respect to `a` goes from `10` to `16`.
+
+We can repeat the same process for `b`:
+
+```
+∂c/∂b = 1  (if you increase b by 1, c increases by 1)
+∂Loss/∂b = ∂Loss/∂c × ∂c/∂b = 10 × 1 = 10
+```
