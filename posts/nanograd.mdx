@@ -123,14 +123,14 @@ Notice how multiplication needs to save the input values (x and y) during the fo
 
 Each operation in the computational graph has one of these gradient functions attached which forms the blueprint for the backward pass.
 
-# Defining an autograd system in Rust
+# Autograd in Rust
 
 Now that we have a good foundation of how autograd works and it's main components, let's starting spec'ing out what we're going to build in rust.
 
 Here is my plan:
 
 1. Create the core type that will wrap the number and track it's computational history. This maps to the first and second components of the autograd system.
-2. Implement a basic forward pass with addition and multiplication operations.
+2. Implement a basic forward pass with addition, multiplication and power operations.
 3. Implement the backward pass to compute gradients.
 4. Add more operations (maybe)
 5. Build an actual neural network using our nanograd building blocks
@@ -324,9 +324,9 @@ We just update the `Tensor` struct with the backward function that we pass in.
 
 And with that we're done with the first step! We created the core data type to store our tensor data, gradients, parent history and backward function. We also added the ability to create leaf tensors and tensors from operations and a few getters; and made all of it thread safe.
 
-Let's move on to the second step: Implement a basic forward pass with addition and multiplication operations.
+Let's move on to the second step: Implement a basic forward pass with addition, multiplication and power operations.
 
-# Forward Pass Operations#
+# Forward Pass Operations
 
 We're going to add on the addition operation first. Just like we learned `c = a + b` in elementary school, we just add the data fields together like `c.data = a.data + b.data` for the forward pass.
 
@@ -334,7 +334,7 @@ The tricky part is that the backward pass, which we will implement a little late
 
 But first, we have to take a quick detour to talk about how the gradients get calculated. Even though this doesn't happen until the backward pass, we have to define it here since we have to pass those gradients to the backward pass.
 
-# Addition Operations
+## Addition
 
 The backward pass uses the [chain rule](https://en.wikipedia.org/wiki/Chain_rule) to calculate the gradient of `a` and `b` like:
 
@@ -540,7 +540,7 @@ c: 5.0
 
 Nice! Things are looking good. We can now add our tensors and do a very simple forward pass. Time to build on it.
 
-## Multiplication Operations
+## Multiplication
 
 We've already laid the foundation for the multiplication operation with the work we did above on the addition operation. So let's make a few updates and create a multiplication operation.
 
@@ -560,16 +560,12 @@ Let's write the code for it:
 
 ```rust
     pub fn mul(&self, other: &Tensor) -> Tensor {
-        // compute forward pass data operation
         let data = self.data() * other.data();
 
-        // create clones of the data that we can hand off to our backward_fn
         let self_clone = self.clone();
         let other_clone = other.clone();
 
-        // define the backward func and box it on the heap to run later
         let backward_fn = Box::new(move |grad_output: f64| {
-            // use += to accumulate bc we might run this multiple times
             self_clone.inner.lock().unwrap().grad += grad_output * other_clone.data();
             other_clone.inner.lock().unwrap().grad += grad_output * self_clone.data();
         });
@@ -624,3 +620,67 @@ print(f"c: {c.item()}")
 (nanograd-py) [11/9/25 8:25:04] ~/code/projects/nanograd-py (main ✗) uv run main.py
 c: 6.0
 ```
+
+## Power
+
+Last operation for now, let's do powers. This is usefulf for things like MSE (mean squared error) which is often used in loss functions. Let's lay out the forward and backward pass like we did above:
+
+When `c = a^n`:
+
+- Forward: `c = a^n`
+- Backward: `∂c/∂a = n × a^(n-1)`
+
+So: `∂Loss/∂a = ∂Loss/∂c × n × a^(n-1)`
+
+The power operation is different from the other two in that there is no `other` tensor, it's just one tensor being raised to a power. Let's see the code:
+
+```rust
+    pub fn pow(&self, n: f64) -> Tensor {
+        let data = self.data().powf(n);
+
+        let self_clone = self.clone();
+
+        let backward_fn = Box::new(move |grad_output: f64| {
+            self_clone.inner.lock().unwrap().grad +=
+                grad_output * n * self_clone.data().powf(n - 1.0);
+        });
+
+        let prev = vec![self.clone()];
+
+        Tensor::from_op(data, prev, backward_fn)
+    }
+```
+
+And let's test it against pytorch:
+
+```rust
+use nanograd::tensor::Tensor;
+
+fn main() {
+    let a = Tensor::new(3.0);
+    let b = a.pow(2.0);
+    println!("data: {}", b.data());
+}
+
+```
+
+```bash
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s
+     Running `target/debug/nanograd`
+data: 9
+```
+
+```python
+import torch
+
+a = torch.tensor(3.0, requires_grad=True)
+b = a**2
+print(f"b: {b.item()}")  # 9.0
+```
+
+```bash
+(nanograd-py) [11/9/25 8:37:18] ~/code/projects/nanograd-py (main ✗) uv run main.py
+b: 9.0
+```
+
+Nice! We're getting pretty good at this.
