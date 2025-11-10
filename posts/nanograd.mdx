@@ -683,4 +683,46 @@ print(f"b: {b.item()}")  # 9.0
 b: 9.0
 ```
 
-Nice! We're getting pretty good at this.
+Nice! We're getting pretty good at this. And with that, phase 2 is now complete! We now have our core data structures, computional graph and forward pass operations.
+
+Onto phase 3!
+
+# Implementing Backward Pass
+
+This is where we make nanograd actually work. We need to implement a backward pass function that:
+
+1. Traverses the computation graph in reverse topological order
+2. Calls each node's backward function
+3. Propagates gradients from output to inputs
+
+Let's start with an example:
+
+```rust
+let a = Tensor::new(2.0);
+let b = Tensor::new(3.0);
+let c = a.mul(&b);      // c = 6
+let d = c.add(&a);      // d = 8
+let loss = d.pow(2.0);  // loss = 64
+```
+
+The computational graph looks like this:
+
+![comp](/nanograd/exa.png)
+
+The forward order: a, b → c → d → loss
+
+The backward order (reverse topological): loss -> d -> c -> a, b
+
+We need to visit nodes so that when we process a node, all nodes that depend on it have already been processed. Let's sketch out the algorithm before we implement it:
+
+```
+1. Start at the output node (loss)
+2. Set loss.grad = 1.0 (seed gradient)
+3. Build topological order (DFS)
+4. For each node in reverse topological order:
+   - If it has a backward_fn:
+     - Call backward_fn(node.grad)
+     - This updates the gradients of parent nodes
+```
+
+First things first, we need to build a helper function that can build the reverse topological order.
