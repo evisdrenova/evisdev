@@ -168,8 +168,6 @@ What does this need to store? Here's what I'm thinking:
 Let's start with a couple of structs:
 
 ```rust
-// create a new file called tensor.rs
-
 use std::sync::{Arc, Mutex};
 
 struct TensorData {
@@ -250,5 +248,76 @@ data: 5.0
 grad: None
 ```
 
-They match up pretty well! One thing to note: pytorch uses "None" because it can distinguish between gradients that haven't been run yet and gradients that are equal to zero. For our purposes they're essentially the same thing.
+They match up pretty well! One thing to note: pytorch uses "None" because it can distinguish between gradients that haven't been run yet ("None") and gradients that are equal to zero while our code just uses `0.0` for both. Down the line we can update it to support the same use-case as pytorch but for now they're essentially the same thing.
 
+# Adding a computational graph
+
+Next, let's add the ability to track where a tensor comes from.
+
+To do that, we need to add two fields to our struct:
+
+- `prev`: a list of the parent tensors
+- `backward_fn`: how to compute gradients; similar to the third autograd component
+
+Let's update our `TensorData` struct:
+
+```rust
+type BackwardFn = Box<dyn Fn() + Send>;
+
+
+struct TensorData {
+    data: f64,
+    grad: f64,
+    prev: Vec<Tensor>,
+    backward_fn: Option<BackwardFn>,
+}
+```
+
+`prev` is just a vector of `Tensor` and `backward_fn` is a `BackwardFn` that we defined above the struct and wrapped in an `Option` to make it an optional value.
+
+Let's look at the `BackwardFn` type:
+
+- `Fn()`: a function that takes in no arguments and doesn't return anything - it will capture what it needs from the surrounding scope
+- `dyn`: the function will be **dynamic** because we don't know the exact type of function at compile time, so rust will figure it out at runtime.
+- `Box<...>`: `dyn Fn()` is a trait, not a concrete type - its size is unknown at compile time. Box also puts it on the heap and gives us a fixed-size pointer. Without it, rust wouldn't know how much space to allocate for `TensorData`.
+- `+ Send`: this is a trait bound meaning the function must be saqfe to send between threads. We need this because we're using `Arc` which allows sharing between threads.
+
+Remember from the third section in the autograd components, different operations have different functions, so we have to define a generic function like `Fn()` and wrap it in a `Box<...>`, so we can get a fixed size pointer regardless of the size of the data.
+
+You can think of it like a box containing any function that takes no args and is safe to share between threads.
+
+Next, let's update our `new` function to add on these additional fields and initialize them.
+
+```rust
+    pub fn new(data: f64) -> Self {
+        Tensor {
+            inner: Arc::new(Mutex::new(TensorData {
+                data,
+                grad: 0.0,
+                prev: Vec::new(),
+                backward_fn: None,
+            })),
+        }
+    }
+```
+
+Since this is a new Tensor, we can intiialize our `prev` field with a new vector and set our `backward_fn` to `None`. Why do we set the `backward_fn` to `None`?
+
+If you we refer back to our computational graph diagram from above, leaf tensors are created with `new()` and don't have any backward functions because they're inputs. Computed tensors, the ones created by operations like add, multiply, etc., get their backward function set by that operation when its created.
+
+So we actually need to add another constructor that will set the backward function. Luckily, it's pretty easy.
+
+```rust
+    fn from_op(data: f64, prev: Vec<Tensor>, backward_fn: BackwardFn) -> Self {
+        Tensor {
+            inner: Arc::new(Mutex::new(TensorData {
+                data,
+                grad: 0.0,
+                prev,
+                backward_fn: Some(backward_fn),
+            })),
+        }
+    }
+```
+
+We just update the `Tensor` struct with the backward function that we pass in.
