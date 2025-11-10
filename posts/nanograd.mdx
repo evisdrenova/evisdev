@@ -326,13 +326,15 @@ And with that we're done with the first step! We created the core data type to s
 
 Let's move on to the second step: Implement a basic forward pass with addition and multiplication operations.
 
-# Creating a Forward Pass operation
+# Forward Pass Operations#
 
 We're going to add on the addition operation first. Just like we learned `c = a + b` in elementary school, we just add the data fields together like `c.data = a.data + b.data` for the forward pass.
 
 The tricky part is that the backward pass, which we will implement a little later, needs to modify the `a.grad` and `b.grad` when it updates the gradients. So it needs to capture references to `a` and `b`.
 
 But first, we have to take a quick detour to talk about how the gradients get calculated. Even though this doesn't happen until the backward pass, we have to define it here since we have to pass those gradients to the backward pass.
+
+# Addition Operations
 
 The backward pass uses the [chain rule](https://en.wikipedia.org/wiki/Chain_rule) to calculate the gradient of `a` and `b` like:
 
@@ -343,7 +345,7 @@ It's critical that we understand how the chain rule works and the intuition behi
 
 Let's say that we have:
 
-```
+```bash
 a = 2.0
 b = 3.0
 c = a + b = 5.0
@@ -425,8 +427,8 @@ impl Tensor {
             let output_grad = output_clone.grad();
 
             // use += to accumulate bc we might run this multiple times
-            self_clone.inner.lock().unwrap().grad += output_grad;
-            other_clone.inner.lock().unwrap().grad += output_grad;
+            self_clone.inner.lock().unwrap().grad += output_grad * 1.0;
+            other_clone.inner.lock().unwrap().grad += output_grad * 1.0;
         });
 
         // update the backward func
@@ -488,8 +490,8 @@ No change needed to the `from_op()` function and here is the updated `add()` fun
         // define the backward func and box it on the heap to run later
         let backward_fn = Box::new(move |grad_output: f64| {
             // use += to accumulate bc we might run this multiple times
-            self_clone.inner.lock().unwrap().grad += grad_output;
-            other_clone.inner.lock().unwrap().grad += grad_output;
+            self_clone.inner.lock().unwrap().grad += grad_output * 1.0;
+            other_clone.inner.lock().unwrap().grad += grad_output * 1.0;
         });
 
         let prev = vec![self.clone(), other.clone()];
@@ -522,7 +524,7 @@ data: 5
 data: 5
 ```
 
-```pytorch
+```python
 import torch
 
 a = torch.tensor(2.0, requires_grad=True)
@@ -537,3 +539,88 @@ c: 5.0
 ```
 
 Nice! Things are looking good. We can now add our tensors and do a very simple forward pass. Time to build on it.
+
+## Multiplication Operations
+
+We've already laid the foundation for the multiplication operation with the work we did above on the addition operation. So let's make a few updates and create a multiplication operation.
+
+When we do `c = a * b`:
+
+- Forward: `c = a × b`
+- Backward:
+  - `∂c/∂a = b` (if you increase a, c changes by b)
+  - `∂c/∂b = a` (if you increase b, c changes by a)
+
+So:
+
+- `∂Loss/∂a` = `∂Loss/∂c × b`
+- `∂Loss/∂b` = `∂Loss/∂c × a`
+
+Let's write the code for it:
+
+```rust
+    pub fn mul(&self, other: &Tensor) -> Tensor {
+        // compute forward pass data operation
+        let data = self.data() * other.data();
+
+        // create clones of the data that we can hand off to our backward_fn
+        let self_clone = self.clone();
+        let other_clone = other.clone();
+
+        // define the backward func and box it on the heap to run later
+        let backward_fn = Box::new(move |grad_output: f64| {
+            // use += to accumulate bc we might run this multiple times
+            self_clone.inner.lock().unwrap().grad += grad_output * other_clone.data();
+            other_clone.inner.lock().unwrap().grad += grad_output * self_clone.data();
+        });
+
+        let prev = vec![self.clone(), other.clone()];
+
+        Tensor::from_op(data, prev, backward_fn)
+    }
+```
+
+One thing to note is that in the addition operation we multipled the `grad_output` by `1.0` (also called the local gradient) since `∂c/∂a = 1` and `∂c/∂b = 1` but in the multiplication operation we're actually multiply it by the original data values.
+
+Why do we do this?
+
+In addition, the derivatives are constants. If you increase `a` by `1`, you increase `c` by `1`. However, in multiplication, the derivative is:
+
+- `∂c/∂a = b` (depends on b)
+- `∂c/∂b = a` (depends on a)
+
+So if b = 10, then increasing a by 1 increases c by 10. But if b = 100, increasing a by 1 increases c by 100!
+
+Let's test our implementation against pytorch:
+
+```rust
+use nanograd::tensor::Tensor;
+
+fn main() {
+    let a = Tensor::new(2.0);
+    let b = Tensor::new(3.0);
+    let c = a.mul(&b);
+    println!("data: {}", c.data());
+}
+```
+
+```bash
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running `target/debug/nanograd`
+data: 6
+```
+
+```python
+import torch
+
+a = torch.tensor(2.0, requires_grad=True)
+b = torch.tensor(3.0, requires_grad=True)
+c = a * b
+print(f"c: {c.item()}")
+
+```
+
+```bash
+(nanograd-py) [11/9/25 8:25:04] ~/code/projects/nanograd-py (main ✗) uv run main.py
+c: 6.0
+```
