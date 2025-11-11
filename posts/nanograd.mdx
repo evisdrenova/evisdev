@@ -24,7 +24,7 @@ If you’ve ever wondered what really happens beneath loss.backward(), this is a
 
 Let’s dive in.
 
-# What is autograd?
+# What is Autograd?
 
 If you're not familiar with autograd then let's take a minute to walk through it. If you are familiar with it and how it works in Pytorch, then you can probably skip this section.
 
@@ -44,7 +44,7 @@ The **"differentiation"** part refers to computing derivatives (gradients). Spec
 
 Without autograd, you'd need to manually compute and code the derivative for every operation in your network using calculus. With autograd, you just call `loss.backward()` and PyTorch figures it all out using the chain rule.
 
-# Autograd main comoponents
+# Autograd Main Components
 
 We can break down an autograd system into 3 main components.
 
@@ -132,13 +132,13 @@ Here is my plan:
 1. Create the core type that will wrap the number and track it's computational history. This maps to the first and second components of the autograd system.
 2. Implement a basic forward pass with addition, multiplication and power operations.
 3. Implement the backward pass to compute gradients.
-4. Add more operations (maybe)
+4. Adding non-linearities
 5. Build an actual neural network using our nanograd building blocks
 6. Training loop to put it all together and make sure it works.
 
 I think this seems like a reasonable start. I'm also going to use Pytorch as a reference implementation to check out work along the way and make sure we're getting the same output so we know we're on the right track.
 
-# Project set up
+# Project Scaffolding
 
 First things first, let's set up our project. I'm going to create a rust project using cargo:
 
@@ -156,7 +156,7 @@ Okay, cool, we have our projects set up.
 
 Let's get started with the first step: creating the core type that will wrap our tensors number and track it's computational history.
 
-# Creating the core type
+# Creating the Core Type
 
 What does this need to store? Here's what I'm thinking:
 
@@ -250,7 +250,7 @@ grad: None
 
 They match up pretty well! One thing to note: pytorch uses "None" because it can distinguish between gradients that haven't been run yet ("None") and gradients that are equal to zero while our code just uses `0.0` for both. Down the line we can update it to support the same use-case as pytorch but for now they're essentially the same thing.
 
-# Adding a computational graph
+# Adding a Computational Graph
 
 Next, let's add the ability to track where a tensor comes from.
 
@@ -1028,3 +1028,97 @@ We start the root and seed it with `grad = 1.0`. Then we go through the order in
 Lastly, we accumulate the gradients at the leafs. So `a` gets gradient from both `c` and `d` (they both use `a`; remember composite functions), so we use `+=`. The same is true for `b`.
 
 The gradient tells us: "If I change `a` by a tiny bit, how much does `e` (the loss) change?"
+
+# Adding Non-linearities
+
+So far we've built the core blocks of the nanograd system and we're _almost_ ready to put it all together in a training loop. Before we do that, we have to add in just two more operations: ReLU and GeLU. These are non-linear activation functions which give our neural nets the ability to truly learn. I wrote a [blog on activation functions](/posts/why_activations) if you want to do a little more reading.
+
+## ReLU
+
+ReLU is super simple: ReLU(x) = max(0, x)
+
+Forward: If x > 0, output x. Otherwise output 0.
+
+Backward:
+
+- If x > 0: gradient passes through (multiply by 1)
+- If x ≤ 0: gradient is blocked (multiply by 0)
+
+Mathematically: `∂ReLU/∂x = 1 if x > 0 else 0`
+
+Here's the code:
+
+```rust
+pub fn relu(&self) -> Tensor {
+    // forward pass
+    let data = if self.data() > 0.0 { self.data() } else { 0.0 };
+
+    let self_clone = self.clone();
+
+    let backward_fn = Box::new(move |grad_output: f64| {
+        let local_grad = if self_clone.data() > 0.0 {
+            grad_output
+        } else {
+            0.0
+        };
+
+         self_clone.inner.lock().unwrap().grad += grad_output * local_grad;
+    });
+
+    Tensor::from_op(data, vec![self.clone()], backward_fn)
+}
+```
+
+In the forward pass, we just check if the data is greater than 0, if so, then we pass it through otherwise we return a 0. We do something similar in the `backward_fn`. We pass in the gradient and then update the gradient on the original tensor.
+
+Let's do a test with pytorch and verify:
+
+```rust
+use nanograd::tensor::Tensor;
+
+fn main() {
+    let a = Tensor::new(3.0);
+    let b = a.relu();
+    b.backward();
+
+    assert_eq!(b.data(), 3.0); // 3.0 stays 3.0
+    assert_eq!(a.grad(), 1.0); // Gradient passes through
+
+    let a = Tensor::new(-3.0);
+    let b = a.relu();
+    b.backward();
+
+    assert_eq!(b.data(), 0.0); // -3.0 becomes 0.0
+    assert_eq!(a.grad(), 0.0); // Gradient blocked
+}
+```
+
+```bash
+[11/10/25 10:12:36] ~/code/projects/nanograd (main ✗) cargo run
+   Compiling nanograd v0.1.0 (/Users/evisdrenova/code/projects/nanograd)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.21s
+     Running `target/debug/nanograd`
+```
+
+The no return value means that it was true.
+
+```python
+import torch
+import torch.nn.functional as F
+
+a = torch.tensor(3.0, requires_grad=True)
+b = F.relu(a)
+b.backward()
+print(f"b: {b.item()}, a.grad: {a.grad.item()}")
+
+a = torch.tensor(-3.0, requires_grad=True)
+b = F.relu(a)
+b.backward()
+print(f"b: {b.item()}, a.grad: {a.grad.item()}")
+```
+
+```bash
+(nanograd-py) [11/10/25 9:43:28] ~/code/projects/nanograd-py (main ✗) uv run main.py
+b: 3.0, a.grad: 1.0
+b: 0.0, a.grad: 0.0
+```
