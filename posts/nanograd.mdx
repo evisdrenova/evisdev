@@ -1029,9 +1029,9 @@ Lastly, we accumulate the gradients at the leafs. So `a` gets gradient from both
 
 The gradient tells us: "If I change `a` by a tiny bit, how much does `e` (the loss) change?"
 
-# Adding Non-linearities
+# Adding Non-linearity
 
-So far we've built the core blocks of the nanograd system and we're _almost_ ready to put it all together in a training loop. Before we do that, we have to add in just two more operations: ReLU and GeLU. These are non-linear activation functions which give our neural nets the ability to truly learn. I wrote a [blog on activation functions](/posts/why_activations) if you want to do a little more reading.
+So far we've built the core blocks of the nanograd system and we're _almost_ ready to put it all together in a training loop. Before we do that, we have to add in just one more operations: ReLU. This is a non-linear activation functions which give our neural nets the ability to truly learn. I wrote a [blog on activation functions](/posts/why_activations) if you want to do a little more reading.
 
 ## ReLU
 
@@ -1122,3 +1122,109 @@ print(f"b: {b.item()}, a.grad: {a.grad.item()}")
 b: 3.0, a.grad: 1.0
 b: 0.0, a.grad: 0.0
 ```
+
+ReLU is done! Now we are ready. We are finally ready to build a neural net.
+
+Onto step 5!
+
+# Building a Neural net
+
+We're going to build a simple neural net from the ground up. The foundational building block of a neural net is the Neuron.
+
+Neurons have:
+
+1. Weights (one per input)
+2. Bias
+3. Computes `output = relu(w₁×x₁ + w₂×x₂ + ... + wₙ×xₙ + b)`
+
+For example, a Neuron with three inputs:
+
+```
+inputs: [x₁, x₂, x₃]
+weights: [w₁, w₂, w₃]
+bias: b
+
+output = relu(w₁×x₁ + w₂×x₂ + w₃×x₃ + b)
+```
+
+Let's create a new file called `src/neuron.rs` for our Neuron implementation.
+
+Next, let's create the Neuron struct:
+
+```rust
+pub struct Neuron {
+    weights: Vec<Tensor>,
+    bias: Tensor,
+}
+```
+
+The neuron will have a `weights` field that is a vector of Tensors and a `bias` field which is just a tensor.
+
+Next, let's define the Neuron implementation:
+
+```rust
+use crate::tensor::Tensor;
+use rand::Rng;
+
+pub struct Neuron {
+    weights: Vec<Tensor>,
+    bias: Tensor,
+}
+
+impl Neuron {
+    pub fn new(num_inputs: usize) -> Self {
+        let mut rng = rand::rng();
+
+        // Initialize weights randomly between -1 and 1
+        let weights = (0..num_inputs)
+            .map(|_| Tensor::new(rng.random_range(-1.0..1.0)))
+            .collect();
+
+        // Initialize bias to 0
+        let bias = Tensor::new(0.0);
+
+        Neuron { weights, bias }
+    }
+
+}
+```
+
+First, we have to add in the `rand` crate with `cargo add rand`. Then we created a method to intialize a new Neuron with the `num_inputs` arg which defines how many weights we want to randomly create. Then we return the newly created Neuron with random weights and no bias.
+
+Next, let's create the forward pass function which we defined in the output above.
+
+```rust
+impl Neuron {
+    pub fn new(num_inputs: usize) -> Self {
+        let mut rng = rand::rng();
+
+        // Initialize weights randomly between -1 and 1
+        let weights = (0..num_inputs)
+            .map(|_| Tensor::new(rng.random_range(-1.0..1.0)))
+            .collect();
+
+        // Initialize bias to 0
+        let bias = Tensor::new(0.0);
+
+        Neuron { weights, bias }
+    }
+
+    pub fn forward(&self, inputs: &[Tensor]) -> Tensor {
+        let mut sum = Tensor::new(0.0);
+
+        for i in 0..self.weights.len() {
+            sum = sum.add(&self.weights[i].mul(&inputs[i]));
+        }
+
+        sum = sum.add(&self.bias);
+        sum.relu()
+    }
+}
+```
+
+The forward pass function is a straight implementation of `output = relu(w₁×x₁ + w₂×x₂ + ... + wₙ×xₙ + b)`. We initialize a new Tensor with data set to 0.0, then iterate over the weights and input multiplying them together at the same indices and then accumulating the sum. We add the bias and then call the `relu()` method.
+
+
+---
+
+# Building a Training Loop
