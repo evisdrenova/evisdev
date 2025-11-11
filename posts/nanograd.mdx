@@ -859,3 +859,96 @@ Step 7: Add b to topo
 Step 8: Complete
 
 ![comp](/nanograd/8.png)
+
+Nice! To be honest, that took me longer than I want to admit to get right, so if you need to read it more than once, it's totally fine (at least tell me that so I can feel better).
+
+Okay, now we're onto the last part: writing the backward pass function to bring all of this together.
+
+Here's what we need to do:
+
+1. Build the topological order
+2. Set this tensor's gradient to 1.0 (seed the gradient)
+3. Go through each tensor in reverse order
+4. Call its backward function (if it has one)
+
+Let's see the code:
+
+```rust
+pub fn backward(&self) {
+    let topo = self.build_reverse_top_order();
+
+    self.inner.lock().unwrap().grad = 1.0;
+
+    for tensor in topo.iter().rev() {
+        let grad = tensor.grad();
+
+        let should_call = tensor.inner.lock().unwrap().backward_fn.is_some();
+
+        if should_call {
+            if let Some(ref func) = tensor.inner.lock().unwrap().backward_fn {
+                func(grad);
+            }
+        }
+    }
+}
+```
+
+Like we outlined in our steps, we first build our order using our helper functions. Then we initially seed the gradient by setting it to 1.0. Then we loop over the order and for each tensor, get the gradient, check to see if it has a `backward_fn` and if it does, call it and pass in our gradient value.
+
+Remember from our operations above, for example the addition operation, we defined the backward function to just take in an `f64` gradient:
+
+```rust
+let backward_fn = Box::new(move |grad_output: f64| {
+    // use += to accumulate bc we might run this multiple times
+    self_clone.inner.lock().unwrap().grad += grad_output * 1.0;
+    other_clone.inner.lock().unwrap().grad += grad_output * 1.0;
+});
+```
+
+Let's test it using the multiplication operation:
+
+```rust
+use nanograd::tensor::Tensor;
+
+fn main() {
+    let a = Tensor::new(2.0);
+    let b = Tensor::new(3.0);
+    let c = a.mul(&b); // c = 6.0
+
+    c.backward();
+
+    println!("a.grad: {}", a.grad());
+    println!("b.grad: {}", b.grad());
+}
+
+```
+
+```bash
+[11/10/25 9:39:44] ~/code/projects/nanograd (main ✗) cargo run
+   Compiling nanograd v0.1.0 (/Users/evisdrenova/code/projects/nanograd)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running `target/debug/nanograd`
+a.grad: 3
+b.grad: 2
+```
+
+```python
+import torch
+
+a = torch.tensor(2.0, requires_grad=True)
+b = torch.tensor(3.0, requires_grad=True)
+c = a * b  # c = 6.0
+
+c.backward()
+
+print(f"a.grad: {a.grad.item()}")  # Should be 3.0
+print(f"b.grad: {b.grad.item()}")  # Should be 2.0
+```
+
+```bash
+(nanograd-py) [11/10/25 9:39:08] ~/code/projects/nanograd-py (main ✗) uv run main.py
+a.grad: 3.0
+b.grad: 2.0
+```
+
+We're in business! Things are looking good. You can go ahead and test the other operations if you'd like, I did on the side but I want to save some space on the blog.
