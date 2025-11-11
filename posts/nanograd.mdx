@@ -715,7 +715,7 @@ The backward order (reverse topological): loss -> d -> c -> a, b
 
 We need to visit nodes so that when we process a node, all nodes that depend on it have already been processed. Let's sketch out the algorithm before we implement it:
 
-```
+```bash
 1. Start at the output node (loss)
 2. Set loss.grad = 1.0 (seed gradient)
 3. Build topological order (DFS)
@@ -725,4 +725,137 @@ We need to visit nodes so that when we process a node, all nodes that depend on 
      - This updates the gradients of parent nodes
 ```
 
-First things first, we need to build a helper function that can build the reverse topological order.
+First things first, we need to write a helper function that can build the reverse topological order. Let's stub it out:
+
+```rust
+    fn build_reverse_top_order(&self) -> Vec<Tensor> {
+        // the vec that we return
+        let mut topo = Vec::new();
+        // stores the nodes that we have already visited
+        let mut visited = HashSet::new();
+
+        fn build_reverse_top_order_recursive(
+            tensor: &Tensor,
+            topo: &mut Vec<Tensor>,
+            visited: &mut HashSet<>,
+        ) {
+
+        //implement here
+
+        }
+    }
+```
+
+We're creating a function to build the order and inside of that function, writing another function that we will call recursively to iterate over our nodes.
+
+Inside of the recursive function, we need some way to identify unique tensors so that we can check in our hashset if we have already visited it. What can we use? Well, we can't use the data, gradients or parents because those aren't guaranteed to be unique. What about an `Arc` pointer? Yes! we'll always have a unique pointer so we can use the pointer value itself as a unique way of identifying the tensor.
+
+Let's update our function:
+
+```rust
+    fn build_reverse_top_order(&self) -> Vec<Tensor> {
+        // the vec that we return
+        let mut topo = Vec::new();
+        // stores the nodes that we have already visited
+        let mut visited = HashSet::new();
+
+        fn build_reverse_top_order_recursive(
+            tensor: &Tensor,
+            topo: &mut Vec<Tensor>,
+            visited: &mut HashSet<*const ()>,
+        ) {
+            // create a unique pointer for this tensor
+            let ptr = Arc::as_ptr(&tensor.inner) as *const ();
+
+
+            // if we have seen this tensor before then we can just return
+            if visited.contains(&ptr) {
+                return;
+            }
+            // insert into the hashset so we can mark that we visisted it
+            visited.insert(ptr);
+
+            // finish implementation here
+        }
+    }
+```
+
+What's happening here? We're creating a hashset of pointers to our tensors that are allocated on the heap and using that pointer as a unique value to tell if we've already visited that tensor as we build the reverse topological order.
+
+Let's finish up the implementation:
+
+```rust
+fn build_reverse_top_order(&self) -> Vec<Tensor> {
+    // the vec that we return
+    let mut topo = Vec::new();
+    // stores the nodes that we have already visited
+    let mut visited = HashSet::new();
+
+    fn build_reverse_top_order_recursive(
+        tensor: &Tensor,
+        topo: &mut Vec<Tensor>,
+        visited: &mut HashSet<*const ()>,
+    ) {
+        // create a unique pointer for this tensor
+        let ptr = Arc::as_ptr(&tensor.inner) as *const ();
+
+        if visited.contains(&ptr) {
+            return;
+        }
+
+        visited.insert(ptr);
+
+        let prev_unwrapped = tensor.inner.lock().unwrap().prev.clone();
+
+        for parent in prev_unwrapped.iter() {
+            build_reverse_top_order_recursive(parent, topo, visited);
+        }
+        // Add current node after all parents
+        topo.push(tensor.clone());
+    }
+    build_reverse_top_order_recursive(self, &mut topo, &mut visited);
+    topo
+}
+```
+
+Next, we lock the tensor (since it's meant to be thread-safe) and then we access the `prev` vector of tensors which are the parents. We create a clone so we don't run into ownership problems later on.
+
+Then we recursively iterate over the parents in the `prev` vector and push the input tensor to the `topo` vector to build the order.
+
+Let's walk through it step-by-step:
+
+Step 0: Function start, call recursive(d)
+
+![comp](/nanograd/0.png)
+
+Step 1: Mark d as visited, visit it's parents
+
+![comp](/nanograd/1.png)
+
+Step 2: Visit parent c
+
+![comp](/nanograd/2.png)
+
+Step 3: Mark c as visited
+
+![comp](/nanograd/3.png)
+
+Step 4: Visit parent a
+
+![comp](/nanograd/4.png)
+
+Step 5: Add a to topo since it has no parents
+
+![comp](/nanograd/5.png)
+
+Step 6: Visit parent b
+
+![comp](/nanograd/6.png)
+
+Step 7: Add b to topo
+
+![comp](/nanograd/7.png)
+
+Step 8: Complete
+
+![comp](/nanograd/8.png)
