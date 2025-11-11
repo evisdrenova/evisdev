@@ -951,4 +951,80 @@ a.grad: 3.0
 b.grad: 2.0
 ```
 
-We're in business! Things are looking good. You can go ahead and test the other operations if you'd like, I did on the side but I want to save some space on the blog.
+Things are looking good. Let's do one more test, a complicated one to really put our work to the test.
+
+```rust
+use nanograd::tensor::Tensor;
+
+fn main() {
+    let a = Tensor::new(2.0);
+    let b = Tensor::new(3.0);
+    let c = a.mul(&b); // c = 6.0
+    let d = c.add(&a); // d = 8.0
+    let e = d.pow(2.0); // e = 64.0
+
+    e.backward();
+
+    println!("e.data: {}", e.data());
+    println!("e.grad: {}", e.grad());
+    println!("d.grad: {}", d.grad());
+    println!("c.grad: {}", c.grad());
+    println!("a.grad: {}", a.grad());
+    println!("b.grad: {}", b.grad());
+}
+```
+
+```bash
+[11/10/25 9:42:31] ~/code/projects/nanograd (main ✗) cargo run
+   Compiling nanograd v0.1.0 (/Users/evisdrenova/code/projects/nanograd)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running `target/debug/nanograd`
+e.data: 64
+e.grad: 1
+d.grad: 16
+c.grad: 16
+a.grad: 64
+b.grad: 32
+```
+
+```python
+import torch
+
+a = torch.tensor(2.0, requires_grad=True)
+b = torch.tensor(3.0, requires_grad=True)
+c = a * b  # c = 6.0
+d = c + a  # d = 8.0
+e = d**2  # e = 64.0
+
+e.backward()
+
+print(f"e: {e.item()}")
+print(f"a.grad: {a.grad.item()}")  # Should be 64.0
+print(f"b.grad: {b.grad.item()}")  # Should be 32.0
+```
+
+```bash
+(nanograd-py) [11/10/25 9:42:44] ~/code/projects/nanograd-py (main ✗) uv run main.py
+e: 64.0
+a.grad: 64.0
+b.grad: 32.0
+```
+
+We're in business!
+
+Let's take a second and summarize what we did here with the backward pass.
+
+1. **Topo order**: `[a, b, c, d, e]` (leaves to root)
+2. **Reverse topo**: `[e, d, c, b, a]` (root to leaves) ← This is what we iterate through with ` for tensor in topo.iter().rev(){}`
+3. **Seed gradient at e**: `e.grad = 1.0` ← In a real model, we would calculate this in the forward pass
+4. **Process e**: Call `e.backward_fn(1.0)` → updates `d.grad`
+5. **Process d**: Call `d.backward_fn(d.grad)` → updates `c.grad` and `a.grad`
+6. **Process c**: Call `c.backward_fn(c.grad)` → updates `a.grad` and `b.grad`
+7. **Process b**: No backward_fn (leaf), skip
+8. **Process a**: No backward_fn (leaf), skip
+
+We start the root and seed it with `grad = 1.0`. Then we go through the order in **reverse**, with each node's backward_fn updates its **parents'** gradients. Remember that the parents are to the left of the nodes when we go backwards.
+
+Lastly, we accumulate the gradients at the leafs. So `a` gets gradient from both `c` and `d` (they both use `a`; remember composite functions), so we use `+=`. The same is true for `b`.
+
+The gradient tells us: "If I change `a` by a tiny bit, how much does `e` (the loss) change?"
