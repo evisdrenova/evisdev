@@ -1129,7 +1129,13 @@ Onto step 5!
 
 # Building a Neural net
 
-We're going to build a simple neural net from the ground up. The foundational building block of a neural net is the Neuron.
+We're going to build a simple neural net from the ground up.
+
+![comp](/nanograd/nn.png)
+
+The foundational building block of a neural net is the Neuron.
+
+![comp](/nanograd/neuron.png)
 
 Neurons have:
 
@@ -1198,12 +1204,12 @@ impl Neuron {
     pub fn new(num_inputs: usize) -> Self {
         let mut rng = rand::rng();
 
-        // Initialize weights randomly between -1 and 1
+        // initialize weights randomly between -1 and 1
         let weights = (0..num_inputs)
             .map(|_| Tensor::new(rng.random_range(-1.0..1.0)))
             .collect();
 
-        // Initialize bias to 0
+        // initialize bias to 0
         let bias = Tensor::new(0.0);
 
         Neuron { weights, bias }
@@ -1224,6 +1230,113 @@ impl Neuron {
 
 The forward pass function is a straight implementation of `output = relu(w₁×x₁ + w₂×x₂ + ... + wₙ×xₙ + b)`. We initialize a new Tensor with data set to 0.0, then iterate over the weights and input multiplying them together at the same indices and then accumulating the sum. We add the bias and then call the `relu()` method.
 
+While we're at it, let's also add in a function to easily get the parameters:
+
+```rust
+pub fn parameters(&self) -> Vec<Tensor> {
+    // return all parameters (weights + bias) for training
+    let mut params = self.weights.clone();
+    params.push(self.bias.clone());
+    params
+}
+```
+
+This will come in handy later on.
+
+Next, let's create a Layer.
+
+We then stack neurons to create a layer.
+
+![comp](/nanograd/layer.png)
+
+A layer is just a collection of Neurons. Each Neuron gets the same input and produces an output. Remember that Neurons are initialized with different random weights so the outputs will be different.
+
+```rust
+pub struct Layer {
+    neurons: Vec<Neuron>,
+}
+
+impl Layer {
+    pub fn new(num_inputs: usize, num_outputs: usize) -> Self {
+        let neurons = (0..num_outputs).map(|_| Neuron::new(num_inputs)).collect();
+
+        Layer { neurons }
+    }
+
+}
+```
+
+We create a Layer struct that holds a vector of Neurons. Then we create a Layer implementation which has a method to initialize a new layer. The initialization creates a `num_outputs` number of Neurons in the Layer.
+
+Let's write the rest of the layer implementation:
+
+```rust
+impl Layer {
+
+    //...
+
+    pub fn forward(&self, inputs: &[Tensor]) -> Vec<Tensor> {
+        self.neurons
+            .iter()
+            .map(|neuron| neuron.forward(inputs))
+            .collect()
+    }
+
+    pub fn parameters(&self) -> Vec<Tensor> {
+        self.neurons
+            .iter()
+            .flat_map(|neuron| neuron.parameters())
+            .collect()
+    }
+}
+```
+
+Like the Neuron implementation, we define a forward function and a paramter function. We've already done the hard work in the Neuron implementation, so here we're just mapping over the Neurons and collecting the results into a vector and returning it.
+
+Lastly, let's create a multi-layer perceptron by stacking layers
+
+![comp](/nanograd/mlp.png)
+
+The MLP implementation is going to be very very similar to the layer implementation so I'm just going to paste it here:
+
+```rust
+#[derive(Clone)]
+pub struct MLP {
+    layers: Vec<Layer>,
+}
+
+impl MLP {
+    pub fn new(num_inputs: usize, layer_sizes: &[usize]) -> Self {
+        let mut layers = Vec::new();
+        let mut input_size = num_inputs;
+
+        for &output_size in layer_sizes {
+            layers.push(Layer::new(input_size, output_size));
+            input_size = output_size; // Output of this layer = input to next
+        }
+
+        MLP { layers }
+    }
+
+    pub fn forward(&self, inputs: &[Tensor]) -> Vec<Tensor> {
+        let mut current = inputs.to_vec();
+
+        for layer in &self.layers {
+            current = layer.forward(&current);
+        }
+
+        current
+    }
+
+    pub fn parameters(&self) -> Vec<Tensor> {
+        self.layers
+            .iter()
+            .flat_map(|layer| layer.parameters())
+            .collect()
+    }
+}
+
+```
 
 ---
 
