@@ -16,7 +16,7 @@ Call `optimizer.step()` and boom - your model learns.
 
 And yet… every time I write code like this, I can't help but feel like a sense of dissatisfaction. As if I don't actually appreciate how easy Pytorch makes this insanely complicated process. I know there’s an enormous amount of machinery happening under the hood from computational graphs, chained gradients, parameter updates and more, and yet it's all wrapped up in nice little function calls.
 
-So let's peel back the abstraction and implement it from scratch in order to really gain an appreciation of the complexity that pytorch saves us from.
+So let's peel back the abstraction and implement it from scratch in order to really gain an appreciation of the complexity that Pytorch saves us from.
 
 This blog walks through building a very basic autograd system in rust called `nanograd`. The goal isn’t performance or completeness, it’s mainly intuition. I wanted a clearer mental model of how gradients flow, how computation graphs form, and how optimizers update parameters.
 
@@ -38,11 +38,11 @@ When we train neural nets, there are two main steps:
 
 2. **Backward pass (propagation)**: The neural net adjusts its parameters based on the loss. It does this by traversing backwards through the network (opposite of the forward pass) and calculating the gradient of the loss with respect to each parameter using the chain rule. These gradients tell us how to update each parameter to reduce the loss.
 
-The **"automatic"** part means PyTorch computes these gradients for you automatically. You don't need to manually derive and code up the derivatives for each operation in your network.
+The **"automatic"** part means Pytorch computes these gradients for you automatically. You don't need to manually derive and code up the derivatives for each operation in your network.
 
 The **"differentiation"** part refers to computing derivatives (gradients). Specifically, autograd calculates ∂Loss/∂(every parameter) - the gradient of the loss with respect to each of the millions (or billions) of parameters in your model.
 
-Without autograd, you'd need to manually compute and code the derivative for every operation in your network using calculus. With autograd, you just call `loss.backward()` and PyTorch figures it all out using the chain rule.
+Without autograd, you'd need to manually compute and code the derivative for every operation in your network using calculus. With autograd, you just call `loss.backward()` and Pytorch figures it all out using the chain rule.
 
 # Autograd Main Components
 
@@ -84,7 +84,7 @@ The tensor wrapper is the core data structure that makes automatic differentiati
 - **Link to computation history**: A reference to the operation (`grad_fn`) that created this tensor
 - **Maintain connections**: References to parent tensors
 
-The tensor wrapper is what allows PyTorch to say "this tensor came from multiplying x by 2, so I know how to compute gradients for it."
+The tensor wrapper is what allows Pytorch to say "this tensor came from multiplying x by 2, so I know how to compute gradients for it."
 
 ## 3. Gradient Functions
 
@@ -144,7 +144,7 @@ First things first, let's set up our project. I'm going to create a rust project
 
 `cargo init nanograd  && cd nanograd`
 
-And then in another folder, the pytorch equivalent to check our work:
+And then in another folder, the Pytorch equivalent to check our work:
 
 `uv init nanograd-py && cd nanograd-py`
 `source .venv/bin/activate`
@@ -208,7 +208,7 @@ impl Tensor {
 
 Notice how we `lock().unwrap()` the TensorData struct so that we can safely access it in a multi-threaded manner.
 
-Alright, we finally have some code down. It's simple but it's a start. Let's run it as well as our pytorch check and compare the output.
+Alright, we finally have some code down. It's simple but it's a start. Let's run it as well as our Pytorch check and compare the output.
 
 ```rust
 //in main.rs
@@ -232,7 +232,7 @@ data: 5
 grad: 0
 ```
 
-We're just simply instantiating a new `Tensor` struct and return the data and grad fields. Let's check pytorch:
+We're just simply instantiating a new `Tensor` struct and return the data and grad fields. Let's check Pytorch:
 
 ```python
 import torch
@@ -248,7 +248,7 @@ data: 5.0
 grad: None
 ```
 
-They match up pretty well! One thing to note: pytorch uses "None" because it can distinguish between gradients that haven't been run yet ("None") and gradients that are equal to zero while our code just uses `0.0` for both. Down the line we can update it to support the same use-case as pytorch but for now they're essentially the same thing.
+They match up pretty well! One thing to note: Pytorch uses "None" because it can distinguish between gradients that haven't been run yet ("None") and gradients that are equal to zero while our code just uses `0.0` for both. Down the line we can update it to support the same use-case as Pytorch but for now they're essentially the same thing.
 
 # Adding a Computational Graph
 
@@ -502,7 +502,7 @@ No change needed to the `from_op()` function and here is the updated `add()` fun
 
 We removed the `output` tensor we created and just passed in the gradient to the `BackwardFn`. We also now pass in a reference to `self` in the `add()` function signature so we can borrow it.
 
-Much cleaner. Let's test it and compare it with pytorch.
+Much cleaner. Let's test it and compare it with Pytorch.
 
 ```rust
 use nanograd::tensor::Tensor;
@@ -587,7 +587,7 @@ In addition, the derivatives are constants. If you increase `a` by `1`, you incr
 
 So if b = 10, then increasing a by 1 increases c by 10. But if b = 100, increasing a by 1 increases c by 100!
 
-Let's test our implementation against pytorch:
+Let's test our implementation against Pytorch:
 
 ```rust
 use nanograd::tensor::Tensor;
@@ -651,7 +651,7 @@ The power operation is different from the other two in that there is no `other` 
     }
 ```
 
-And let's test it against pytorch:
+And let's test it against Pytorch:
 
 ```rust
 use nanograd::tensor::Tensor;
@@ -1066,7 +1066,7 @@ pub fn relu(&self) -> Tensor {
 
 In the forward pass, we just check if the data is greater than 0, if so, then we pass it through otherwise we return a 0. We do something similar in the `backward_fn`. We pass in the gradient and then update the gradient on the original tensor.
 
-Let's do a test with pytorch and verify:
+Let's do a test with Pytorch and verify:
 
 ```rust
 use nanograd::tensor::Tensor;
@@ -1620,7 +1620,7 @@ Lets look at the output and go through a quick checklist to make sure things are
 2. Check the gradient sum: is it decrease over time? Yes.
 3. Check at our predictions: are they close to our targets? Yes.
 
-Okay, things are looking good but let's compare it against pytorch before we celebrate:
+Okay, things are looking good but let's compare it against Pytorch before we celebrate:
 
 ```python
 import torch
@@ -1693,7 +1693,7 @@ Let's go through our checklist:
 
 We did it! We successfully built an autograd system from scratch in rust and then built a neural net and training loop to test it and it passed.
 
-Believe it or not this is the core of Pytorch. It's obviously hyper-optimized and has a ton more features but this is the core. And we just rebuilt it in rust.
+Believe it or not this is the core of Pytorch. It's obviously hyper-optimized and has a ton more features but this is the core. And we just rebuilt it in Rust.
 
 Pretty awesome.
 
