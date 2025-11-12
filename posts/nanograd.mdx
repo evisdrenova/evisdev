@@ -4,7 +4,7 @@ date: "2025-11-12"
 publish: true
 ---
 
-I've been spending a lot of time training neural nets lately and fortunately or unfortunately, depending on which camp you fall on, python makes it very easy to train models.
+I've been spending a lot of time training neural nets lately and fortunately or unfortunately, depending on which camp you fall on, Python makes it very easy to train models.
 
 Want to train a model? Just run `model.train()`.
 
@@ -18,7 +18,7 @@ And yet… every time I write code like this, I can't help but feel like a sense
 
 So let's peel back the abstraction and implement it from scratch in order to really gain an appreciation of the complexity that Pytorch saves us from.
 
-This blog walks through building a very basic autograd system in rust called `nanograd`. The goal isn’t performance or completeness, it’s mainly intuition. I wanted a clearer mental model of how training loops flow forward and backward to calculate loss and gradients and update weights.
+This blog walks through building a very basic autograd system in Rust called `nanograd`. The goal isn’t performance or completeness, it’s mainly intuition. I wanted a clearer mental model of how training loops flow forward and backward to calculate loss and gradients and update weights.
 
 If you’ve ever wondered what really happens beneath `loss.backward()`, this is a great place to start.
 
@@ -125,7 +125,7 @@ Each operation in the computational graph has one of these gradient functions at
 
 # Autograd in Rust
 
-Now that we have a good foundation of how autograd works and it's main components, let's starting spec'ing out what we're going to build in rust.
+Now that we have a good foundation of how autograd works and it's main components, let's starting spec'ing out what we're going to build in Rust.
 
 Here is my plan:
 
@@ -140,7 +140,7 @@ I think this seems like a reasonable start. I'm also going to use Pytorch as a r
 
 # Project Scaffolding
 
-First things first, let's set up our project. I'm going to create a rust project using cargo:
+First things first, let's set up our project. I'm going to create a Rust project using cargo:
 
 `cargo init nanograd  && cd nanograd`
 
@@ -278,8 +278,8 @@ struct TensorData {
 Let's look at the `BackwardFn` type:
 
 - `Fn()`: a function that takes in no arguments and doesn't return anything - it will capture what it needs from the surrounding scope
-- `dyn`: the function will be **dynamic** because we don't know the exact type of function at compile time, so rust will figure it out at runtime.
-- `Box<...>`: `dyn Fn()` is a trait, not a concrete type - its size is unknown at compile time. Box also puts it on the heap and gives us a fixed-size pointer. Without it, rust wouldn't know how much space to allocate for `TensorData`.
+- `dyn`: the function will be **dynamic** because we don't know the exact type of function at compile time, so Rust will figure it out at runtime.
+- `Box<...>`: `dyn Fn()` is a trait, not a concrete type - its size is unknown at compile time. Box also puts it on the heap and gives us a fixed-size pointer. Without it, Rust wouldn't know how much space to allocate for `TensorData`.
 - `+ Send`: this is a trait bound meaning the function must be saqfe to send between threads. We need this because we're using `Arc` which allows sharing between threads.
 
 Remember from the third section in the autograd components, different operations have different functions, so we have to define a generic function like `Fn()` and wrap it in a `Box<...>`, so we can get a fixed size pointer regardless of the size of the data.
@@ -442,7 +442,7 @@ impl Tensor {
 
 Let's walk through this step by step.
 
-First, we add our tensors by adding the `data` fields of the two input tensors. Then we create clones of those tensors so that we can hand off ownership to the backward pass inside of the move closure (this is rust after all!).
+First, we add our tensors by adding the `data` fields of the two input tensors. Then we create clones of those tensors so that we can hand off ownership to the backward pass inside of the move closure (this is Rust after all!).
 
 Then we create a stubbed output tensor. Why? Well in our backward pass, we need access to the output's gradient (think of it like `c` from the chain rule example), so that we can add it to the our two input tensors (`a` and `b` from our chain rule example).
 
@@ -1691,7 +1691,7 @@ Let's go through our checklist:
 2. Check the gradient sum: is it decrease over time? Yes.
 3. Check at our predictions: are they close to our targets? Yes.
 
-We did it! We successfully built an autograd system from scratch in rust and then built a neural net and training loop to test it and it passed.
+We did it! We successfully built an autograd system from scratch in Rust and then built a neural net and training loop to test it and it passed.
 
 Believe it or not this is the core of Pytorch. It's obviously hyper-optimized and has a ton more features but this is the core. And we just rebuilt it in Rust.
 
