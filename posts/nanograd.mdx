@@ -1338,6 +1338,103 @@ impl MLP {
 
 ```
 
----
+Alright, folks, we've finally reached the last part.
+
+Let's build the training loop.
 
 # Building a Training Loop
+
+This is the last phase where we put everything together. There are three things that we need:
+
+1. Loss function: we'll use mean squared error (MSE) for this
+2. Training data (a simple data set)
+3. Training loop (forward pass, backward pass, update weights)
+
+First, let's add a way to update the parameters after computing the gradients. We can update our `Tensor` implementation by adding these two functions:
+
+```rust
+impl Tensor {
+    // ...
+
+    pub fn zero_grad(&self) {
+        self.inner.lock().unwrap().grad = 0.0;
+    }
+
+    pub fn update(&self, learning_rate: f64) {
+        let mut locked = self.inner.lock().unwrap();
+        locked.data -= learning_rate * locked.grad;
+    }
+}
+```
+
+The `zero_grad` function is pretty straightforward, it just zeros out the gradient.
+
+The `update` function updates the parameter by moving in the opposite direction of the gradient. The gradient tells us which direction the loss **increases**, so we subtract it to move toward lower loss. The learning rate controls how big of a step we take. multiplying it by the gradient scales the step size. So `data -= learning_rate * grad` means "move the parameter in the direction that reduces the loss, by a step of size learning_rate × gradient".
+
+First, we need a dataset. Here is a pretty basic one for us to work with:
+
+```rust
+    // Simple dataset: XOR-like problem
+    // Input: [x1, x2], Target: x1 XOR x2
+    let dataset = vec![
+        (vec![0.0, 0.0], 0.0),
+        (vec![0.0, 1.0], 1.0),
+        (vec![1.0, 0.0], 1.0),
+        (vec![1.0, 1.0], 0.0),
+    ];
+```
+
+Notice that the dataset is a vector of tuples where the first element of the tuple is the input data and the second element is the target data. In our training loop, we need to convert this dataset into our Tensor types. We can do that like this:
+
+```rust
+// Simple dataset: XOR-like problem
+// Input: [x1, x2], Target: x1 XOR x2
+let dataset = vec![
+    (vec![0.0, 0.0], 0.0),
+    (vec![0.0, 1.0], 1.0),
+    (vec![1.0, 0.0], 1.0),
+    (vec![1.0, 1.0], 0.0),
+];
+
+let tensor_dataset: Vec<(Vec<Tensor>, Tensor)> = dataset
+    .iter()
+    .map(|(inputs, target)| {
+        let tensor_inputs = inputs.iter().map(|&x| Tensor::new(x)).collect();
+
+        let tensor_target = Tensor::new(*target);
+
+        (tensor_inputs, tensor_target)
+    })
+    .collect();
+```
+
+Here we are iterating over the dataset and converting the input into a vector of tensors by looping over the input (since it's a vector of f64s) and initializing a new `Tensor` for each element. The output is much easier, it's just a single f64, so we can just initialize a new `Tensor` for that.
+
+Nice, we have our data in the right shape. Now for the training loop.
+
+The training loop needs to do the following for each epoch:
+
+1. Zero gradients
+2. For each data point:
+   - Forward pass
+   - Compute loss (prediction - target)^2
+   - Backward pass
+3. Update weights (using the update function we created earlier)
+4. Print loss every 10 epochs
+
+Let's write the code:
+
+```rust
+
+
+```
+
+We don't have a substraction operation, but we can create a quick one using the inverse of our add operation and add it to our `Tensor` implementation:
+
+```rust
+    pub fn sub(&self, other: &Tensor) -> Tensor {
+        // a - b = a + (-1 × b)
+        let neg_one = Tensor::new(-1.0);
+        self.add(&other.mul(&neg_one))
+    }
+```
