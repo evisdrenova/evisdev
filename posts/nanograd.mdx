@@ -18,7 +18,7 @@ And yet… every time I write code like this, I can't help but feel like a sense
 
 So let's peel back the abstraction and implement it from scratch in order to really gain an appreciation of the complexity that Pytorch saves us from.
 
-This blog walks through building a very basic autograd system in rust called `nanograd`. The goal isn’t performance or completeness, it’s mainly intuition. I wanted a clearer mental model of how gradients flow, how computation graphs form, and how optimizers update parameters.
+This blog walks through building a very basic autograd system in rust called `nanograd`. The goal isn’t performance or completeness, it’s mainly intuition. I wanted a clearer mental model of how training loops flow forward and backward to calculate loss and gradients and update weights.
 
 If you’ve ever wondered what really happens beneath loss.backward(), this is a great place to start.
 
