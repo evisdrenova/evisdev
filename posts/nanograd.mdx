@@ -1050,19 +1050,14 @@ Here's the code:
 
 ```rust
 pub fn relu(&self) -> Tensor {
-    // forward pass
     let data = if self.data() > 0.0 { self.data() } else { 0.0 };
 
     let self_clone = self.clone();
 
     let backward_fn = Box::new(move |grad_output: f64| {
-        let local_grad = if self_clone.data() > 0.0 {
-            grad_output
-        } else {
-            0.0
-        };
+        let local_grad = if self_clone.data() > 0.0 { 1.0 } else { 0.0 };
 
-         self_clone.inner.lock().unwrap().grad += grad_output * local_grad;
+        self_clone.inner.lock().unwrap().grad += grad_output * local_grad;
     });
 
     Tensor::from_op(data, vec![self.clone()], backward_fn)
@@ -1161,10 +1156,11 @@ Next, let's create the Neuron struct:
 pub struct Neuron {
     weights: Vec<Tensor>,
     bias: Tensor,
+    is_output: bool,
 }
 ```
 
-The neuron will have a `weights` field that is a vector of Tensors and a `bias` field which is just a tensor.
+The neuron will have a `weights` field that is a vector of Tensors, a `bias` field which is just a tensor and then an `is_output` field which we will use to determine if we should multiply by the activation function. We only want to do that in hidden layers and not output layers.
 
 Next, let's define the Neuron implementation:
 
@@ -1189,7 +1185,11 @@ impl Neuron {
         // Initialize bias to 0
         let bias = Tensor::new(0.0);
 
-        Neuron { weights, bias }
+        Neuron {
+            weights,
+            bias,
+            is_output,
+        }
     }
 
 }
@@ -1201,21 +1201,8 @@ Next, let's create the forward pass function which we defined in the output abov
 
 ```rust
 impl Neuron {
-    pub fn new(num_inputs: usize) -> Self {
-        let mut rng = rand::rng();
-
-        // initialize weights randomly between -1 and 1
-        let weights = (0..num_inputs)
-            .map(|_| Tensor::new(rng.random_range(-1.0..1.0)))
-            .collect();
-
-        // initialize bias to 0
-        let bias = Tensor::new(0.0);
-
-        Neuron { weights, bias }
-    }
-
-    pub fn forward(&self, inputs: &[Tensor]) -> Tensor {
+    //..
+    pub fn new(num_inputs: usize, is_output: bool) -> Self {
         let mut sum = Tensor::new(0.0);
 
         for i in 0..self.weights.len() {
@@ -1223,12 +1210,18 @@ impl Neuron {
         }
 
         sum = sum.add(&self.bias);
-        sum.relu()
+
+        // only apply ReLU if NOT output neuron
+        if self.is_output {
+            sum // Linear output
+        } else {
+            sum.relu() // Hidden layers use ReLU
+        }
     }
 }
 ```
 
-The forward pass function is a straight implementation of `output = relu(w₁×x₁ + w₂×x₂ + ... + wₙ×xₙ + b)`. We initialize a new Tensor with data set to 0.0, then iterate over the weights and input multiplying them together at the same indices and then accumulating the sum. We add the bias and then call the `relu()` method.
+The forward pass function is a straight implementation of `output = relu(w₁×x₁ + w₂×x₂ + ... + wₙ×xₙ + b)`. We initialize a new Tensor with data set to 0.0, then iterate over the weights and input multiplying them together at the same indices and then accumulating the sum. We add the bias and then call the `relu()` method if it's not the output neuron.
 
 While we're at it, let's also add in a function to easily get the parameters:
 
@@ -1257,8 +1250,10 @@ pub struct Layer {
 }
 
 impl Layer {
-    pub fn new(num_inputs: usize, num_outputs: usize) -> Self {
-        let neurons = (0..num_outputs).map(|_| Neuron::new(num_inputs)).collect();
+    pub fn new(num_inputs: usize, num_outputs: usize, is_output: bool) -> Self {
+        let neurons = (0..num_outputs)
+            .map(|_| Neuron::new(num_inputs, is_output))
+            .collect();
 
         Layer { neurons }
     }
@@ -1310,9 +1305,10 @@ impl MLP {
         let mut layers = Vec::new();
         let mut input_size = num_inputs;
 
-        for &output_size in layer_sizes {
-            layers.push(Layer::new(input_size, output_size));
-            input_size = output_size; // Output of this layer = input to next
+        for (i, &output_size) in layer_sizes.iter().enumerate() {
+            let is_last_layer = i == layer_sizes.len() - 1;
+            layers.push(Layer::new(input_size, output_size, is_last_layer));
+            input_size = output_size;
         }
 
         MLP { layers }
@@ -1371,7 +1367,27 @@ The `zero_grad` function is pretty straightforward, it just zeros out the gradie
 
 The `update` function updates the parameter by moving in the opposite direction of the gradient. The gradient tells us which direction the loss **increases**, so we subtract it to move toward lower loss. The learning rate controls how big of a step we take. multiplying it by the gradient scales the step size. So `data -= learning_rate * grad` means "move the parameter in the direction that reduces the loss, by a step of size learning_rate × gradient".
 
-First, we need a dataset. Here is a pretty basic one for us to work with:
+First, we need to create our neural net. We can use our `MLP` implementation to define a neural net like this:
+
+```rust
+let mlp = MLP::new(2, &[8, 1]);
+```
+
+This creates a multi-layer perceptron neural net with:
+
+![relu](/nanograd/mlpnet.png)
+
+- Input: 2 values
+- Layer 1: 2 inputs → 8 outputs (hidden layer with ReLU)
+- Layer 2: 8 inputs → 1 output (output layer, no ReLU)
+
+It has a total of 33 parameters. Slightly smaller than GPT4 at an estimated 1.7 Trillion parameters...
+
+Now, we need a dataset. A classic data set to train basic neural nets is the XOR data set.
+
+![relu](/whyactivation/before.png)
+
+It's not linearly seperable without a hidden layer meaning that you cannot draw a linear line on this coordinate plane in order to separate the red and blue dots. It requires a hidden layer.
 
 ```rust
     // Simple dataset: XOR-like problem
@@ -1415,18 +1431,55 @@ Nice, we have our data in the right shape. Now for the training loop.
 The training loop needs to do the following for each epoch:
 
 1. Zero gradients
-2. For each data point:
+2. Set the learning rate and the number of epochs
+3. For each data point:
    - Forward pass
    - Compute loss (prediction - target)^2
    - Backward pass
-3. Update weights (using the update function we created earlier)
-4. Print loss every 10 epochs
+4. Update weights (using the update function we created earlier)
+5. Print loss every 10 epochs
 
 Let's write the code:
 
 ```rust
+let learning_rate = 0.05;
+let epochs = 1000;
 
+for epoch in 0..epochs {
+    // zero out gradients in between epoch runs
+    for j in mlp.parameters().iter() {
+        j.zero_grad();
+    }
 
+    // initialize loss
+    let mut total_loss = 0.0;
+
+    for (input, target) in &tensor_dataset {
+        // call forward pass
+        let prediction = mlp.forward(input);
+
+        // calc loss
+        let loss = prediction[0].sub(target).pow(2.0);
+        // calc gradients
+        loss.backward();
+
+        total_loss += loss.data();
+    }
+
+    // update weights
+    for param in mlp.parameters().iter() {
+        param.update(learning_rate);
+    }
+
+    if epoch % 50 == 0 {
+        let params = mlp.parameters();
+        let grad_sum: f64 = params.iter().map(|p| p.grad().abs()).sum();
+        println!(
+            "Epoch {}: Loss = {:.4}, Grad sum = {:.6}",
+            epoch, total_loss, grad_sum
+        );
+    }
+}
 ```
 
 We don't have a substraction operation, but we can create a quick one using the inverse of our add operation and add it to our `Tensor` implementation:
@@ -1438,3 +1491,212 @@ We don't have a substraction operation, but we can create a quick one using the 
         self.add(&other.mul(&neg_one))
     }
 ```
+
+Let's gve it a shot!
+
+Here's the entire training loop:
+
+```rust
+use nanograd::neuron::MLP;
+use nanograd::tensor::Tensor;
+
+fn main() {
+    let mlp = MLP::new(2, &[8, 1]);
+
+    let dataset = vec![
+        (vec![0.0, 0.0], 0.0),
+        (vec![0.0, 1.0], 1.0),
+        (vec![1.0, 0.0], 1.0),
+        (vec![1.0, 1.0], 0.0),
+    ];
+
+    let tensor_dataset: Vec<(Vec<Tensor>, Tensor)> = dataset
+        .iter()
+        .map(|(inputs, target)| {
+            let tensor_inputs = inputs.iter().map(|&x| Tensor::new(x)).collect();
+
+            let tensor_target = Tensor::new(*target);
+
+            (tensor_inputs, tensor_target)
+        })
+        .collect();
+
+    let learning_rate = 0.05;
+    let epochs = 1000;
+
+    for epoch in 0..epochs {
+        // zero out gradients in between epoch runs
+        for j in mlp.parameters().iter() {
+            j.zero_grad();
+        }
+
+        // initialize loss
+        let mut total_loss = 0.0;
+
+        for (input, target) in &tensor_dataset {
+            // call forward pass
+            let prediction = mlp.forward(input);
+
+            // calc loss
+            let loss = prediction[0].sub(target).pow(2.0);
+
+            loss.backward();
+
+            total_loss += loss.data();
+        }
+
+        // update weights
+        for param in mlp.parameters().iter() {
+            param.update(learning_rate);
+        }
+
+        if epoch % 50 == 0 {
+            let params = mlp.parameters();
+            let grad_sum: f64 = params.iter().map(|p| p.grad().abs()).sum();
+            println!(
+                "Epoch {}: Loss = {:.4}, Grad sum = {:.6}",
+                epoch, total_loss, grad_sum
+            );
+        }
+    }
+
+    println!("\nTesting trained model:");
+    for (inputs, target) in &tensor_dataset {
+        let prediction = mlp.forward(inputs);
+        println!(
+            "Input: [{:.1}, {:.1}] -> Prediction: {:.4}, Target: {:.1}",
+            inputs[0].data(),
+            inputs[1].data(),
+            prediction[0].data(),
+            target.data()
+        );
+    }
+}
+```
+
+And here's the output:
+
+<Note>
+  Since we're initializing our neural net with random numbers, we will always
+  get a different output. If you want a consistent output you can seed the
+  random number generator function in the `Neuron`.
+</Note>
+
+```bash
+[11/11/25 10:04:14] ~/code/projects/nanograd (main ✔) cargo run
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running `target/debug/nanograd`
+Epoch 0: Loss = 3.8480, Grad sum = 37.952766
+Epoch 50: Loss = 0.4277, Grad sum = 10.286748
+Epoch 100: Loss = 0.1869, Grad sum = 13.542963
+Epoch 150: Loss = 0.1376, Grad sum = 13.211368
+Epoch 200: Loss = 0.1252, Grad sum = 12.557876
+Epoch 250: Loss = 0.1771, Grad sum = 15.256723
+Epoch 300: Loss = 0.1025, Grad sum = 11.665494
+Epoch 350: Loss = 0.0835, Grad sum = 10.444364
+Epoch 400: Loss = 0.0912, Grad sum = 10.878126
+Epoch 450: Loss = 0.0739, Grad sum = 9.863174
+Epoch 500: Loss = 0.0536, Grad sum = 8.269420
+Epoch 550: Loss = 0.0509, Grad sum = 8.100785
+Epoch 600: Loss = 0.0426, Grad sum = 7.403397
+Epoch 650: Loss = 0.0376, Grad sum = 6.894954
+Epoch 700: Loss = 0.0364, Grad sum = 6.778427
+Epoch 750: Loss = 0.0293, Grad sum = 6.124202
+Epoch 800: Loss = 0.0296, Grad sum = 6.191044
+Epoch 850: Loss = 0.0184, Grad sum = 4.857976
+Epoch 900: Loss = 0.0184, Grad sum = 4.850194
+Epoch 950: Loss = 0.0119, Grad sum = 3.909000
+
+Testing trained model:
+Input: [0.0, 0.0] -> Prediction: 0.0111, Target: 0.0
+Input: [0.0, 1.0] -> Prediction: 1.0299, Target: 1.0
+Input: [1.0, 0.0] -> Prediction: 1.0303, Target: 1.0
+Input: [1.0, 1.0] -> Prediction: 0.0807, Target: 0.0
+```
+
+Lets look at the output and go through a quick checklist to make sure things are working well:
+
+1. Check the loss: is it decreasing over time? Yes.
+2. Check the gradient sum: is it decrease over time? Yes.
+3. Check at our predictions: are they close to our targets? Yes.
+
+Okay, things are looking good but let's compare it against pytorch before we celebrate:
+
+```python
+import torch
+import torch.nn as nn
+
+model = nn.Sequential(nn.Linear(2, 8), nn.ReLU(), nn.Linear(8, 1))
+
+
+X = torch.tensor([[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]])
+y = torch.tensor([[0.0], [1.0], [1.0], [0.0]])
+
+optimizer = torch.optim.SGD(model.parameters(), lr=0.05)
+criterion = nn.MSELoss()
+
+for epoch in range(1000):
+    optimizer.zero_grad()
+    outputs = model(X)
+    loss = criterion(outputs, y)
+    loss.backward()
+    optimizer.step()
+
+    if epoch % 50 == 0:
+        print(f"Epoch {epoch}: Loss = {loss.item():.4f}")
+
+# Test
+with torch.no_grad():
+    for x, target in zip(X, y):
+        pred = model(x)
+        print(
+            f"Input: {x.tolist()} -> Pred: {pred.item():.4f}, Target: {target.item()}"
+        )
+
+```
+
+And the output is:
+
+```bash
+(nanograd-py) [11/10/25 11:27:11] ~/code/projects/nanograd-py (main ✗) uv run main.py
+Epoch 0: Loss = 0.6884
+Epoch 50: Loss = 0.1906
+Epoch 100: Loss = 0.1440
+Epoch 150: Loss = 0.1027
+Epoch 200: Loss = 0.0635
+Epoch 250: Loss = 0.0225
+Epoch 300: Loss = 0.0056
+Epoch 350: Loss = 0.0011
+Epoch 400: Loss = 0.0002
+Epoch 450: Loss = 0.0000
+Epoch 500: Loss = 0.0000
+Epoch 550: Loss = 0.0000
+Epoch 600: Loss = 0.0000
+Epoch 650: Loss = 0.0000
+Epoch 700: Loss = 0.0000
+Epoch 750: Loss = 0.0000
+Epoch 800: Loss = 0.0000
+Epoch 850: Loss = 0.0000
+Epoch 900: Loss = 0.0000
+Epoch 950: Loss = 0.0000
+Input: [0.0, 0.0] -> Pred: 0.0000, Target: 0.0
+Input: [0.0, 1.0] -> Pred: 1.0000, Target: 1.0
+Input: [1.0, 0.0] -> Pred: 1.0000, Target: 1.0
+Input: [1.0, 1.0] -> Pred: 0.0000, Target: 0.0
+```
+
+Let's go through our checklist:
+
+1. Check the loss: is it decreasing over time? Yes.
+2. Check the gradient sum: is it decrease over time? Yes.
+3. Check at our predictions: are they close to our targets? Yes.
+
+We did it! We successfully built an autograd system from scratch in rust and then built a neural net and training loop to test it and it passed.
+
+Believe it or not this is the core of Pytorch. It's obviously hyper-optimized and has a ton more features but this is the core. And we just rebuilt it in rust.
+
+Pretty awesome.
+
+Until next time.
+
+Evis
