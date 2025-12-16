@@ -1,0 +1,155 @@
+---
+title: "A Code-Abundant World"
+date: "2025-12-15"
+publish: true
+---
+
+For the past 60 years, the amount of code we could produce was constrained by how fast humans could type.
+
+That constraint no longer exists.
+
+Large language models can now generate thousands of lines of code in seconds. We're moving from a world where code was scarce to one where code is abundant. This is a fundamental shift, one that breaks many of the assumptions that we've built our entire development infrastructure around.
+
+Over the past 20 years, we've made major advancements in how we build, test, and ship software. CI/CD pipelines, containerization, infrastructure as code. Yet one foundational piece has remained largely unchanged: version control. Git works almost identically to how it did when Linus created it in 2005.
+
+That was fine when humans were the bottleneck. It's not fine anymore.
+
+## The Old Assumptions
+
+Git was designed for a specific context: the Linux kernel development process. The assumptions baked into its design reflected how humans wrote code at the time:
+
+- Code was written slowly and thoughtfully (usually, and if not, then you'd get a very nice [email from Linus](https://github.com/corollari/linusrants))
+- Commits represented logical units of human reasoning
+- History existed to understand _why_ decisions were made
+- Code review caught (many) mistakes before merge
+- One developer worked on one thing at a time
+
+Git is fundamentally a content-addressable filesystem stored in a database. It uses SHA-1 hashes to create a DAG of commits. The index (staging area) is a binary file that tracks what will go into the next commit. Each commit stores a tree object pointing to blobs (files) and other trees (directories). Efficient? Yes, for 2005 workflows. But the architecture assumes sequential, human-paced operations. Git resolves state between the working directory, index and HEAD commit by comparing hashes to see what has already been committed and/or changed.
+
+For the last 20 years, these assumptions made sense. When human typing speed and cognitive bandwidth were the constraints, a VCS could safely be just a storage layer. Store the changes, track the history and enable collaboration. The human in the loop handled everything else.
+
+## The New Reality
+
+According to GitHub, nearly 50% of code in repos where Copilot is enabled is now AI-generated. That number is projected to hit 80% within 3-5 years. And that's just GitHub + Copilot, arguably the least used LLM out of OpenAI, Anthropic and Microsoft. When you account for tools like Cursor and Claude Code, I'd feel confident saying it's going to be closer to 90-95%. This isn't AI augmenting humans in how they write code, it's a fundamental change in how code comes into existence.
+
+Think about what this means practically. I can spin up multiple Claude Code agents in different terminal windows, all working on the same codebase at once. Each agent might generate 10 versions of a function in 30 seconds before settling on one. Or I might go through 2-3 (if not more) loops of having an agent generate code, realizing that it is wrong and then asking it to generate it again. The bottleneck has completely shifted, from writing code to understanding and validating it.
+
+And here's the thing that nobody talks about: those iteration loops are where all of the context is, yet it's lost every time you start over with a new session. An agent with a fresh context window doesn't have any of the context that the previous agent had when it wrote the code. It's like hiring a new engineer to work on the same codebase every day.
+
+Yes, context window compaction and compression help—you can summarize previous interactions or use retrieval to pull in relevant history. But these are lossy operations. The nuance of why an agent rejected approach A in favor of approach B, the edge cases it discovered while iterating, the implicit constraints it learned from failed attempts—that signal gets compressed away. What you're left with is a summary, not the full reasoning chain.
+
+The other problem is that bugs and performance issues scale with generation speed. When an agent produces thousands of lines in seconds, the potential for problems grows proportionally. The "generate-test-fix" loop that agents use can create massive churn. An agent might touch the same file 50 times in a minute while iterating.
+
+Git wasn't built for this. Its lock file contention alone becomes a bottleneck. SHA-1 calculation time adds up. The index file becomes a serialization point. When you're trying to commit every iteration to preserve agent state, Git's architecture actively fights you. Which is why most don't do it. There are a few projects coming out specifically to address this. Projects like [agentfs](https://github.com/turso/agentfs) from Turso, yet these are still really early. And I would argue they don't actually solve the problem since the agent state isn't helpful on its own—it needs to be combined with the code it worked on at the right time.
+
+In many ways, agents have turned codebases into stories, ones that need their narrative explicitly written in case the agent forgets and has to start over. This wasn't the case previously. As humans, we remember where we left off and the decisions we made to get there. Agents don't have that luxury. They need more context. The best part is that when they get it, they are even more productive than before.
+
+## Why VCS Needs to Change
+
+Version control can't remain just a storage layer. It needs to become a coordination layer, a system that understands not just _what_ changed, but _who_ changed it (human vs agent), _why_ (the prompt, the context), and _how_ it relates to everything else.
+
+### Performance
+
+Let's talk numbers. Git commits 10,000 files in roughly 25 seconds on typical hardware. That's fine for human workflows. But agents operating at machine speed need sub-second commits. The difference matters.
+
+Why is Git slow here? A few reasons:
+
+1. **SHA-1 hashing**: Git computes SHA-1 for every blob. BLAKE3 is roughly 10x faster.
+2. **Sequential tree building**: Git builds tree objects sequentially. Modern CPUs have 8-16 cores sitting idle. We can parallelize when it makes sense.
+3. **Lock contention**: The index file is a single point of serialization. Multiple agents fighting over it creates contention.
+4. **Pack file overhead**: Git's delta compression is great for storage, bad for write throughput.
+
+The lock contention problem gets worse with multiple agents. Git uses file-based locks (`.git/index.lock`) to prevent concurrent index modifications. Two agents trying to stage changes at the same time? One waits. Three agents working on different parts of the codebase? They serialize through the same lock. The index becomes a global mutex on your entire repository.
+
+But why do agents need sub-second commits in the first place? Why can't they just use Git's normal commit model?
+
+Because agents don't think in logical commits—they think in iterations. Every time an agent modifies code, runs tests, sees failures, and adjusts, that's a state worth preserving. If the agent goes down a wrong path for 10 iterations, you want to roll back to iteration 5, not lose everything. Human commits are checkpoints of completed thoughts. Agent commits need to be checkpoints of exploration. The faster you can save state, the more freedom agents have to experiment without fear of losing progress.
+
+An AI-native VCS needs to handle "micro-commits"—saving agent state on every iteration without blocking the generation loop. This means parallel tree building, faster hashing, and eliminating single points of contention.
+
+### Context
+
+Here's a problem I keep running into: agents can't understand codebase history. Git stores text diffs. That's it. There's no semantic layer.
+
+Current agents suffer from context window limits. They can't read 10 years of commit history to understand why a decision was made. Git history is opaque to them, parsing commit logs and diffs requires complex tooling, and even then you're just getting strings.
+
+What if version control stored intent alongside text? Not just "changed line 47" but "optimized memory allocation in the blob storage module." You could query your repo by meaning: "Show me commits that fixed memory leaks in this subsystem."
+
+Technically, this means storing vector embeddings alongside diffs. When `commit` happens, you generate an embedding of the semantic change. The VCS becomes searchable by concept, not just by text grep. It becomes long-term memory for agents.
+
+### Provenance
+
+When AI writes code that introduces a bug, someone needs to understand what led to that bug. Was it a bad prompt? Missing context? A model hallucination?
+
+Human commit messages are summaries. Agent workflows need full provenance:
+
+- Which agent/model generated this code
+- What prompt was used
+- What files were read before generation
+- What documentation was accessed
+- Previous iterations and why they were rejected
+
+If you track this for every commit, human and agent, you get something nobody has today: a complete dataset of how features get built. You can statistically analyze which prompts lead to bugs. You can have one agent continue exactly where another left off. You can see exactly the code that an agent wrote vs. code that a human wrote.
+
+This isn't metadata bolted onto Git. It's a fundamental change to what a commit represents.
+
+## New Workflows
+
+Once VCS becomes a coordination layer, workflows that weren't possible before become obvious.
+
+### Semantic Diffs
+
+Traditional line-based diffs are useless when agents routinely rewrite entire functions. "Added 50 lines, removed 48" tells you nothing.
+
+Semantic diffs capture intent:
+
+- "Changed algorithm from O(n²) to O(n log n)"
+- "Refactored to reduce memory allocations by 3x"
+- "Same inputs/outputs, different implementation"
+
+The agent writes context into the commit. The diff becomes meaningful at the abstraction level humans actually care about.
+
+### Intelligent Bisection
+
+`git bisect` does binary search through history to find regressions. It's slow because switching commits means rewriting the working directory, lots of I/O.
+
+With content-addressable storage and virtual checkouts (mounting repo state in memory via FUSE), you could run a test suite against 1,000 past commits in seconds. Not hypothetically—the architecture enables it.
+
+Better: semantic bisection. "Find the commit that introduced this behavior." The system doesn't just find the commit, it explains _why_ that change caused the issue, using the stored intent and provenance.
+
+### Multi-Agent Coordination
+
+Multiple agents working on the same codebase need real orchestration:
+
+- **Agent-specific workspaces**: Each agent gets an isolated branch automatically
+- **Automatic conflict resolution**: AI mediates merge conflicts using semantic understanding
+- **Quality gates**: Agents must pass test suites, type checks, and performance benchmarks before merge
+- **Meta-commits**: Combine multiple agent contributions into coherent, reviewable units
+
+This is where "VCS as coordination layer" really pays off. The system isn't just storing code—it's managing a fleet of contributors that happen to be machines.
+
+### Performance as First-Class Data
+
+If bugs scale with generation speed, we need to track performance alongside code:
+
+- Benchmark snapshots with each commit
+- Performance regressions as automatic merge blockers
+- Resource profiles (memory, CPU, disk) versioned with the code
+
+Not as an afterthought. As part of what a commit fundamentally is.
+
+## The Opportunity
+
+We're at an inflection point. Git has served us well for 20 years, but it was designed for a different world. A world where humans wrote code slowly, one change at a time.
+
+The new world has AI agents generating thousands of lines in seconds, multiple agents working in parallel, and iteration speeds that make traditional VCS a bottleneck.
+
+This isn't about building a better Git. It's about building infrastructure purpose-built for AI-native development:
+
+- Fast enough to keep up with agent iteration (sub-second commits for 10K+ files)
+- Smart enough to understand semantic changes, not just text diffs
+- Rich enough to capture full provenance and enable agent continuity
+
+The question isn't whether VCS will evolve. It's whether we'll build something that matches the scale of what's coming, or keep stretching a 20-year-old tool until it breaks.
+
+I'm betting on the former.
