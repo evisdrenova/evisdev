@@ -1,14 +1,16 @@
 ---
-title: "The intuition behind how neural networks learn"
+title: How neural networks learn
 date: "2025-10-29"
 publish: false
 ---
 
-What does it mean for a neural network to "learn"?
+How do LLMs like ChatGPT or Claude learn? What's actually happening inside ChatGPT or Claude as it's learning? What does it even mean for an LLM to "learn"?
 
-What's actually happening\_ inside ChatGPT or Claude as it's learning? How does a bunch of matrix multiplications somehow figure out how to write code or classify images or predict the next word?
+When I first started learning about LLMs, I found myself coming back to these questions over and over again, trying to paint a clear picture in my head of how a neural net goes from multiplying numbers to writing code. What I eventually discovered is that the underlying mechanics are surprisingly elegant once you see how all the pieces connect.
 
-I wanted to write a technical yet intuitive guide that answers these questions from first principles. We'll walk through how loss functions, gradient descent, and optimizers work together to update model weights, the actual mechanics of learning.
+Eventually it clicked and I got so excited that I wanted to write a technical yet intuitive guide that answers these questions from first principles. Something that could have guided my understanding in the beginning.
+
+We'll walk through how loss functions, gradient descent, and optimizers work together to update model weights and help neural nets learn.
 
 We'll cover the math, but more importantly, we'll build the intuition of _why_ it all works.
 
@@ -18,22 +20,24 @@ Let's jump in.
 
 Think about the last time that you learned something new. Maybe it was a new skill or recipe. Your first attempt? Probably not perfect. But each time you try again, you get a little closer. You think about what you need to do, make adjustments, tweak the timing and eventually you nail it.
 
-Neural networks learn in a similar way. We can train a neural network to learn how to classify an email as spam or predict the next token, and over a number of repititions (we call them epochs), they gradually improve until we're happy with the results.
+Neural networks learn in a similar way. We can train a neural network to learn how to classify an email as spam or predict the next token, and over a number of repititions (we call them epochs), they gradually improve until we're happy with the results (or it doesn't, and we're back to square one).
 
-Here's the general process:
+We can generally describe this process:
 
 1. The network makes a prediction
 2. We measure how far off it was from the correct answer, if we're happy then we stop training, otherwise, we continue
-3. It adjusts its internal parameters to do better next time
-4. Repeat
+3. The neural network adjusts its internal parameters to hopefully do better next time
+4. Repeat step 1
 
-This process relies on two fundamental concepts:
+The success of this process relies on two fundamental concepts:
 
 1. Measuring how far off we are from where we want to be. We call this measure a **loss function**. The goal is to make this distance as small as possible so we are as close to our ideal state as possible. In the email spam example above, this would mean being able to perfectly classify every spam email as spam and never missing one. In reality, we're never perfect but we try to get as close as we can.
 
 2. Updating our model weights to reduce the loss function next time we try again. This is done by an algorithm called an **optimizer**. Optimizers decide _how_ to adjust weights in order to reduce the loss.
 
-At its core, training a neural network is an optimization problem. We have a loss function, let's call it: $L(θ)$ that measures how wrong our model is, and we want to find parameters (weights) $θ$ that minimize this loss which ultimately produces a more accurate (and ideally precise) model.
+So our loss function tells us how far off our prediction is from the correct answer and our optimzier helps us update the weights in the neural network so we can try again and hopefully be closer.
+
+Said differently, at its core, training a neural network is an optimization problem. We have a loss function, let's call it: $L(θ)$ that measures how wrong our model is, and we want to find parameters (weights) $θ$ that minimize this loss which ultimately produces a more accurate (and ideally precise) model.
 
 ![pro](/optimizers/process.png)
 
@@ -41,15 +45,17 @@ But, first, how do we measure the loss?
 
 # How Wrong Are We?
 
-The loss function tells us exactly how far our model's predictions are from the truth. But how do we know what the truth is?
+The loss function tells us how far our model's predictions are from the truth. But how do we know what the truth is?
 
 ## Training with Answers
 
-In supervised learning, we train models using labeled data—examples where we already know the correct answer. Think of it like practicing with an answer key.
+In supervised learning, we train models using labeled data where we already know the correct answer.
 
 Let's look at two examples:
 
-**For a spam classifier:** We have thousands of emails that humans have already labeled as "spam" or "not spam." The model makes predictions, and we compare them against these known labels. When the model is wrong, we increase our loss, indicating that the model needs to update it's weights next time (via the optimizer) and try to reduce the loss on the next epoch.
+**For a spam classifier:** We have thousands of emails that humans have already labeled as "spam" or "not spam." The model makes predictions, and we compare them against these known labels. When the model is wrong, our loss increases, indicating that the model needs to update it's weights next time (via the optimizer) and try to reduce the loss on the next epoch.
+
+A decreasing loss over time is good while an increasing loss is bad. With that being said, there is a point of diminishing returns where the loss "converges" (the technical term) where it's leveled off and the model is as good as it's going to be with that set of weights.
 
 **For LLMs:** The process is actually pretty simple. We train the model on data from the internet, books and other text sources, feeding in batches of tokens (words or parts of words) that represent sentences. Then we test the model by asking it to predict the next token. For example, take the sentence: "ChatGPT can make mistakes."
 
@@ -69,7 +75,7 @@ This is called self-supervised learning because the model generates its own trai
 
 As we're training our models, we're measuring how right or wrong our model was on every prediction and then averaging that together to measure our loss. The loss function is the algorithm that we use to measure how right or wrong our model was on every prediction.
 
-Many LLMs use **cross-entropy loss**, which is perfect for the next-token prediction task. For each token the model is trying to predict, the model outputs a probability distribution over its entire vocabulary (often 50,000+ possible tokens), and cross-entropy measures how confident it was about the correct next token.
+There are different types of loss functions but many LLMs use **cross-entropy loss**, which is perfect for the next-token prediction task. For each token the model is trying to predict, the model outputs a probability distribution over its entire vocabulary (often 50,000+ possible tokens), and cross-entropy measures how confident it was about the correct next token.
 
 ![pro](/optimizers/next.png)
 
@@ -85,9 +91,7 @@ If "mistakes" is correct: `L = -log(0.70) ≈ 0.357`
 
 If "soup" was somehow correct: `L = -log(0.37) ≈ 0.994`
 
-If we had another word that had a probability of `0.12` then the negative log loss would be `2.120`. You can see that the loss starts to really scale if the word that is chosen has a very low probability.
-
-The logarithm ensures that being confident and wrong is penalized, while being confident and right is rewarded. This pushes the model to not just guess correctly, but to be confident in its predictions.
+If we had another word that had a probability of `0.12` then the negative log loss would be `2.120`. You can see that the loss starts to really scale if the word that is chosen has a very low probability. The logarithm ensures that being confident and wrong is penalized, while being confident and right is rewarded.
 
 **Aggregating Across the Sequence**
 
@@ -97,7 +101,7 @@ $$L = -\frac{1}{n} \sum_{i=1}^{n} \log(p_{\text{correct}_i})$$
 
 Where `n` is the number of tokens and we sum over each prediction in the sequence.
 
-This should make intuitive sense. We're asking the model to predict 5 different tokens. For each token, we see how right or wrong it was (our loss) and then we average that to get a final loss number. If the number is high then our model was often wrong. If it's low, then our model was often right.
+This makes intuitive sense. We're asking the model to predict 5 different tokens. For each token, we see how right or wrong it was (our loss) and then we average that to get a final loss number. If the number is high then our model was often wrong. If it's low, then our model was often right.
 
 The process of feeding in training data to your model and computing the loss function for every parameter is called the **forward pass**.
 
@@ -107,7 +111,7 @@ Now that we can measure how right or wrong our predictions are (using the loss),
 
 # Hill Climbing
 
-When we first initialize our model, we do it with random weights. (We have to start somewhere.) We first make a forward pass (as described above). At the end of that forward pass we have a loss value that is calculated by our loss function.
+When we first initialize our model, we do it with random weights (we have to start somewhere and randomly assigning weights is good enough.) We then make our first forward pass (as described above). At the end of that forward pass we have a loss value that is calculated by our loss function. Since we used random weights, our loss function is predictably going to be high and our model is not going to be very accurate.
 
 One way to think about loss functions is to imagine it as a hilly landscape where the height at any point represents how wrong (or right) your model is with those particular weights. The lower the point is on a hill or in the landscape, the lower the loss and the better the model.
 
@@ -119,9 +123,9 @@ But for LLMs with billions of parameters the landscape is extraordinarily comple
 
 ![loss-landscape](/optimizers/hills.png)
 
-Since we intialize our model with random weights, we might be dropped anywhere on this hilly landscape. Our goal is to reach the lowest points in the landscape (which represents the lowest loss), but there's a twist. Every step we take changes the hilly landscape across the millions or billions of parameters that we have.
+Since we intialize our model with random weights, we might be dropped anywhere on this hilly landscape. Our goal is to reach the lowest points in the landscape (which represents the lowest loss), but there's a twist. Every step we take changes the hilly landscape across the millions or billions of parameters that we have. It might increase the loss for some parameters while decreasing the loss for others.
 
-So, how do we navigate this hilly loss landscape? And how do we do it efficiently if every step we take means updating millions or billions of parameters?
+Then how do we navigate this hilly loss landscape? And how do we do it efficiently if every step we take means updating millions or billions of parameters?
 
 # The Foundation: Gradient Descent
 
@@ -229,7 +233,6 @@ Even though each step is less precise, taking 31,000 noisy steps gets you to the
 The noise actually helps! Here's why:
 
 With noisy SGD, the randomness from sampling different mini-batches can actually help you avoid local minima and help you find the true minimum. This noise acts as a form of **regularization** and helps the model generalize better to new data.
-
 
 **The Math**
 
