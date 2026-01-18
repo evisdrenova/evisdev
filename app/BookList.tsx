@@ -9,7 +9,26 @@ export interface BookMetadata {
 
 const books: BookMetadata[] = [
   {
-    title: "The Hobbitt",
+    title: "LOTR: The Return of the King",
+    rating: 9.3,
+    author: "JRR Tolkein",
+    comment: "Finally finished the core LOTR series. What a great book. ",
+  },
+  {
+    title: "LOTR: The Two Towers",
+    rating: 9.8,
+    author: "JRR Tolkein",
+    comment: "One of the top 3 best books I've ever read.",
+  },
+  {
+    title: "LOTR: The Fellowship of the Ring",
+    rating: 9.2,
+    author: "JRR Tolkein",
+    comment: "Had so much fun reading this.",
+  },
+
+  {
+    title: "The Hobbit",
     rating: 7.0,
     author: "JRR Tolkein",
     comment:
