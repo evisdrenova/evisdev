@@ -127,9 +127,9 @@ Since we intialize our model with random weights, we might be dropped anywhere o
 
 Then how do we navigate this hilly loss landscape? And how do we do it efficiently if every step we take means updating millions or billions of parameters?
 
-# The Foundation: Gradient Descent
+# Gradient Descent
 
-Imagine you're blindfolded on the hilly landscape we mentioned above and you can only feel the slope beneath your feet, how do you find the lowest point?
+Imagine you're blindfolded on the hilly landscape we mentioned above and you can only feel the slope beneath your feet, how do you find the lowest point in the hilly landscape?
 
 ![loss-landscape](/optimizers/hill.png)
 
@@ -141,9 +141,9 @@ This slope is called the **gradient**. It tells you which direction slopes downw
 
 The gradient is the tangent line at any given point on a curve. And the size of the step that you take down the curve, following the gradient, is called the **learning rate**.
 
-A seemingly intuitive question might be: why don't we just take the biggest step that we can so we can reach the bottom as fast as we can?
+Okay, so we're on a hill and we want to walk down the slope. And if we do that then that will decrease our loss and our model will be more accurate. Great, so we can just take the biggest step that we can so we can reach the bottom as fast as we can, right?
 
-The answer is pretty simple: if you take steps that are too large, you might overshoot the valley entirely and end up on the opposite hill! Imagine taking a giant leap while blindfolded - you could fly right past the lowest point and land somewhere even higher. Worse yet, you might start bouncing back and forth across the valley, never actually settling at the bottom.
+It's unfortunately not that simple. If you take steps that are too large, you might overshoot the valley entirely and end up on the opposite hill! Imagine taking a giant leap while blindfolded - you could fly right past the lowest point and land somewhere even higher than the bottom. Worse yet, you might start bouncing back and forth across the valley, never actually settling at the bottom.
 
 This is why choosing the right learning rate (step size) is crucial. Too small, and you'll take forever to reach the bottom (or get stuck in a shallow dip). Too large, and you'll overshoot.
 
@@ -165,17 +165,17 @@ Where:
 
 Let's break down what this equation is actually saying:
 
-**`θ_t`** - This is where you currently are on the landscape (your current parameter values for your model)
+`θ_t` - This is where you currently are on the landscape (your current parameter values for your model)
 
-**`∇L(θ_t)`** - This is the direction of steepest _ascent_ at your current position. It points uphill. Think of it as a vector that says "if you go this way, the loss increases most rapidly."
+`∇L(θ_t)` - This is the direction of steepest _ascent_ at your current position. It points uphill. Think of it as a vector that says "if you go this way, the loss increases most rapidly."
 
-**`- ∇L(θ_t)`** - By putting a negative sign in front, we flip the direction to point _downhill_ instead. Now we're pointing toward where the loss decreases most rapidly.
+`- ∇L(θ_t)` - By putting a negative sign in front, we flip the direction to point _downhill_ instead. Now we're pointing toward where the loss decreases most rapidly.
 
-**`α`** - This controls how big of a step we take in that downhill direction. A larger α means bigger steps, smaller α means smaller, more cautious steps.
+`α` - This controls how big of a step we take in that downhill direction. A larger α means bigger steps, smaller α means smaller, more cautious steps.
 
-**`θ_t - α∇L(θ_t)`** - This is your new position. We take where you were (`θ_t`) and move in the downhill direction (`-∇L`) by a distance controlled by the learning rate (`α`).
+`θ_t - α∇L(θ_t)` - This is your new position. We take where you were (`θ_t`) and move in the downhill direction (`-∇L`) by a distance controlled by the learning rate (`α`).
 
-**`θ_{t+1}`** - This is simply the name for your new position after taking that step.
+`θ_{t+1}` - This is simply the name for your new position after taking that step.
 
 So the whole equation says: **"Your next position equals your current position, minus a step in the steepest downhill direction."** We repeat this process over and over, taking small steps downhill until we reach a valley (a minimum in the loss).
 
@@ -189,50 +189,38 @@ Here's how it works:
 - Work backwards through the model, calculating the gradient for every parameter in the model
 - Update all parameters using those gradients
 
-Why is it called "backward"? Because we're literally moving in the opposite direction through the network. The forward pass goes input → hidden layers → output. The backward pass goes output → hidden layers → input, computing how much each parameter contributed to the loss.
+Why is it called "backward pass"? Because we're literally moving in the opposite direction of the forward pass through the network. The forward pass goes input → hidden layers → output. The backward pass goes output → hidden layers → input, computing how much each parameter contributed to the loss.
 
-If you're thinking, "wow that's a lot to process for just one step", then you're exactly right. It is. And it's not the only problem. There are three big ones:
+If you're thinking, "wow that's a lot to process for just one step", then you're exactly right. It is. And it's not the only problem. There are three big problems:
 
 1. **Computationally expensive**: Computing gradients over the entire dataset is slow. If you have a billion training examples, you need to process all of them before taking a single step.
 
-2. **Fixed learning rate**: Same step size everywhere, even when the terrain varies dramatically. Sometimes you're on a gentle slope and could take big steps. Other times you're near the minimum and should take tiny steps.
+2. **No memory**: Each step completely forgets previous steps. If the loss surface is shaped like a narrow valley, you'll bounce back and forth between the walls while making slow progress forward.
 
-3. **No memory**: Each step completely forgets previous steps, leading to oscillation. If the loss surface is shaped like a narrow valley, you'll bounce back and forth between the walls while making slow progress forward.
+3. **Fixed learning rate**: Same step size everywhere, even when the terrain varies dramatically. Sometimes you're on a gentle slope and could take big steps. Other times you're near the minimum and should take tiny steps.
 
-The good thing is that we can address of each of these problems by making some slight changes to the gradient descent formula that result in big performance gains.
+The good thing is that we can address of each of these problems by making some slight changes to the gradient descent formula that results in big performance gains.
 
 ## Stochastic Gradient Descent (SGD)
 
 Let's tackle the first problem: computing gradients over the entire dataset is slow.
 
-In normal gradient descent, if we have 1 billion examples in our training data, we will process 1 billion examples and then have to calculate gradients for those parameters.
+In normal gradient descent, if we have 1 million examples in our training data, we will process 1 millino examples and then have to calculate gradients for those parameters. That's a lot of calculations to perform for every step we take.
 
-Well what if we didn't do the entire dataset at once? What if we batched the dataset into smaller batches and then ran those through the model? We'd still run the same total amount of training data just batched up in small groups.
-
-As it turns out, this batching doesn't really impact the model all that much, in fact, it actually makes it more resilient in some ways.
+What if we didn't do the entire training dataset at once? What if we batched the dataset into smaller batches and then ran those through the model?
 
 This is the core idea behind **Stochastic Gradient Descent (SGD)**.
 
-![sgd-comparison](/optimizers/sgd.png)
+We'd still run the same total amount of training data just batched up in small groups. As it turns out, this batching doesn't make the model worse, in fact, it actually makes it more resilient in some ways.
 
 Think of it like polling in an election. You don't need to survey every single voter in the country to understand who's winning, a representative sample of 1,000 people gives you a pretty good estimate. Similarly, a small **mini-batch** of training examples gives you a noisy but useful estimate of the true gradient.
-
-**The Trade-off**
-
-Yes, each individual measurement is noisier but you can take _many more steps_ in the same amount of time.
 
 Imagine you have a million training examples:
 
 - **Regular Gradient Descent**: You carefully measure all 1 million examples, then take 1 step. Repeat.
 - **SGD with batch size 32**: You quickly measure 32 examples, take a step. You can do this ~31,000 times while gradient descent is still on its first step!
 
-Even though each step is less precise, taking 31,000 noisy steps gets you to the bottom much faster than taking 1 perfect step.
-
-**A Surprising Benefit**
-
-The noise actually helps! Here's why:
-
-With noisy SGD, the randomness from sampling different mini-batches can actually help you avoid local minima and help you find the true minimum. This noise acts as a form of **regularization** and helps the model generalize better to new data.
+Even though each step is less precise, taking 31,000 noisy steps gets you to the bottom much faster than taking 1 perfect step. In fact, the noise actually helps to regularize the model so that it generalizes better to new data.
 
 **The Math**
 
@@ -261,17 +249,13 @@ In modern LLM training, batch sizes are often quite large (thousands or even mil
 
 So the equation says: **"Your next position equals your current position, minus a step in the downhill direction estimated from a small random sample."** We repeat this thousands of times, and even though each step is imperfect, we rapidly converge toward the valley.
 
-## Adding Momentum: Remembering the Past
+## Adding Momentum
 
-**The Problem SGD Solves Poorly**
+Now let's move onto the second problem: remembering gradients from past steps to converge faster.
 
-Picture a ball rolling through a narrow valley—steep walls but a gentle slope toward the minimum. SGD will bounce wildly between the walls (high gradient in that direction) while making painfully slow progress forward (low gradient in that direction).
+One of the downsides of SGD is that each step is stateless and doesn't remember how we updated previous gradients. This can cause wild swings in gradients that slow down the convergence process.
 
-This happens because SGD has no memory. Each update is based solely on the current gradient.
-
-**The Mathematics**
-
-Momentum adds a velocity term:
+We can smooth out the learning process by adding in a velocity term into our SGD equation from above:
 
 ```
 v_t = γ · v_(t-1) + α · ∇L(θ_t)
@@ -288,15 +272,13 @@ v_t = α · g_t + γ · α · g_(t-1) + γ² · α · g_(t-2) + γ³ · α · g_
 
 This is an exponentially weighted moving average of past gradients, where recent gradients have more influence.
 
-**The Intuition**
-
-Your parameter update now has **inertia**. Think of a ball rolling downhill:
+The parameter update now has **inertia**. Think of a ball rolling downhill:
 
 - If gradients consistently point in the same direction, you build up speed (like rolling down a long slope)
 - If they oscillate, the momentum dampens the zigzagging (like friction smoothing out the path)
 - You can roll through shallow local minima instead of getting stuck
 
-**Why It Works: The Memory Effect**
+**Why It Works**
 
 The `γ` parameter controls how much history you remember:
 
@@ -305,633 +287,68 @@ The `γ` parameter controls how much history you remember:
 - `γ = 0.99`: Roughly 100 steps of memory
 - `γ → 1`: Infinite memory—you never slow down
 
-**Visual Example**
+This makes our learning process much smoother and allows us to move fast in places where it makes sense while smoothing out variances.
 
-Consider optimizing through this valley:
+## Adaptive Learning Rates
 
-```
-     |  ↓↓↓  |
-     | ↓ ↓ ↓ |
-     |↓  ↓  ↓|
-     |   ↓   |  ← minimum
-     |_______|
-```
+Lastly, let's move onto the final problem: static learning rates.
 
-- **Without momentum**: Bounces between walls ← → ← → ← →, slow descent
-- **With momentum**: Dampened oscillations ← → ← →, faster descent ↓↓↓
+Our hilly landscape can have small hills, big hills and some in between. Given that our learning rate represents the size of the step that we're going to take in any direction, it wouldn't make sense to take a huge step on a small hill (and vice versa on a big hill).
 
-The vertical component (toward minimum) accumulates, while horizontal components (between walls) cancel out.
+The solution is to make the learning rate adaptive for every parameter in order to ensure we're taking optimal learning rate steps.
 
----
+### AdaGrad: The First Attempt
 
-## Adaptive Learning Rates: Different Speeds for Different Parameters
+AdaGrad tracks how much each parameter has been updated historically. Parameters that have received large updates get smaller learning rates; parameters with small updates keep larger learning rates.
 
-**The Core Insight**
+The problem? It only accumulates—never forgets. Over time, learning rates shrink toward zero and training effectively stops.
 
-Not all parameters should update at the same rate. Consider three scenarios:
+### RMSProp: Adding Forgetting
 
-1. **Sparse features**: The word "antidisestablishmentarianism" appears rarely in your training data. When it does appear, you should make a large update to its embedding—you don't have many chances to learn from it.
+RMSProp fixes this by using an exponentially decaying average instead of accumulating forever. Recent gradient magnitudes matter more than ancient history. This lets learning rates increase or decrease based on recent behavior.
 
-2. **Different scales**: One parameter might have gradients around 0.001, another around 100. Using the same learning rate for both is suboptimal.
+### Adam: Putting It All Together
 
-3. **Different curvatures**: The loss surface might be steep in one direction (converge quickly) but flat in another (need larger steps).
+What if we combined everything?
 
-The solution? Make the learning rate **adaptive** per parameter.
-
-### AdaGrad: The First Adaptive Method
-
-**Mathematics**:
-
-```
-G_t = G_(t-1) + g_t²  (accumulate squared gradients)
-θ_(t+1) = θ_t - α · g_t / (√G_t + ε)
-```
-
-**The Intuition**
-
-Divide each parameter's learning rate by the square root of the sum of all its past squared gradients.
-
-- Large historical gradients → `√G_t` is large → learning rate becomes small
-- Small historical gradients → `√G_t` is small → learning rate stays large
-
-Think of it as: "If this parameter has been making big updates, slow down. If it's been making small updates, speed up."
-
-**Why square the gradients?** We want to measure magnitude regardless of direction. Squaring makes negative and positive gradients contribute equally.
-
-**The Problem**
-
-`G_t` only accumulates—it never decreases. Over time, `√G_t` grows and grows, making the learning rate smaller and smaller until learning effectively stops. This is called the "decaying learning rate problem."
-
-### RMSProp: Fixing AdaGrad
-
-**Mathematics**:
-
-```
-v_t = β · v_(t-1) + (1 - β) · g_t²
-θ_(t+1) = θ_t - α · g_t / (√v_t + ε)
-```
-
-**The Intuition**
-
-Instead of accumulating all squared gradients forever, maintain an exponentially decaying average. Recent gradient magnitudes matter more than ancient history.
-
-With `β = 0.9`, gradients from 10 steps ago have only 10% of their original influence. Gradients from 100 steps ago are essentially forgotten.
-
-**The Key Difference**
-
-- **AdaGrad**: Infinite memory → learning rate can only decrease
-- **RMSProp**: Finite memory → learning rate can increase or decrease based on recent behavior
-
-This solves the decaying learning rate problem while keeping the benefits of adaptive per-parameter learning rates.
-
----
-
-## Adam: Putting It All Together
-
-**The Philosophy**
-
-What if we combined everything we've learned?
-
-1. **Momentum** (from SGD + Momentum): Remember the direction we've been going
+1. **Momentum** (from SGD): Remember the direction we've been going
 2. **Adaptive learning rates** (from RMSProp): Scale updates per parameter
-3. **One more thing**: Fix an initialization bias we'll discover
 
-This is Adam: **Ada**ptive **M**oment Estimation.
+This is **Adam**: **Ada**ptive **M**oment Estimation.
 
-**The Mathematics**
+Adam maintains two moving averages:
 
-Adam maintains two moving averages—one for gradients (momentum), one for squared gradients (adaptive learning rates):
+- **First moment (m)**: The momentum-smoothed gradient direction
+- **Second moment (v)**: The variance of recent gradients
 
-**First moment (mean of gradients)**:
+The update rule:
 
-```
-m_t = β₁ · m_(t-1) + (1 - β₁) · g_t
-```
+$$\theta_{t+1} = \theta_t - \alpha \cdot \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}$$
 
-**Second moment (uncentered variance of gradients)**:
+Think of it as a signal-to-noise ratio: the numerator tells you _where_ to go (the consistent direction), and the denominator tells you _how confident_ to be (based on gradient variability). High confidence? Take a bigger step. Lots of noise? Be cautious.
 
-```
-v_t = β₂ · v_(t-1) + (1 - β₂) · g_t²
-```
+**Default hyperparameters:**
 
-**Bias correction** (we'll see why this matters):
+- `α = 0.001` (learning rate)
+- `β₁ = 0.9` (momentum decay—roughly 10 steps of memory)
+- `β₂ = 0.999` (variance decay—roughly 1000 steps of memory)
 
-```
-m̂_t = m_t / (1 - β₁^t)
-v̂_t = v_t / (1 - β₂^t)
-```
+Why longer memory for variance? Estimating variance reliably requires more samples than estimating direction.
 
-**Parameter update**:
-
-```
-θ_(t+1) = θ_t - α · m̂_t / (√v̂_t + ε)
-```
-
-**Breaking Down the Update Rule**
-
-Let's parse this carefully:
-
-```
-θ_(t+1) = θ_t - α · m̂_t / (√v̂_t + ε)
-```
-
-- **Numerator (`m̂_t`)**: Where to go—the momentum-smoothed direction
-- **Denominator (`√v̂_t`)**: How much to scale the step—adaptive per parameter
-- **Their ratio**: A normalized update that's scaled by past gradient variance
-
-**Three Ways to Understand Adam**
-
-**Perspective 1: Adaptive Step Sizes**
-
-Look at what happens for different parameters:
-
-Parameter with large, consistent gradients:
-
-- `m̂_t` is large (strong signal)
-- `v̂_t` is large (consistent magnitude)
-- `m̂_t / √v̂_t` → moderate update (doesn't overshoot)
-
-Parameter with small, noisy gradients:
-
-- `m̂_t` is small (weak signal)
-- `v̂_t` is small (low magnitude)
-- `m̂_t / √v̂_t` → moderate update (doesn't under-step)
-
-Adam automatically balances these!
-
-**Perspective 2: Signal-to-Noise Ratio**
-
-Think of `m̂_t` as the signal (consistent direction) and `√v̂_t` as the noise (variability):
-
-```
-update ∝ signal / noise
-```
-
-- High signal-to-noise → confident, take larger steps
-- Low signal-to-noise → uncertain, take smaller steps
-
-This is like listening to someone speak: if the signal is clear above the noise, you hear them well. If it's noisy, you're less confident in what you heard.
-
-**Perspective 3: Second-Order Approximation**
-
-The division by `√v̂_t` approximates second-order optimization (Newton's method) without computing expensive second derivatives.
-
-Newton's method uses: `θ_(t+1) = θ_t - H^(-1) · g_t`, where `H` is the Hessian (matrix of second derivatives).
-
-Adam approximates the Hessian's inverse using only gradient information: `√v̂_t` acts like a diagonal approximation of the Hessian.
-
-**Why Bias Correction Is Critical**
-
-We initialize `m_0 = 0` and `v_0 = 0`. Without correction, here's what happens in iteration 1:
-
-```
-m_1 = 0.9 · 0 + 0.1 · g_1 = 0.1 · g_1
-v_1 = 0.999 · 0 + 0.001 · g_1² = 0.001 · g_1²
-```
-
-Both are severely biased toward zero! Our estimates are 10x and 1000x too small.
-
-With bias correction:
-
-```
-m̂_1 = 0.1 · g_1 / (1 - 0.9¹) = 0.1 · g_1 / 0.1 = g_1
-v̂_1 = 0.001 · g_1² / (1 - 0.999¹) = 0.001 · g_1² / 0.001 = g_1²
-```
-
-Perfect! The correction factors `(1 - β₁^t)` and `(1 - β₂^t)` exactly cancel the bias.
-
-**What happens over time?**
-
-- Iteration 1: Correction factors are ~0.1 and ~0.001 (large correction needed)
-- Iteration 10: Correction factors are ~0.65 and ~0.01 (moderate correction)
-- Iteration 1000: Correction factors are ~1.0 and ~1.0 (barely any correction)
-
-The correction automatically fades as the estimates become reliable.
-
-**Hyperparameters and Their Meaning**
-
-Default values:
-
-- `α = 0.001`: Global learning rate
-- `β₁ = 0.9`: First moment decay (momentum memory)
-- `β₂ = 0.999`: Second moment decay (variance memory)
-- `ε = 1e-8`: Numerical stability constant
-
-**Why these specific values?**
-
-`β₁ = 0.9` gives roughly 10 steps of memory for direction:
-
-```
-Effective memory = 1/(1-β₁) = 1/(1-0.9) = 10
-```
-
-`β₂ = 0.999` gives roughly 1000 steps of memory for variance:
-
-```
-Effective memory = 1/(1-β₂) = 1/(1-0.999) = 1000
-```
-
-**Why longer memory for variance?** Estimating variance requires more samples than estimating mean. You need to see more data to confidently say "this parameter's gradients are consistently large" versus "this direction is generally downhill."
-
----
-
-## Memory and Computational Cost
-
-**Storage Requirements**
-
-For a model with N parameters:
-
-| Optimizer      | Memory Overhead | What's Stored                        |
-| -------------- | --------------- | ------------------------------------ |
-| SGD            | 0               | Nothing                              |
-| SGD + Momentum | N               | Velocity `v`                         |
-| AdaGrad        | N               | Accumulated `G`                      |
-| RMSProp        | N               | Moving average `v`                   |
-| Adam           | 2N              | First moment `m` + second moment `v` |
-
-**Is 2N a problem?**
-
-For a model with 100M parameters:
-
-- Parameters: 400 MB (float32)
-- Adam state: 800 MB additional
-- **Total**: 1.2 GB
-
-Compare to:
-
-- Activations during training (batch=32): Often 5-10 GB
-- Gradients: 400 MB
-
-Memory is rarely the bottleneck for Adam. The activations dominate.
-
-**Computational Cost Per Step**
-
-All modern optimizers have O(N) cost per step. The differences are minimal:
-
-- **SGD**: 1 multiply, 1 add per parameter → 2 ops
-- **Adam**: 2 EMA updates, 2 bias corrections, 1 sqrt, 2 divides → ~10 ops
-
-In practice, this overhead is negligible ( less than 1% of total training time) because:
-
-1. Forward and backward passes dominate (90%+ of time)
-2. Modern hardware handles element-wise operations efficiently
-3. The optimizer often runs on CPU while GPU does forward/backward
-
----
-
-## Adam Variants and Improvements
-
-### AdamW: Decoupled Weight Decay
-
-**The Problem**
-
-In standard Adam, L2 regularization interacts poorly with adaptive learning rates.
-
-With L2 regularization, we modify the loss:
-
-```
-L'(θ) = L(θ) + (λ/2) · ||θ||²
-```
-
-Taking gradients:
-
-```
-∇L'(θ) = ∇L(θ) + λ · θ
-```
-
-This adds `λ·θ` to the gradient, which then gets adapted by Adam's learning rate scaling. This means:
-
-- Parameters with large historical gradients get less weight decay (because their effective learning rate is smaller)
-- Parameters with small historical gradients get more weight decay (because their effective learning rate is larger)
-
-This is backwards! We want consistent regularization.
-
-**AdamW Solution**
-
-Decouple weight decay from gradient-based optimization:
-
-```
-θ_(t+1) = θ_t - α · m̂_t / (√v̂_t + ε) - α · λ · θ_t
-                                         ^^^^^^^^^^^
-                                    weight decay applied
-                                    after adaptation
-```
-
-**The Intuition**
-
-Apply regularization directly to parameters, not through gradients. This makes regularization strength consistent across all parameters regardless of their gradient history.
-
-**When to use**: AdamW often generalizes better than Adam, especially for transformers and language models. It's rapidly becoming the default.
-
-### AMSGrad: Fixing Non-Convergence
-
-**The Problem**
-
-In some pathological cases, Adam can fail to converge because `v_t` can decrease, causing the effective learning rate to increase when it shouldn't.
-
-Example: If recent gradients are smaller than historical gradients, `v_t` decreases, `√v̂_t` decreases, and the effective learning rate (denominator gets smaller) increases. This can cause instability.
-
-**Solution**
-
-Use the maximum of all past `v̂_t` values:
-
-```
-v̂_t_max = max(v̂_(t-1)_max, v̂_t)
-θ_(t+1) = θ_t - α · m̂_t / (√v̂_t_max + ε)
-```
-
-**The Intuition**
-
-Never let the adaptive learning rate increase—only decrease or stay the same. This guarantees monotonic convergence in convex settings.
-
-**In practice**: Rarely makes a difference for neural networks (which are highly non-convex). Most practitioners stick with standard Adam.
-
-### NAdam: Nesterov Momentum
-
-**The Idea**
-
-Combine Adam with Nesterov accelerated gradient.
-
-Standard momentum: Look at where you are, then jump
-
-```
-Evaluate gradient at current position → Jump
-```
-
-Nesterov momentum: Jump first, then look
-
-```
-Jump → Evaluate gradient at new position → Adjust
-```
-
-**The Intuition**
-
-Nesterov momentum is slightly more "optimistic." It assumes the momentum will carry you forward, evaluates the gradient at that future point, then makes a correction.
-
-Think of it like steering a car: Nesterov steers where you're about to be, not where you currently are.
-
-The math gets complicated, but the intuition is that Nesterov can converge faster by being slightly more aggressive in consistent directions.
-
-### RAdam: Rectified Adam
-
-**The Problem**
-
-Early in training (first few iterations), the variance estimate `v̂_t` is very unreliable because it's based on so few samples. This can cause large, erratic updates.
-
-**Solution**
-
-Add a rectification term that gradually ramps up the adaptive learning rate based on the variance estimate's reliability:
-
-```
-ρ_t = ρ_∞ - 2·t·β₂^t / (1 - β₂^t)
-```
-
-Where `ρ_∞` is the maximum length of the approximated SMA (Simple Moving Average).
-
-If `ρ_t > 4`, use Adam. Otherwise, fall back to SGD with momentum.
-
-**The Intuition**
-
-Don't trust the variance estimate until you have enough samples. In the very beginning, just use momentum without the adaptive part.
-
-**When to use**: When training is unstable in the first few epochs, or when using very small learning rates.
-
----
-
-## When Adam Fails: The Generalization Gap
-
-**The Surprising Weakness**
-
-Despite its popularity, Adam has a well-documented issue: it sometimes generalizes worse than SGD, particularly on vision tasks.
-
-**Empirical Observation**:
-
-- **Adam**: Lower training loss, faster convergence, sometimes worse test accuracy
-- **SGD**: Higher training loss, slower convergence, sometimes better test accuracy
-
-Why would a slower optimizer that achieves worse training loss generalize better?
-
-**Hypothesis 1: Sharp vs. Flat Minima**
-
-Imagine two valleys at the same depth:
-
-```
-Valley A (Sharp):        Valley B (Flat):
-    \  /                     \___/
-     \/
-```
-
-Both have the same loss, but:
-
-- **Sharp minimum**: Small perturbations (like test data) push you up the walls → high test loss
-- **Flat minimum**: Small perturbations barely change the loss → robust test performance
-
-**The claim**: Adam's adaptive learning rates allow it to converge into sharp minima. SGD's constant learning rate acts as implicit regularization, preventing convergence to sharp minima—it naturally finds flatter basins.
-
-**Why does this happen?**
-
-Adam can take small, precise steps into narrow valleys because it adapts per parameter. SGD with its fixed learning rate "can't fit" into sharp minima—the noise keeps kicking it out.
-
-**Hypothesis 2: Effective Learning Rate Decay**
-
-In SGD, as you approach a minimum, gradients naturally get smaller:
-
-```
-Near minimum: ||∇L|| → 0
-Effective step size: α · ||∇L|| → 0
-```
-
-This natural annealing helps convergence.
-
-In Adam, the adaptive term `1/√v̂_t` can prevent this. If gradients are getting smaller, `v̂_t` also gets smaller, potentially keeping the effective learning rate high.
-
-**Hypothesis 3: Different Loss Landscapes**
-
-Vision models (CNNs) have highly non-convex loss surfaces with many good local minima. The optimizer's dynamics determine which basin of attraction you end up in.
-
-Adam and SGD simply converge to different solutions. Adam finds one quickly (but sometimes sharp), SGD finds another slowly (but sometimes flat).
-
-**Practical Guidance**
-
-**Use Adam when**:
-
-- Fast experimentation and iteration speed matter
-- Working on NLP tasks (transformers strongly prefer Adam/AdamW)
-- Training from scratch on large datasets
-- You don't have time for extensive hyperparameter tuning
-
-**Use SGD (+ momentum) when**:
-
-- You need absolute best generalization on held-out data
-- Training computer vision models (especially ResNets, EfficientNets)
-- Fine-tuning pre-trained models
-- You can afford to carefully tune learning rates and schedules
-
-**The Hybrid Approach**:
-
-1. Use Adam for initial exploration and architecture search (fast iteration)
-2. Switch to SGD for final training once you've found a good architecture
-3. Or use Adam with aggressive learning rate decay schedules
-
----
-
-## Understanding Optimization Landscapes
-
-**Visualizing the Journey**
-
-Consider training a simple 2-parameter model. The loss landscape might look like:
-
-```
-        High Loss
-           ↑
-           │     ╱╲
-           │    ╱  ╲    ╱╲
-           │   ╱    ╲  ╱  ╲
-           │  ╱  A   ╲╱ B  ╲
-           │ ╱              ╲___
-           │╱___________________╲→ Parameter 1
-           │
-        Parameter 2
-```
-
-- **Point A**: Sharp minimum—Adam might converge here quickly
-- **Point B**: Flat minimum—SGD more likely to find this eventually
-
-**Why Flat Minima Generalize Better**
-
-Train on dataset D, test on dataset D'. If the distribution shifts even slightly:
-
-- **Sharp minimum**: Performance degrades significantly (steep walls mean small changes → large loss increase)
-- **Flat minimum**: Performance degrades gracefully (flat floor means small changes → small loss increase)
-
-This is the essence of generalization: robustness to distribution shift.
-
-**The Batch Size Connection**
-
-Batch size interacts surprisingly with optimizer choice:
-
-- **Small batches** (8-32): Noisy gradients → need adaptive learning rates → Adam wins
-- **Large batches** (1024+): Accurate gradients → simple optimization works → SGD competitive
-
-This explains why:
-
-- Distributed training (large batches) often uses SGD
-- Single-GPU training (smaller batches) often uses Adam
-
-Large batches give you more accurate gradient estimates, reducing the need for Adam's adaptive learning rates to deal with noise.
-
-**Learning Rate Schedules**
-
-Both Adam and SGD benefit from learning rate schedules:
-
-**Cosine Annealing**:
-
-```
-α_t = α_min + (α_max - α_min) · (1 + cos(πt/T)) / 2
-```
-
-Smoothly reduces learning rate from `α_max` to `α_min` following a cosine curve. This helps convergence to flat minima.
-
-**Warmup**:
-
-```
-If t < warmup_steps:
-    α_t = α_base · (t / warmup_steps)
-Else:
-    α_t = α_base
-```
-
-**Why warmup helps Adam**: Early in training, the second moment estimate `v̂_t` is unstable (based on few samples). Warmup gives it time to stabilize before taking aggressive steps.
-
-Without warmup: Unreliable `v̂_t` → erratic effective learning rates → instability
-With warmup: Gradual ramp-up → `v̂_t` accumulates information → stable convergence
-
----
-
-## The Big Picture: Optimization as Search
-
-**What We're Really Doing**
-
-Neural network training is search through an enormous parameter space. For a model with 100M parameters, you're navigating a 100-million-dimensional landscape.
-
-The optimization algorithm determines:
-
-1. **What trajectory we take** through this space
-2. **How fast we move** along that trajectory
-3. **Where we end up** (which local minimum we converge to)
-
-Different optimizers take radically different paths and find different solutions.
-
-**The Fundamental Trade-offs**
-
-There's no free lunch in optimization:
-
-- **Speed vs. Stability**: Aggressive updates (large learning rate) converge fast but might overshoot and diverge
-- **Adaptation vs. Consistency**: Adaptive learning rates help navigate varied terrain but can find sharp minima
-- **Memory vs. Simplicity**: Maintaining state (momentum, variance) helps but uses memory and adds complexity
-- **Training Loss vs. Generalization**: The absolute minimum of training loss doesn't always generalize best
-
-Every optimizer makes different trade-offs.
-
-**The Future of Optimization**
-
-Current research directions:
-
-1. **Second-order methods**: K-FAC, Shampoo—using curvature information more effectively
-2. **Learned optimizers**: Meta-learning optimization algorithms themselves (learning to learn)
-3. **Distribution-aware**: Optimizers that explicitly model the data distribution
-4. **Federated learning**: Optimization across distributed, heterogeneous data sources
-5. **Neural architecture search**: Optimizing both architecture and weights simultaneously
-
----
+In practice, most modern LLM training uses **AdamW**, a variant that handles weight decay (regularization) more cleanly. If you're training transformers, AdamW is typically your default choice.
 
 ## Conclusion
 
-Adam works because it combines three powerful ideas:
+Let's return to where we started: What does it mean for a neural network to learn?
 
-1. **Momentum**: Remember where you've been—build velocity in consistent directions
-2. **Adaptive learning rates**: Different speeds for different parameters—navigate varied terrain
-3. **Bias correction**: Handle initialization properly—don't let early estimates mislead you
+We've now seen the full picture:
 
-The math might look intimidating with all the moving averages and correction terms, but the intuition is straightforward: **take smart steps by remembering the past and adapting to the terrain.**
+1. **Loss functions** measure how wrong the model is, comparing predictions to ground truth and producing a single number that captures "how far off are we?"
 
-Is Adam perfect? No. It sometimes finds solutions that don't generalize as well as SGD, particularly on vision tasks. The speed-generalization trade-off is real.
+2. **Gradient descent** uses calculus to figure out which direction to adjust each parameter to reduce that loss, following the slope downhill on the loss landscape.
 
-But Adam's combination of fast convergence, stability across problems, and minimal hyperparameter tuning makes it the default choice for most deep learning applications.
+3. **Optimizers** like Adam make this process practical, using momentum to smooth out the path, adaptive learning rates to navigate varied terrain, and mini-batches to make computation practical.
 
-**The Bottom Line**
+The math is elegant once you see how the pieces connect: a loss function creates a landscape, gradients point downhill, and optimizers decide how to walk. Each step nudges billions of parameters in the right direction, and after millions of iterations, the model learns the underlying distribution of the data, which you can then sample to write code, answer questions, or classify emails.
 
-Start with Adam (or AdamW). For 95% of applications, it will serve you well. If you need the absolute best test performance and have time to carefully tune learning rates and schedules, consider SGD with momentum. But don't prematurely optimize—Adam's speed advantage during experimentation usually outweighs SGD's potential generalization edge.
-
-Now go train some models!
-
----
-
-## Further Reading
-
-**Original Papers**:
-
-- Kingma & Ba (2015): "Adam: A Method for Stochastic Optimization"
-- Loshchilov & Hutter (2019): "Decoupled Weight Decay Regularization" (AdamW)
-- Reddi et al. (2018): "On the Convergence of Adam and Beyond" (AMSGrad)
-
-**Empirical Comparisons**:
-
-- Wilson et al. (2017): "The Marginal Value of Adaptive Gradient Methods"
-- Schmidt et al. (2021): "Descending through a Crowded Valley"
-
-**Practical Guides**:
-
-- Ruder (2016): "An Overview of Gradient Descent Optimization Algorithms"
-- Stanford CS231n course notes on optimization
-
-**Advanced Topics**:
-
-- Martens & Grosse (2015): K-FAC (Kronecker-factored approximate curvature)
-- Anil et al. (2020): "Scalable Second Order Optimization for Deep Learning"
-
----
-
-_Thanks for reading! If you found this helpful, consider implementing Adam from scratch as an exercise—there's no better way to truly understand an algorithm than to build it yourself._
-
----
+That's the core of how neural networks learn.
