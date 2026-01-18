@@ -3,19 +3,21 @@ import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
+import Image from "next/image";
 
 export default function Header() {
   return (
     <div className="mb-16">
       <div className="flex flex-col sm:flex-row items-start gap-6">
-        <Avatar className="w-20 h-20">
-          <AvatarImage
-            src="Circlevis.png"
+        <div>
+          <Image
+            src="/header_image.jpg"
             alt="evis"
             className="border border-gray-800 rounded-full"
+            width="130"
+            height="180"
           />
-          <AvatarFallback>Ed</AvatarFallback>
-        </Avatar>
+        </div>
         <div className="flex-1 ">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:mb-0 mb-6">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-300 sm:mb-2">
@@ -46,7 +48,8 @@ export default function Header() {
           </div>
           <p className="text-gray-600 text-sm dark:text-gray-400 mb-5 w-full sm:w-[70%] ">
             <span>
-              Hey, I&apos;m Evis. I like to write code and learn new things.{" "}
+              Hey, I&apos;m Evis. I like to write code and learn new
+              things.{" "}
             </span>
             <br />
             <br />
