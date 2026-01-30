@@ -1,0 +1,108 @@
+---
+title: "Embrace the Logarithms"
+date: "2026-01-30"
+publish: true
+---
+
+For three years, the mantra in AI has been "embrace the exponentials." Model performance was doubling. The curve was going up and to the right, and the only question was how fast. VCs said it, researchers said it, Twitter said it. Just wait for the next model.
+
+And for the most part that was true. The models continued to get better every few months as the foundational model lagbsOpenAI, Anthropic and Gemini released new models, followed shortly thereafter by the open source community - Deepseek, Kimi, GLM and others.
+
+Every new model release brought new benchmark scores and screams of SOTA across Twitter. In isolation the benchmarks were undoubtedly impressive. But recently I thought, "what do these benchmarks look like over time?". So I searched around and finally came across an awesome website ([llm-stats.com](https://llm-stats.com/leaderboards/llm-leaderboard)) that had already done all of the hardwork for me.
+
+So I started to investigate and the data tells a very interesting, maybe even, dare I say, contrarian story.
+
+## The Shape of the Curve
+
+Look at the data. On MMLU, we went from GPT-3.5 Turbo at ~70% in early 2023 to GPT-4 and Claude 3 Opus around 83-85% by early 2024. Then Claude 3.5 Sonnet and GPT-4o pushed to 88%. Now GPT-5 sits at 90%.
+
+![MMLU Performance Timeline](/embracelogs/mmlu.png)
+_MMLU scores 2023-2026. Source: [llm-stats.com](https://llm-stats.com/leaderboards/llm-leaderboard)_
+
+That's 20 points in the first 18 months. 2 points in the next 18. The derivative collapsed.
+
+SWE-Bench Verified tells a similar story. We went from DeepSeek-V2.5 at ~18% in mid-2024 to Claude Opus 4.5 and GPT-5.1 Thinking around 75-80% by late 2025. Incredible progress, but zoom in on the last six months. The frontier models are all clustered within 5-10 points of each other. The curve has flattened.
+
+![SWE-Bench Verified Performance Timeline](/embracelogs/swe.png)
+_SWE-Bench Verified scores 2024-2026. Source: [llm-stats.com](https://llm-stats.com/leaderboards/llm-leaderboard)_
+
+GPQA is perhaps the clearest signal. We went from GPT-3.5 Turbo at ~30% to ChatGPT-4o around 85% by mid-2024. Now Gemini 3 Pro and GPT-5.2 Pro are scoring above 100%—presumably through some combination of test contamination, extended reasoning, or benchmark-specific optimization. The frontier models are at the ceiling. There's nowhere left to go.
+
+![GPQA Performance Timeline](/embracelogs/gpqa.png)
+_GPQA scores 2023-2026. Source: [llm-stats.com](https://llm-stats.com/leaderboards/llm-leaderboard)_
+
+The exponential crowd wasn't necessairly wrong, they were just a little optimistic. Model performance was exponential initially but then quickly flatted out. Unless something drastically changes, we're in the era of the logarithm now.
+
+## Why the Scaling Laws Broke
+
+In 2022, Google DeepMind released a paper titled [_Training Compute-Optima Large Language Models_](https://arxiv.org/abs/2203.15556). In the paper, they investigated the optimal model size and number of tokens for training an LLM given a compute budget. In the paper, they found that loss decreases predictably as a power law function of compute. Specifically:
+
+$$
+L(C) = \left(\frac{C_0}{C}\right)^\alpha
+$$
+
+Where L is loss, C is compute, and α is somewhere around 0.05. The problem is that benchmark performance isn't loss. Benchmark performance can be gamed and despite AI labs claiming that they haven't trained on benchmark data, it's hard to believe that if they'vet trained on effectively the entire internet, that data wasn't contaminated with some benchmark data, somewhere.
+
+Additionally, and probably more importantly, benchmarks measure skills that have finite ceilings. MMLU is multiple choice, once you know enough to consistently identify the right answer, there's no "more knowing." SWE-Bench requires generating patches that pass tests and once the model can reliably do that, it's saturated.
+
+If loss follows a powerlaw then benchmark performance follow a sigmoid.
+
+![MMLU Performance Timeline](/embracelogs/loss.png)
+
+Here's what I mean:
+
+1. **High loss = bad model**: you're basically guessing, small improvements in loss doesn't really help much, you're still wrong most of the time. You're on the flat bottom of the sigmoid.
+2. **Medium loss = okay model**: accuracy is climbing and marginal improvements in loss is reflected in increasing model performance on the benchmark
+3. **Low loss = good model**: the model is right on most questions but further loss improvements don't really help the model solve the remaining hard problems.
+
+This is why benchmark scores follow a sigmoid even when underlying loss follows a power law. The loss can keep improving, but the benchmark saturates because the task saturates.
+
+So this begs the question: if the current models are effectively trained on all of the data that humanity has produced, are we approaching the fundamental limits of what can be learned from text? There is research that has been done on this, going all of the way back to Claude Shannon and Information Theory, but it wasn't specific to LLMs and I think the jury is still out. Intuitively, I would think that there's a fundamental limit to how much can be learned from text alone. Once you've extracted most of the predictable underlying structure, I would reason that additional compute would yield diminishing returns.
+
+Taking a step back, I think there are four mechanisms that we're running into:
+
+**Data exhaustion**: we've tokenized most of the (high-quality) internet. Synthetic data helps, but it's been shown that models collapse after a few generations of being training on synthetic data.
+
+**Benchmark saturation**: when models score 90%+ on a benchmark, I would guess that the remaining 10% represnts questions that the model will likely never answer correctly. We likely need new benchmarks, but there's little incentive to spend the time and money to develop them.
+
+**Compute economics**: it's reported that GPT-4 cost roughly 100M to train. The next generation probably cost 500M-1B which is inline with what most foundational AI labs are raising. But the improvement from GPT-4 to GPT-5 was smaller than from GPT-3.5 to GPT-4. The cost-performance curve is heading in the wrong direction unless a new model architecture is developed that changes this relationship.
+
+**Architecture ceilings**: I've said for the last year that we're likely 2-3 major architectural innovations away from AGI. At this point, we've exhausted the low-hanging architectural improvements like MoE, RoPE, flash attention, better normalization, sparse attention, etc. What's left requires probably requires rethinking the fundamental compute graph.
+
+In order to hit the next exponential, we're likely going to need to solve these existing problems or developer a new model architecture that completely side-steps these altogether.
+
+## Embrace the Logarithm
+
+If the exponential is dead, then do we embrace the logarithm?
+
+I think the logarithm is actually a good thing, at least for now. We need to let the dust settle a bit and focus on build secure, performant and reliable systems without the substrate changing underneath us.
+
+I would also argue that for many use-case, in fact most B2B use cases, the current models are "good enough". Summarization, translation, code completion, Q&A, conversational interfaces, these all work well today. They're not perfect, but how do you make a probablistic system perfect anyways? They're good enough to build ontop of and ship products. If we follow the logarithm, the incremental improvement from GPT-5 to GPT-6 won't unlock new categories anyways.
+
+If you're a builder, I think this means a few things:
+
+**Stop betting on the next model**: if GPT-5 or Claude can't do what you need, it's unlikely the next model will. The improvement gradient has flattened. You need to build systems that work with current capabilities, better prompting, better RAG, better agent architectures, better tooling. The model now becomes a fixed constraint you optimize around.
+
+**Differentiate on systems, not access**: everyone has access to the same frontier models. The moat isn't API access; it's data, workflows, domain expertise, and the ability to build reliable systems that actually solve problems. This is good news if you're good at engineering.
+
+**Build for reliability, not capability**: the next breakthrough might be getting 95% performance on 99% of attempts rather than 100% performance on 75% of attempts. Consistency, predictability, and graceful degradation matter more when the capability ceiling is fixed.
+
+The exciting part is that this shifts the game to something I find more interesting: systems design. How do you combine a model with memory? How do you give it tools? How do you build agent loops that are reliable? How do you create feedback mechanisms that help models improve on your specific task?
+
+These are engineering problems, not research problems. And a lot more people can solve engineering problems than research problems.
+
+## Time to Build
+
+The "embrace the exponentials" era for LLMs is over. At least that's what the math leads me to believe despite what "Situational Awareness" will tell you.
+
+But it's not all bad. In fact, I think this is good.
+
+"Embrace the exponentials" made sense when exponentials were real. It encouraged builders to think big and build for a future when model capabilities caught up to our plans.
+
+But we're in a new regime now. At least for the current model paradigm and architecture, it seems like the ceiling is in sight. The benchmarks have saturated and the economics have shifted.
+
+So I say that we **Embrace the logarithms**.
+
+Not because plateaus are exciting but because understanding where you are on the curve tells you what to do next. If you're on the exponential part, wait. If you're on the plateau, build.
+
+Time to build.
