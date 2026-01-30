@@ -4,7 +4,7 @@ date: "2026-01-30"
 publish: true
 ---
 
-For three years, the mantra in AI has been "embrace the exponentials." Model performance was doubling. The curve was going up and to the right, and the only question was how fast. VCs said it, researchers said it, Twitter said it. Just wait for the next model.
+For three years, the mantra in AI has been "embrace the exponentials." Model performance felt, and in some cases, was exponential. The curve was going up and to the right, and the only question was how fast. VCs said it, researchers said it, Twitter said it. Just wait for the next model.
 
 And for the most part that was true. The models continued to get better every few months as the foundational model lagbsOpenAI, Anthropic and Gemini released new models, followed shortly thereafter by the open source community - Deepseek, Kimi, GLM and others.
 
@@ -26,7 +26,7 @@ SWE-Bench Verified tells a similar story. We went from DeepSeek-V2.5 at ~18% in 
 ![SWE-Bench Verified Performance Timeline](/embracelogs/swe.png)
 _SWE-Bench Verified scores 2024-2026. Source: [llm-stats.com](https://llm-stats.com/leaderboards/llm-leaderboard)_
 
-GPQA is perhaps the clearest signal. We went from GPT-3.5 Turbo at ~30% to ChatGPT-4o around 85% by mid-2024. Now Gemini 3 Pro and GPT-5.2 Pro are scoring above 100%—presumably through some combination of test contamination, extended reasoning, or benchmark-specific optimization. The frontier models are at the ceiling. There's nowhere left to go.
+GPQA is perhaps the clearest signal. We went from GPT-3.5 Turbo at ~30% to ChatGPT-4o around 85% by mid-2024. Now Gemini 3 Pro and GPT-5.2 Pro are scoring above 100%, probably through some combination of test contamination, extended reasoning, or benchmark-specific optimization. The frontier models are at the ceiling. There's nowhere left to go.
 
 ![GPQA Performance Timeline](/embracelogs/gpqa.png)
 _GPQA scores 2023-2026. Source: [llm-stats.com](https://llm-stats.com/leaderboards/llm-leaderboard)_
@@ -41,11 +41,11 @@ $$
 L(C) = \left(\frac{C_0}{C}\right)^\alpha
 $$
 
-Where L is loss, C is compute, and α is somewhere around 0.05. The problem is that benchmark performance isn't loss. Benchmark performance can be gamed and despite AI labs claiming that they haven't trained on benchmark data, it's hard to believe that if they'vet trained on effectively the entire internet, that data wasn't contaminated with some benchmark data, somewhere.
+Where L is loss, C is compute, and α varies by regime, but is small (~0.05–0.1).. The problem is that benchmark performance isn't loss. Benchmark performance can be gamed and despite AI labs claiming that they haven't trained on benchmark data, it's hard to believe that if they'vet trained on effectively the entire internet, that data wasn't contaminated with some benchmark data, somewhere.
 
 Additionally, and probably more importantly, benchmarks measure skills that have finite ceilings. MMLU is multiple choice, once you know enough to consistently identify the right answer, there's no "more knowing." SWE-Bench requires generating patches that pass tests and once the model can reliably do that, it's saturated.
 
-If loss follows a powerlaw then benchmark performance follow a sigmoid.
+If loss follows a powerlaw then benchmark performance conceptually follow a sigmoid.
 
 ![MMLU Performance Timeline](/embracelogs/loss.png)
 
@@ -99,10 +99,10 @@ But it's not all bad. In fact, I think this is good.
 
 "Embrace the exponentials" made sense when exponentials were real. It encouraged builders to think big and build for a future when model capabilities caught up to our plans.
 
-But we're in a new regime now. At least for the current model paradigm and architecture, it seems like the ceiling is in sight. The benchmarks have saturated and the economics have shifted.
+But we're in a new regime now - at least for the current model paradigm and architecture, it seems like the ceiling is in sight. The benchmarks have saturated and the economics have shifted.
 
 So I say that we **Embrace the logarithms**.
 
 Not because plateaus are exciting but because understanding where you are on the curve tells you what to do next. If you're on the exponential part, wait. If you're on the plateau, build.
 
-Time to build.
+It's time to build.
