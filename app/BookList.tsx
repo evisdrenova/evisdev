@@ -9,6 +9,24 @@ export interface BookMetadata {
 
 const books: BookMetadata[] = [
   {
+    title: "The Dream Machine",
+    rating: 10.0,
+    author: "Graham Farmelo",
+    comment: "The only 10 I've ever given. A must read.",
+  },
+  {
+    title: "The Strangest Man",
+    rating: 9.6,
+    author: "Graham Farmelo",
+    comment: "Paul Dirac is a god.",
+  },
+  {
+    title: "The Silmarillion",
+    rating: 9.1,
+    author: "JRR Tolkein",
+    comment: "Dense, so many nouns. But very good.",
+  },
+  {
     title: "LOTR: The Return of the King",
     rating: 9.3,
     author: "JRR Tolkein",
